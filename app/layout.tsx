@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthingGuardWrapper } from "@/common/authing-guard-wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,11 +24,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
+      <head>
+        <link
+          rel="preconnect"
+          href="https://<your-authing-domain>.authing.cn"
+        />
+        <script
+          src="https://cdn.authing.co/packages/guard/latest/guard.min.js"
+          defer
+        ></script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthingGuardWrapper>{children}</AuthingGuardWrapper>
       </body>
     </html>
   );
