@@ -13,7 +13,7 @@ export const PUBLIC_ROUTES = [
 
 // 受保护的路由（需要登录才能访问）
 export const PROTECTED_ROUTES = [
-  '/index',  // 索引页面
+  '/home',  // 索引页面
 ] as const
 
 // 特殊路由配置
@@ -21,7 +21,7 @@ export const SPECIAL_ROUTES = {
   // 登录页面
   LOGIN: '/login',
   // 默认重定向页面（登录后）
-  DEFAULT_REDIRECT: '/index',
+  DEFAULT_REDIRECT: '/home',
   // 首页
   HOME: '/',
 } as const
