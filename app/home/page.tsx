@@ -1,4 +1,12 @@
 import LogoutButton from "@/app/ui/LogoutButton";
+import { ModeToggle } from "@/components/ModeToggle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 /**
  * 仪表板页面 - 现在由布局自动处理认证
@@ -7,17 +15,27 @@ import LogoutButton from "@/app/ui/LogoutButton";
 export default async function HomePage() {
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">仪表板</h2>
-        <p className="text-gray-600 mb-6">
-          欢迎使用 Wedding Explorer！您已成功登录。
-        </p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">仪表板</CardTitle>
+          <CardDescription>
+            欢迎使用 Wedding Explorer！您已成功登录。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ModeToggle />
+        </CardContent>
+      </Card>
 
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">账户操作</h3>
-        <LogoutButton />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">账户操作</CardTitle>
+          <CardDescription>管理您的账户设置</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LogoutButton />
+        </CardContent>
+      </Card>
     </div>
   );
 }

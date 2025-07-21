@@ -1,33 +1,36 @@
 import Link from "next/link";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full text-center">
-        <div className="mb-8">
-          <h1 className="text-6xl font-bold text-gray-900 mb-2">404</h1>
-          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <Card className="max-w-md w-full">
+        <CardHeader className="text-center">
+          <CardTitle className="text-6xl font-bold text-stone-900 mb-2">404</CardTitle>
+          <CardDescription className="text-2xl font-semibold text-stone-700 mb-4">
             页面找不到啦
-          </h2>
-          <p className="text-gray-600 mb-8">
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-stone-600 text-center mb-6">
             抱歉，您访问的页面不存在或已被移动。
           </p>
-        </div>
 
-        <div className="space-y-4">
-          <Link
-            href={SPECIAL_ROUTES.HOME}
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            返回首页
-          </Link>
+          <div className="space-y-4">
+            <Button asChild className="w-full">
+              <Link href={SPECIAL_ROUTES.HOME}>
+                返回首页
+              </Link>
+            </Button>
 
-          <div className="text-sm text-gray-500">
-            <p>如果问题持续存在，请检查您的网络连接或稍后再试</p>
+            <div className="text-sm text-stone-500 text-center">
+              <p>如果问题持续存在，请检查您的网络连接或稍后再试</p>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

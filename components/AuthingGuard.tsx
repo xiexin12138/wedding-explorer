@@ -4,12 +4,14 @@ import { useGuard, User } from "@authing/guard-react18";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
+import { useUser } from "@/components/UserProvider";
 
 const CDN_CSS = "https://cdn.authing.co/packages/guard/latest/guard.min.css";
 
 export default function AuthingGuard() {
   const guard = useGuard();
   const router = useRouter();
+  const { setUser } = useUser();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -45,17 +47,64 @@ export default function AuthingGuard() {
         });
 
         if (response.ok) {
+          // 更新用户状态，包含 data 字段
+          setUser({
+            id: userInfo.id || undefined,
+            name: userInfo.name || userInfo.nickname || undefined,
+            email: userInfo.email || undefined,
+            data: {
+              phone: userInfo.phone || undefined,
+              nickname: userInfo.nickname || undefined,
+              username: userInfo.username || undefined,
+              email: userInfo.email || undefined,
+              // 添加其他可能的用户数据字段
+              ...Object.fromEntries(
+                Object.entries(userInfo).filter(([_, value]) => value != null)
+              )
+            }
+          });
+          
           router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT);
         }
       } else {
         // 2. 启动 Guard
         guard
           .start(containerRef.current!)
-          .then((userInfo: User) => {
+          .then(async (userInfo: User) => {
             console.log("✅ 登录成功", userInfo);
 
-            // 页面跳转回默认页面， 使用 window.location.href 强制跳转
-            window.location.href = SPECIAL_ROUTES.DEFAULT_REDIRECT;
+            // 将认证信息发送到服务端设置 httpOnly cookie
+            const response = await fetch(API_ROUTES.AUTH.SET_SESSION, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                userInfo,
+              }),
+            });
+
+            if (response.ok) {
+              // 更新用户状态，包含 data 字段
+              setUser({
+                id: userInfo.id || undefined,
+                name: userInfo.name || userInfo.nickname || undefined,
+                email: userInfo.email || undefined,
+                                              data: {
+                  phone: userInfo.phone || undefined,
+                  nickname: userInfo.nickname || undefined,
+                  username: userInfo.username || undefined,
+                  email: userInfo.email || undefined,
+                  // 添加其他可能的用户数据字段
+                  ...Object.fromEntries(
+                    Object.entries(userInfo).filter(([_, value]) => value != null)
+                  )
+                }
+              });
+              
+              // 页面跳转回默认页面， 使用 window.location.href 强制跳转
+              window.location.href = SPECIAL_ROUTES.DEFAULT_REDIRECT;
+            }
           })
           .catch((error) => {
             console.error("❌ Authing 初始化失败:", error);
@@ -69,7 +118,7 @@ export default function AuthingGuard() {
         document.head.removeChild(link);
       }
     };
-  }, [guard, router, isClient]);
+  }, [guard, router, isClient, setUser]);
 
   // 在服务器端和客户端水合期间显示一致的加载状态
   if (!isClient) {
@@ -77,7 +126,7 @@ export default function AuthingGuard() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-white text-lg">正在加载登录...</div>
       </div>
-    );
+      );
   }
 
   return <div ref={containerRef} data-authing-guard />;

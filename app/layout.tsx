@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthingGuardWrapper } from "@/common/AuthingGuardWrapper";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { UserProvider } from "@/components/UserProvider";
+import { Header } from "@/components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,11 +20,11 @@ export const metadata: Metadata = {
   title: "欢迎您",
   description: "欢迎您参加我们的活动",
   viewport: {
-    width: 'device-width',
+    width: "device-width",
     initialScale: 1,
     maximumScale: 1,
     userScalable: false,
-    viewportFit: 'cover',
+    viewportFit: "cover",
   },
 };
 
@@ -31,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"
@@ -45,7 +48,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthingGuardWrapper>{children}</AuthingGuardWrapper>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <UserProvider>
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1">
+                <AuthingGuardWrapper>{children}</AuthingGuardWrapper>
+              </main>
+            </div>
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
