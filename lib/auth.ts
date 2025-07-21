@@ -78,7 +78,6 @@ export async function validateJWTToken(token: string): Promise<AuthingUser | nul
     const { payload } = await jwtVerify(token, secretKey, {
       algorithms: ['HS256']
     })
-    console.log("🚀 ~ validateJWTToken ~ payload:", payload)
 
     // 验证基本字段
     if (!payload.sub) {

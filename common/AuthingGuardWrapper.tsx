@@ -12,7 +12,6 @@ export function AuthingGuardWrapper({ children }: AuthingGuardWrapperProps) {
   return (
     <GuardProvider
       appId={AUTHING_APP_ID}
-      mode="modal"
       lang="zh-CN"
       // 如果你使用的是私有化部署的 Authing 服务，需要传入自定义 host，如:
 

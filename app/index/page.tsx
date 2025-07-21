@@ -1,4 +1,5 @@
-import LogoutButton from "./LogoutButton";
+import { Suspense } from 'react'
+import LogoutButton from "@/common/LogoutButton";
 
 /**
  * 仪表板页面 - 现在由布局自动处理认证
@@ -16,7 +17,16 @@ export default async function IndexPage() {
 
       <div className="bg-white shadow rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">账户操作</h3>
-        <LogoutButton />
+        <Suspense fallback={
+          <button
+            disabled 
+            className="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed"
+          >
+            加载中...
+          </button>
+        }>
+          <LogoutButton />
+        </Suspense>
       </div>
     </div>
   );

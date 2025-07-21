@@ -9,7 +9,6 @@ if (typeof window !== 'undefined') {
 }
 
 const AUTHING_APP_SECRET = process.env.AUTHING_APP_SECRET;
-const AUTHING_APP_HOST = process.env.AUTHING_APP_HOST;
 
 if (!AUTHING_APP_SECRET) {
   console.error('❌ AUTHING_APP_SECRET 环境变量未设置');
@@ -20,10 +19,9 @@ if (!AUTHING_APP_SECRET) {
 export { AUTHING_APP_SECRET };
 
 // 也可以重新导入客户端配置（避免重复）
-export { AUTHING_APP_ID } from './client-config';
+export { AUTHING_APP_ID, AUTHING_APP_HOST } from './client-config';
 
 // 服务端配置对象
 export const SERVER_CONFIG = {
   authingSecret: AUTHING_APP_SECRET,
-  authingHost: AUTHING_APP_HOST,
 } as const;

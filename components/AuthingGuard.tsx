@@ -11,7 +11,6 @@ export default function AuthingGuard() {
   const guard = useGuard();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
 
   // 确保只在客户端运行
@@ -44,7 +43,6 @@ export default function AuthingGuard() {
             userInfo,
           }),
         });
-        console.log("🚀 ~ guard.trackSession ~ response:", response);
 
         if (response.ok) {
           router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT);
@@ -55,16 +53,12 @@ export default function AuthingGuard() {
           .start(containerRef.current!)
           .then((userInfo: User) => {
             console.log("✅ 登录成功", userInfo);
-            setIsLoading(false);
 
-            // 页面跳转回默认页面
-            setTimeout(() => {
-              router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT);
-            }, 1000);
+            // 页面跳转回默认页面， 使用 window.location.href 强制跳转
+            window.location.href = SPECIAL_ROUTES.DEFAULT_REDIRECT;
           })
           .catch((error) => {
             console.error("❌ Authing 初始化失败:", error);
-            setIsLoading(false);
           });
       }
     });
@@ -78,7 +72,7 @@ export default function AuthingGuard() {
   }, [guard, router, isClient]);
 
   // 在服务器端和客户端水合期间显示一致的加载状态
-  if (!isClient || isLoading) {
+  if (!isClient) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-white text-lg">正在加载登录...</div>
