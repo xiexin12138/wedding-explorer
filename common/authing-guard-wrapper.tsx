@@ -2,7 +2,7 @@
 
 import { GuardProvider } from "@authing/guard-react18";
 import { ReactNode } from "react";
-import { AUTHING_APP_ID } from "@/common/config";
+import { AUTHING_APP_ID } from "@/lib/client-config";
 
 interface AuthingGuardWrapperProps {
   children: ReactNode;

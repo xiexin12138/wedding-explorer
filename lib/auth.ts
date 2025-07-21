@@ -3,15 +3,12 @@ import { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 import { COOKIE_NAME } from '@/lib/routes.config'
 
+import { AUTHING_APP_SECRET } from './server-config'
+
 // 获取 Authing 密钥（HS256 对称加密）
 function getAuthingSecret() {
-  const secret = process.env.AUTHING_APP_SECRET
-  if (!secret) {
-    throw new Error('AUTHING_APP_SECRET (密钥) 未设置')
-  }
-
   // HS256 使用字符串密钥，转换为 Uint8Array
-  return new TextEncoder().encode(secret)
+  return new TextEncoder().encode(AUTHING_APP_SECRET)
 }
 
 export interface AuthingUser {
