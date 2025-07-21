@@ -80,5 +80,5 @@ export default function AuthingGuard() {
     );
   }
 
-  return <div ref={containerRef} />;
+  return <div ref={containerRef} data-authing-guard />;
 }
