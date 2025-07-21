@@ -30,23 +30,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-      return (
-      <html lang="zh-CN">
-        <head>
-          <link
-            rel="preconnect"
-            href="https://<your-authing-domain>.authing.cn"
-          />
-          <script
-            src="https://cdn.authing.co/packages/guard/latest/guard.min.js"
-            defer
-          ></script>
-        </head>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <AuthingGuardWrapper>{children}</AuthingGuardWrapper>
-        </body>
-      </html>
-    );
+  return (
+    <html lang="zh-CN">
+      <head>
+        <link
+          rel="preconnect"
+          href="https://<your-authing-domain>.authing.cn"
+        />
+        <script
+          src="https://cdn.authing.co/packages/guard/latest/guard.min.js"
+          defer
+        ></script>
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <AuthingGuardWrapper>{children}</AuthingGuardWrapper>
+      </body>
+    </html>
+  );
 }
