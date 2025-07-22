@@ -69,7 +69,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 4. 完成加载状态
       setLoading(false);
 
-      // 5. 重定向到登录页
+      // 5. 重定向到默认页
       router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
     } catch (error) {
       console.error("❌ 登出请求失败:", error);
@@ -86,8 +86,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setLoading(false);
 
-      // 重定向到登录页
-      router.replace(SPECIAL_ROUTES.LOGIN);
+      // 重定向到默认页
+      router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
     }
   };
 
