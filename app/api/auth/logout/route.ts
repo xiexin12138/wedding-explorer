@@ -10,22 +10,33 @@ export async function POST() {
     })
 
     // 清除 JWT token cookie（通过响应 headers）
+    // 使用多种方式确保在 iOS Safari 中正确清除
     response.cookies.set(COOKIE_NAME, '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      expires: new Date(0), // 设置为过期时间
+      maxAge: 0, // 使用 maxAge: 0 替代 expires，更好的 iOS 兼容性
+      path: '/',
+      // 不设置 domain，让 cookie 只对当前域名有效
+    })
+
+    // 额外设置一个过期时间为过去的 cookie，确保清除
+    response.cookies.set(COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires: new Date('1970-01-01'), // 设置为 1970 年，确保过期
       path: '/',
     })
 
     // 清除其他相关 cookies
     response.cookies.set('authjs.csrf-token', '', {
-      expires: new Date(0),
+      maxAge: 0, // 使用 maxAge: 0
       path: '/',
     })
 
     response.cookies.set('authjs.callback-url', '', {
-      expires: new Date(0),
+      maxAge: 0, // 使用 maxAge: 0
       path: '/',
     })
 
