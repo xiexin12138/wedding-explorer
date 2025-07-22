@@ -34,6 +34,7 @@ export const API_ROUTES = {
   AUTH: {
     SET_SESSION: '/api/auth/set-session',
     LOGOUT: '/api/auth/logout',
+    CHECK: '/api/auth/check',
   },
 } as const
 

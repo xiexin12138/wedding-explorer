@@ -8,11 +8,8 @@ import {
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  API_ROUTES,
-  AUTHING_ROUTES,
-  SPECIAL_ROUTES,
-} from "@/lib/routes.config";
+import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
+import { guard } from "@/lib/auth-graud/config";
 
 interface User {
   name?: string;
@@ -47,17 +44,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLoading(true); // 重新设置加载状态
 
       // 1. 调用 Authing 服务端登出
-      const authLogout = await fetch(AUTHING_ROUTES.LOGOUT, {
-        method: "GET",
-        credentials: "include", // 包含 cookies
-      });
+      guard.logout();
 
       // 2. 调用本地 API 清除 cookie
       const apiLogout = await fetch(API_ROUTES.AUTH.LOGOUT, {
         method: "POST",
       });
 
-      console.log("🔍 Authing 登出结果:", authLogout.ok);
       console.log("🔍 本地 API 登出结果:", apiLogout.ok);
 
       // 3. 清除客户端存储
@@ -103,17 +96,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         console.log("🔍 开始检查用户登录状态...");
-        const response = await fetch("/api/auth/check", {
+        const response = await fetch(API_ROUTES.AUTH.CHECK, {
           method: "GET",
           credentials: "include", // 确保发送 cookies
         });
 
         console.log("📡 API 响应状态:", response.status);
-        
+
         if (response.ok) {
           const data = await response.json();
           console.log("📦 API 返回数据:", data);
-          
+
           if (data.user) {
             setUser(data.user);
             console.log("✅ 用户已登录:", data.user);
