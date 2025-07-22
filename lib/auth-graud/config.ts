@@ -5,4 +5,8 @@ export const guard = new Guard({
   appId: AUTHING_APP_ID || '',
   // 配置托管页相关设置
   host: AUTHING_APP_HOST,
+  // 设置回调 URL
+  redirectUri: typeof window !== 'undefined' 
+    ? `${window.location.origin}/callback`
+    : 'http://localhost:3000/callback',
 })
