@@ -34,12 +34,6 @@ export function Header() {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const { logout } = useLogout();
 
-  // 强制重置登录按钮状态的函数
-  const resetLoginButton = useCallback(() => {
-    console.log("🔄 Header: 强制重置登录按钮状态");
-    setIsLoginLoading(false);
-  }, []);
-
   // 监听用户状态变化，重置登录按钮状态
   useEffect(() => {
     console.log("🔄 Header: 用户状态变化", { user: !!user, loading, isLoginLoading });
@@ -51,13 +45,13 @@ export function Header() {
     }
   }, [user, loading]);
 
-  // 添加一个安全机制，如果按钮状态卡住超过5秒，强制重置
+  // 添加一个安全机制，如果按钮状态卡住超过3秒，强制重置
   useEffect(() => {
     if (isLoginLoading) {
       const timer = setTimeout(() => {
-        console.log("⚠️ Header: 登录按钮状态卡住超过5秒，强制重置");
+        console.log("⚠️ Header: 登录按钮状态卡住超过3秒，强制重置");
         setIsLoginLoading(false);
-      }, 5000);
+      }, 3000);
 
       return () => clearTimeout(timer);
     }
@@ -76,14 +70,13 @@ export function Header() {
     console.log("🔄 Header: 设置登录按钮为加载状态");
     
     try {
-      // 添加一个小延迟来展示动画
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      // 使用 router.push 进行客户端路由跳转
       console.log("🔄 Header: 跳转到登录页面", SPECIAL_ROUTES.LOGIN);
       router.push(SPECIAL_ROUTES.LOGIN);
     } catch (error) {
       console.error("❌ Header: 跳转登录页面失败", error);
-      setIsLoginLoading(false);
+      // 如果 router.push 失败，回退到 window.location.href
+      window.location.href = SPECIAL_ROUTES.LOGIN;
     }
   };
 
@@ -93,7 +86,10 @@ export function Header() {
         {/* Logo */}
         <div
           className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 hover:text-primary"
-          onClick={() => router.push(SPECIAL_ROUTES.DEFAULT_HOME)}
+          onClick={() => {
+            // 使用 router.push 进行客户端路由跳转
+            router.push(SPECIAL_ROUTES.DEFAULT_HOME);
+          }}
         >
           <Home className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
           <h1 className="text-xl font-semibold">Wedding Explorer</h1>
