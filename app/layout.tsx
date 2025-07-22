@@ -3,13 +3,14 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { UserProvider } from "@/components/UserProvider";
 import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
+import { AnalyticsScript } from "@/components/AnalyticsScript";
 
 export const metadata: Metadata = {
   title: "欢迎您",
   description: "欢迎您参加我们的活动",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export default function RootLayout({
           src="https://cdn.authing.co/packages/guard/latest/guard.min.js"
           defer
         ></script>
+        <AnalyticsScript />
       </head>
       <body className="antialiased">
         <ThemeProvider
