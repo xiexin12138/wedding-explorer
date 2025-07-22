@@ -127,9 +127,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    setTimeout(() => {
-      checkAuth();
-    }, 500);
+    checkAuth();
   }, []);
 
   return (
