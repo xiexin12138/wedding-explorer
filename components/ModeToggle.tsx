@@ -13,18 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ModeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
-
-  // 获取当前主题的显示文本
-  const getCurrentThemeText = () => {
-    if (theme === "system") {
-      return "跟随系统";
-    } else if (theme === "dark") {
-      return "夜间模式";
-    } else {
-      return "日间模式";
-    }
-  };
+  const { theme, setTheme } = useTheme();
 
   // 获取当前主题的图标
   const getCurrentThemeIcon = () => {
@@ -40,13 +29,16 @@ export function ModeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center space-x-2 h-9 px-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center space-x-2 h-9 px-3"
+        >
           {getCurrentThemeIcon()}
-          {/* <span className="text-sm">{getCurrentThemeText()}</span> */}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("light")}
           className={theme === "light" ? "bg-accent" : ""}
         >
@@ -54,7 +46,7 @@ export function ModeToggle() {
           日间模式
           {theme === "light" && <span className="ml-auto text-xs">✓</span>}
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("dark")}
           className={theme === "dark" ? "bg-accent" : ""}
         >
@@ -62,7 +54,7 @@ export function ModeToggle() {
           夜间模式
           {theme === "dark" && <span className="ml-auto text-xs">✓</span>}
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setTheme("system")}
           className={theme === "system" ? "bg-accent" : ""}
         >

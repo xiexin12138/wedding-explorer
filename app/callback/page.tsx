@@ -71,6 +71,7 @@ export default function Callback() {
           email: userInfo.email || undefined,
           // 添加其他可能的用户数据字段
           ...Object.fromEntries(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             Object.entries(userInfo).filter(([_, value]) => value != null)
           ),
         },

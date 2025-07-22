@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, ReactNode } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 // 定义vConsole接口
@@ -15,15 +15,11 @@ declare global {
   }
 }
 
-interface DebugProviderProps {
-  children: ReactNode;
-}
-
-export function DebugProvider({ children }: DebugProviderProps) {
+function DebugInitializerContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // 检查URL中是否包含debug=true参数
+    // 只在客户端执行，检查URL中是否包含debug=true参数
     const debugMode = searchParams.get("debug");
     
     if (debugMode === "true") {
@@ -67,5 +63,14 @@ export function DebugProvider({ children }: DebugProviderProps) {
     }
   }, [searchParams]);
 
-  return <>{children}</>;
+  // 这个组件不渲染任何内容，只负责初始化调试功能
+  return null;
+}
+
+export function DebugInitializer() {
+  return (
+    <Suspense fallback={null}>
+      <DebugInitializerContent />
+    </Suspense>
+  );
 } 
