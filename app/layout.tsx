@@ -22,10 +22,6 @@ export default async function RootLayout({
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
-        <script
-          src="https://cdn.authing.co/packages/guard/latest/guard.min.js"
-          defer
-        ></script>
         <AnalyticsScript />
       </head>
       <body className="antialiased">
