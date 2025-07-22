@@ -9,11 +9,13 @@ import { AUTHING_APP_HOST } from "./client-config"
 export const PUBLIC_ROUTES = [
   '/',           // 首页
   '/login',      // 登录页
+  '/callback'    // 登录回调页
 ] as const
 
 // 受保护的路由（需要登录才能访问）
 export const PROTECTED_ROUTES = [
   '/home',  // 索引页面
+  '/dashboard' // 活动首页
 ] as const
 
 // 特殊路由配置
@@ -22,8 +24,8 @@ export const SPECIAL_ROUTES = {
   LOGIN: '/login',
   // 默认重定向页面（登录后）
   DEFAULT_REDIRECT: '/home',
-  // 首页
-  HOME: '/',
+  // 首页（登录前）
+  DEFAULT_HOME: '/',
 } as const
 
 // API 路由配置

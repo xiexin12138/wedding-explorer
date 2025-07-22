@@ -25,37 +25,27 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 import { useUser } from "@/components/UserProvider";
+import { useLogout } from "@/hooks/useLogout";
 
 export function Header() {
   const router = useRouter();
-  const { user, setUser, loading } = useUser();
+  const { user, loading } = useUser();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        setUser(null);
-        router.push(SPECIAL_ROUTES.LOGIN);
-      }
-    } catch (error) {
-      console.error("登出失败:", error);
-    }
-  };
+  const { logout } = useLogout();
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
-        <div className="flex items-center space-x-2">
-          <h1 className="text-lg font-semibold">Wedding Explorer</h1>
+        <div
+          className="flex items-center space-x-2"
+          onClick={() => router.push(SPECIAL_ROUTES.DEFAULT_HOME)}
+        >
+          <h1 className="text-xl font-semibold">Wedding Explorer</h1>
         </div>
 
         {/* 右侧控制按钮 */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           {/* 主题切换 */}
           <ModeToggle />
 
@@ -71,19 +61,30 @@ export function Header() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 h-9 px-3"
                 >
                   <User className="h-4 w-4" />
-                  <span 
-                    className="max-w-[80px] sm:max-w-[120px] md:max-w-[160px] truncate"
-                    title={user?.username || user.email || "用户"}
+                  <span
+                    className="max-w-[80px] sm:max-w-[120px] md:max-w-[160px] truncate text-sm"
+                    title={
+                      user?.name || user?.email || user?.username || "用户"
+                    }
                   >
-                    {user?.username || user.email || "用户"}
+                    {user?.name || user?.email || user?.username || "用户"}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>我的账户</DropdownMenuLabel>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {user?.name || user?.username || "用户"}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
@@ -91,7 +92,7 @@ export function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowLogoutDialog(true)}
-                  className="text-red-600 focus:text-red-600"
+                  className="text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   退出登录
@@ -103,6 +104,7 @@ export function Header() {
               variant="outline"
               size="sm"
               onClick={() => router.push(SPECIAL_ROUTES.LOGIN)}
+              className="h-9 px-3"
             >
               登录
             </Button>
@@ -122,8 +124,11 @@ export function Header() {
           <AlertDialogFooter>
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                logout();
+                setShowLogoutDialog(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               确认退出
             </AlertDialogAction>

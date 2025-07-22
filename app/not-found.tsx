@@ -20,7 +20,7 @@ export default function NotFound() {
 
           <div className="space-y-4">
             <Button asChild className="w-full">
-              <Link href={SPECIAL_ROUTES.HOME}>
+              <Link href={SPECIAL_ROUTES.DEFAULT_HOME}>
                 返回首页
               </Link>
             </Button>

@@ -1,11 +1,16 @@
 "use client";
-
-import AuthingGuard from "@/components/AuthingGuard";
+import { guard } from "@/lib/auth-graud/config";
 
 export default function LoginPage() {
+  guard.startWithRedirect();
+
   return (
-    <div className="h-screen w-screen flex justify-center items-center bg-stone-100 p-4">
-      <AuthingGuard />
+    <div className="min-h-screen-dynamic flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <h2 className="text-xl font-semibold">正在跳转到登录页</h2>
+        <p className="text-muted-foreground">请稍候，正在为您准备登录界面...</p>
+      </div>
     </div>
   );
 }

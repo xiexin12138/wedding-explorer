@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
@@ -13,26 +13,62 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function ModeToggle() {
-  const { setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  // 获取当前主题的显示文本
+  const getCurrentThemeText = () => {
+    if (theme === "system") {
+      return "跟随系统";
+    } else if (theme === "dark") {
+      return "夜间模式";
+    } else {
+      return "日间模式";
+    }
+  };
+
+  // 获取当前主题的图标
+  const getCurrentThemeIcon = () => {
+    if (theme === "system") {
+      return <Monitor className="h-4 w-4" />;
+    } else if (theme === "dark") {
+      return <Moon className="h-4 w-4" />;
+    } else {
+      return <Sun className="h-4 w-4" />;
+    }
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-          <span className="sr-only">Toggle theme</span>
+        <Button variant="outline" size="sm" className="flex items-center space-x-2 h-9 px-3">
+          {getCurrentThemeIcon()}
+          {/* <span className="text-sm">{getCurrentThemeText()}</span> */}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem 
+          onClick={() => setTheme("light")}
+          className={theme === "light" ? "bg-accent" : ""}
+        >
+          <Sun className="mr-2 h-4 w-4" />
           日间模式
+          {theme === "light" && <span className="ml-auto text-xs">✓</span>}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem 
+          onClick={() => setTheme("dark")}
+          className={theme === "dark" ? "bg-accent" : ""}
+        >
+          <Moon className="mr-2 h-4 w-4" />
           夜间模式
+          {theme === "dark" && <span className="ml-auto text-xs">✓</span>}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem 
+          onClick={() => setTheme("system")}
+          className={theme === "system" ? "bg-accent" : ""}
+        >
+          <Monitor className="mr-2 h-4 w-4" />
           跟随系统
+          {theme === "system" && <span className="ml-auto text-xs">✓</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

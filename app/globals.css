@@ -74,16 +74,6 @@ select {
   background-image: none !important;
 }
 
-/* 针对 Authing Guard 组件的特殊处理 */
-[data-authing-guard] select,
-[data-authing-guard] input,
-[data-authing-guard] textarea {
-  font-size: 16px !important;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
 /* 确保所有表单元素都有足够大的字体 */
 input[type="text"],
 input[type="email"],
@@ -186,4 +176,22 @@ select {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* 使用自定义视口高度的工具类 */
+.h-screen-dynamic {
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+.min-h-screen-dynamic {
+  min-height: calc(var(--vh, 1vh) * 100);
+}
+
+/* 确保暗色主题下文本颜色正确 */
+.dark {
+  color-scheme: dark;
+}
+
+.dark * {
+  color-scheme: dark;
 }
