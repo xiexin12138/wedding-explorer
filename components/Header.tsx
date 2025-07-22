@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, User, Settings, Loader2, LogIn, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,13 +34,57 @@ export function Header() {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const { logout } = useLogout();
 
+  // 强制重置登录按钮状态的函数
+  const resetLoginButton = useCallback(() => {
+    console.log("🔄 Header: 强制重置登录按钮状态");
+    setIsLoginLoading(false);
+  }, []);
+
+  // 监听用户状态变化，重置登录按钮状态
+  useEffect(() => {
+    console.log("🔄 Header: 用户状态变化", { user: !!user, loading, isLoginLoading });
+    
+    // 当用户未登录且不在加载状态时，重置登录按钮状态
+    if (!user && !loading) {
+      console.log("🔄 Header: 重置登录按钮状态");
+      setIsLoginLoading(false);
+    }
+  }, [user, loading]);
+
+  // 添加一个安全机制，如果按钮状态卡住超过5秒，强制重置
+  useEffect(() => {
+    if (isLoginLoading) {
+      const timer = setTimeout(() => {
+        console.log("⚠️ Header: 登录按钮状态卡住超过5秒，强制重置");
+        setIsLoginLoading(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLoginLoading]);
+
   const handleLoginClick = async () => {
+    console.log("🔄 Header: 点击登录按钮", { isLoginLoading, user: !!user, loading });
+    
+    // 防止重复点击
+    if (isLoginLoading) {
+      console.log("⚠️ Header: 登录按钮正在加载中，忽略点击");
+      return;
+    }
+    
     setIsLoginLoading(true);
+    console.log("🔄 Header: 设置登录按钮为加载状态");
     
-    // 添加一个小延迟来展示动画
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    router.push(SPECIAL_ROUTES.LOGIN);
+    try {
+      // 添加一个小延迟来展示动画
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log("🔄 Header: 跳转到登录页面", SPECIAL_ROUTES.LOGIN);
+      router.push(SPECIAL_ROUTES.LOGIN);
+    } catch (error) {
+      console.error("❌ Header: 跳转登录页面失败", error);
+      setIsLoginLoading(false);
+    }
   };
 
   return (
