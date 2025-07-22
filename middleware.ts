@@ -79,7 +79,8 @@ export function middleware(request: NextRequest) {
     console.log(`⏰ 用户【${payload.sub}】的 Token 剩余有效期: ${timeRemaining}`)
     // 注意：完整的签名验证将在页面组件中使用密钥进行
   } catch (error) {
-    console.log(`🔒 JWT token 格式验证失败，重定向到登录: ${pathname}， error: ${error.message || 'unknown error'}`)
+    const errorMessage = error instanceof Error ? error.message : 'unknown error'
+    console.log(`🔒 JWT token 格式验证失败，重定向到登录: ${pathname}， error: ${errorMessage}`)
     console.log(`🔒 JWT token : ${token}`)
     return NextResponse.redirect(new URL(SPECIAL_ROUTES.LOGIN, request.url))
   }
