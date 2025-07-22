@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DashboardButton } from "@/components/DashboardButton";
+import { WeddingCountdown } from "@/components/WeddingCountdown";
 
 export default function HomePage() {
   return (
@@ -18,7 +19,8 @@ export default function HomePage() {
           您的探索之旅即将开始
         </CardDescription>
       </CardHeader>
-      <CardContent className="text-center space-y-4">
+      <CardContent className="text-center space-y-6">
+        <WeddingCountdown />
         <p className="text-muted-foreground">
           感谢您与我们一起创造美好的回忆。
         </p>
