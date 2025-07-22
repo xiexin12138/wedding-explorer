@@ -89,7 +89,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
+      <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <div
           className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 hover:text-primary"
