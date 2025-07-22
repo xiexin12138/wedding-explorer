@@ -42,6 +42,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       console.log("🚀 开始登出流程...");
 
+      // 立即清除用户状态，确保 UI 立即更新
+      setUser(null);
+      setLoading(true); // 重新设置加载状态
+
       // 1. 调用 Authing 服务端登出
       const authLogout = await fetch(AUTHING_ROUTES.LOGOUT, {
         method: "GET",
@@ -69,11 +73,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         console.log("✅ 客户端存储已清除");
       }
 
-      // 4. 清除用户状态
-      setUser(null);
+      // 4. 完成加载状态
+      setLoading(false);
 
       // 5. 重定向到登录页
-      router.replace(SPECIAL_ROUTES.LOGIN);
+      router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
     } catch (error) {
       console.error("❌ 登出请求失败:", error);
 
@@ -85,8 +89,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         sessionStorage.clear();
       }
 
-      // 清除用户状态
+      // 确保用户状态被清除
       setUser(null);
+      setLoading(false);
 
       // 重定向到登录页
       router.replace(SPECIAL_ROUTES.LOGIN);
@@ -113,13 +118,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
             setUser(data.user);
             console.log("✅ 用户已登录:", data.user);
           } else {
+            setUser(null);
             console.log("❌ 用户未登录");
           }
         } else {
           console.log("❌ 检查认证状态失败:", response.status);
+          setUser(null);
         }
       } catch (error) {
         console.error("检查认证状态失败:", error);
+        setUser(null);
       } finally {
         setLoading(false);
         console.log("🏁 用户状态检查完成");
