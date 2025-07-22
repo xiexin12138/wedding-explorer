@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User, Settings, Loader2 } from "lucide-react";
+import { LogOut, User, Settings, Loader2, LogIn, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import {
@@ -31,16 +31,27 @@ export function Header() {
   const router = useRouter();
   const { user, loading } = useUser();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
   const { logout } = useLogout();
+
+  const handleLoginClick = async () => {
+    setIsLoginLoading(true);
+    
+    // 添加一个小延迟来展示动画
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    router.push(SPECIAL_ROUTES.LOGIN);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <div
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 hover:text-primary"
           onClick={() => router.push(SPECIAL_ROUTES.DEFAULT_HOME)}
         >
+          <Home className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
           <h1 className="text-xl font-semibold">Wedding Explorer</h1>
         </div>
 
@@ -51,7 +62,12 @@ export function Header() {
 
           {/* 用户菜单 */}
           {loading ? (
-            <Button variant="outline" size="sm" disabled>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              disabled 
+              className="animate-pulse transition-all duration-200"
+            >
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               加载中...
             </Button>
@@ -61,9 +77,9 @@ export function Header() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center space-x-2 h-9 px-3"
+                  className="flex items-center space-x-2 h-9 px-3 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-md"
                 >
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4 transition-transform duration-200 hover:rotate-12" />
                   <span
                     className="max-w-[80px] sm:max-w-[120px] md:max-w-[160px] truncate text-sm"
                     title={
@@ -103,10 +119,21 @@ export function Header() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(SPECIAL_ROUTES.LOGIN)}
-              className="h-9 px-3"
+              onClick={handleLoginClick}
+              disabled={isLoginLoading}
+              className="h-9 px-3 transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg hover:bg-primary hover:text-primary-foreground"
             >
-              登录
+              {isLoginLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  跳转中...
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-4 w-4 mr-2 transition-transform duration-200 hover:rotate-12" />
+                  登录
+                </>
+              )}
             </Button>
           )}
         </div>
