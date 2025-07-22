@@ -4,6 +4,7 @@
  */
 
 import { AUTHING_APP_HOST } from "./client-config"
+import { getCurrentOrigin } from "./utils"
 
 // 公开路由（无需登录即可访问）
 export const PUBLIC_ROUTES = [
@@ -77,51 +78,6 @@ export function isStaticAsset(pathname: string): boolean {
     pathname.startsWith('/public/') ||
     pathname === '/favicon.ico' ||
     /\.(jpg|jpeg|png|gif|svg|ico|css|js)$/.test(pathname)
-}
-
-/**
- * 获取当前域名，兼容微信 WebView 等特殊环境
- */
-function getCurrentOrigin(): string {
-  // 方法1：尝试从环境变量获取
-  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL
-  }
-
-  // 方法2：尝试从 window.location 获取
-  if (typeof window !== 'undefined' && window.location) {
-    try {
-      const origin = window.location.origin
-      // 检查是否是有效的域名（不是 localhost 或 127.0.0.1）
-      if (origin && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
-        return origin
-      }
-    } catch (error) {
-      console.warn('⚠️ 无法从 window.location.origin 获取域名:', error)
-    }
-  }
-
-  // 方法3：尝试从 window.location.href 构建
-  if (typeof window !== 'undefined' && window.location.href) {
-    try {
-      const url = new URL(window.location.href)
-      const origin = `${url.protocol}//${url.host}`
-      if (origin && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
-        return origin
-      }
-    } catch (error) {
-      console.warn('⚠️ 无法从 window.location.href 构建域名:', error)
-    }
-  }
-
-  // 方法4：从请求头获取（服务端）
-  if (typeof window === 'undefined') {
-    // 服务端环境，使用环境变量或默认值
-    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  }
-
-  // 方法5：最后的备用方案
-  return 'http://localhost:3000'
 }
 
 /**
