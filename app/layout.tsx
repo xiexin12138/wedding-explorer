@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { UserProvider } from "@/components/UserProvider";
 import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
 import { AnalyticsScript } from "@/components/AnalyticsScript";
+import { DebugProvider } from "@/components/DebugProvider";
 
 export const metadata: Metadata = {
   title: "欢迎您",
@@ -31,13 +32,15 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <UserProvider>
-            <ViewportHeightProvider>
-              <div className="h-screen-dynamic flex flex-col">
-                <main className="flex-1">{children}</main>
-              </div>
-            </ViewportHeightProvider>
-          </UserProvider>
+          <DebugProvider>
+            <UserProvider>
+              <ViewportHeightProvider>
+                <div className="h-screen-dynamic flex flex-col">
+                  <main className="flex-1">{children}</main>
+                </div>
+              </ViewportHeightProvider>
+            </UserProvider>
+          </DebugProvider>
         </ThemeProvider>
       </body>
     </html>
