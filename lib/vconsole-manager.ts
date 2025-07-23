@@ -28,6 +28,7 @@ declare global {
     getDebugStatus?: () => boolean;
     showVConsole?: () => void;
     hideVConsole?: () => void;
+    updateVConsoleTheme?: (theme: 'light' | 'dark') => void;
   }
 }
 
@@ -43,6 +44,9 @@ export class VConsoleManager {
   private isInitializing = false;
   private initPromise: Promise<VConsoleInstance | null> | null = null;
   private logBuffer: Array<{ type: string; message: string; timestamp: number }> = [];
+  private hasInitialized = false; // 标记是否已经初始化过
+  private hasSetupGlobalTools = false; // 标记是否已经设置过全局工具
+  private currentTheme: 'light' | 'dark' = 'dark'; // 当前主题
 
   private constructor() {
     // 初始化时开始收集日志
@@ -80,6 +84,7 @@ export class VConsoleManager {
     
     try {
       this.vConsoleInstance = await this.initPromise;
+      this.hasInitialized = true;
       return this.vConsoleInstance;
     } finally {
       this.isInitializing = false;
@@ -92,22 +97,29 @@ export class VConsoleManager {
    */
   private async _createVConsoleInstance(): Promise<VConsoleInstance | null> {
     try {
-      console.log("🔧 正在初始化 vConsole...");
+      // 只在第一次初始化时打印信息
+      if (!this.hasInitialized) {
+        console.log("🔧 正在初始化 vConsole...");
+      }
       
       const VConsole = await import("vconsole");
       const vConsole = new VConsole.default({
-        theme: "dark", // 使用暗色主题
+        theme: this.currentTheme, // 使用当前主题
         defaultPlugins: ["system", "network", "element", "storage"], // 默认插件
         maxLogNumber: 10000, // 增加最大日志数量，确保日志持久化
         onReady: () => {
-          console.log("✅ vConsole 已准备就绪");
-          console.log("💡 调试工具命令:");
-          console.log("   - window.enableDebugMode() - 启用调试模式");
-          console.log("   - window.clearDebugMode() - 清除调试模式");
-          console.log("   - window.toggleDebugMode() - 切换调试模式");
-          console.log("   - window.getDebugStatus() - 获取调试状态");
-          console.log("   - window.showVConsole() - 显示 vConsole");
-          console.log("   - window.hideVConsole() - 隐藏 vConsole");
+          // 只在第一次初始化时打印信息
+          if (!this.hasInitialized) {
+            console.log("✅ vConsole 已准备就绪");
+            console.log("💡 调试工具命令:");
+            console.log("   - window.enableDebugMode() - 启用调试模式");
+            console.log("   - window.clearDebugMode() - 清除调试模式");
+            console.log("   - window.toggleDebugMode() - 切换调试模式");
+            console.log("   - window.getDebugStatus() - 获取调试状态");
+            console.log("   - window.showVConsole() - 显示 vConsole");
+            console.log("   - window.hideVConsole() - 隐藏 vConsole");
+            console.log("   - window.updateVConsoleTheme('light'|'dark') - 更新主题");
+          }
           
           // 初始化完成后，输出缓存的日志
           this.outputBufferedLogs();
@@ -118,9 +130,12 @@ export class VConsoleManager {
         },
       });
 
-      console.log("🎉 vConsole 调试工具已加载完成");
-      console.log("📱 在移动设备上点击右下角的 vConsole 图标来打开调试面板");
-      console.log("💻 在桌面设备上按 F12 或右键检查元素来查看调试信息");
+      // 只在第一次初始化时打印信息
+      if (!this.hasInitialized) {
+        console.log("🎉 vConsole 调试工具已加载完成");
+        console.log("📱 在移动设备上点击右下角的 vConsole 图标来打开调试面板");
+        console.log("💻 在桌面设备上按 F12 或右键检查元素来查看调试信息");
+      }
       
       return vConsole;
     } catch (error) {
@@ -160,6 +175,27 @@ export class VConsoleManager {
   }
 
   /**
+   * 检查是否已经初始化过（用于控制日志输出）
+   */
+  public hasBeenInitialized(): boolean {
+    return this.hasInitialized;
+  }
+
+  /**
+   * 检查是否已经设置过全局工具
+   */
+  public isGlobalToolsSetup(): boolean {
+    return this.hasSetupGlobalTools;
+  }
+
+  /**
+   * 标记已设置全局工具
+   */
+  public markGlobalToolsSetup(): void {
+    this.hasSetupGlobalTools = true;
+  }
+
+  /**
    * 显示 vConsole
    */
   public showVConsole(): void {
@@ -175,6 +211,33 @@ export class VConsoleManager {
     if (this.vConsoleInstance) {
       this.vConsoleInstance.hide();
     }
+  }
+
+  /**
+   * 更新 vConsole 主题
+   */
+  public updateTheme(theme: 'light' | 'dark'): void {
+    this.currentTheme = theme;
+    
+    // 如果 vConsole 已经初始化，需要重新创建实例
+    if (this.vConsoleInstance) {
+      console.log(`🎨 正在更新 vConsole 主题为: ${theme}`);
+      
+      // 销毁当前实例
+      this.destroyVConsole();
+      
+      // 重新初始化
+      this.initVConsole().catch((error) => {
+        console.error("❌ 重新初始化 vConsole 失败:", error);
+      });
+    }
+  }
+
+  /**
+   * 获取当前主题
+   */
+  public getCurrentTheme(): 'light' | 'dark' {
+    return this.currentTheme;
   }
 
   /**
@@ -284,15 +347,24 @@ export class DebugModeManager {
     if (typeof window === 'undefined') return;
 
     try {
-      console.log("🔧 正在启用调试模式...");
+      // 只在第一次启用时打印信息
+      if (!this.vConsoleManager.hasBeenInitialized()) {
+        console.log("🔧 正在启用调试模式...");
+      }
       
       // 设置 sessionStorage
       sessionStorage.setItem(DEBUG_MODE_KEY, 'true');
       
+      // 获取当前主题（如果可用）
+      this.updateThemeFromSystem();
+      
       // 初始化 vConsole
       await this.vConsoleManager.initVConsole();
       
-      console.log("✅ 调试模式已启用");
+      // 只在第一次启用时打印信息
+      if (!this.vConsoleManager.hasBeenInitialized()) {
+        console.log("✅ 调试模式已启用");
+      }
     } catch (error) {
       console.error("❌ 启用调试模式失败:", error);
     }
@@ -354,6 +426,21 @@ export class DebugModeManager {
   public getVConsoleManager(): VConsoleManager {
     return this.vConsoleManager;
   }
+
+  /**
+   * 从系统获取当前主题
+   */
+  private updateThemeFromSystem(): void {
+    if (typeof window === 'undefined') return;
+
+    // 检查是否有主题相关的类名
+    const htmlElement = document.documentElement;
+    const isDark = htmlElement.classList.contains('dark');
+    const theme = isDark ? 'dark' : 'light';
+    
+    // 更新 vConsole 主题
+    this.vConsoleManager.updateTheme(theme);
+  }
 }
 
 // 全局调试模式管理器实例
@@ -364,6 +451,11 @@ export const debugModeManager = DebugModeManager.getInstance();
  */
 export function setupGlobalDebugTools(): void {
   if (typeof window === 'undefined') return;
+
+  // 检查是否已经设置过全局工具
+  if (debugModeManager.getVConsoleManager().isGlobalToolsSetup()) {
+    return; // 已经设置过，直接返回
+  }
 
   // 清除调试模式
   window.clearDebugMode = () => {
@@ -395,11 +487,19 @@ export function setupGlobalDebugTools(): void {
     debugModeManager.getVConsoleManager().hideVConsole();
   };
 
+  // 更新 vConsole 主题
+  window.updateVConsoleTheme = (theme: 'light' | 'dark') => {
+    debugModeManager.getVConsoleManager().updateTheme(theme);
+  };
+
   // 将 vConsole 实例暴露到全局
   Object.defineProperty(window, 'vConsole', {
     get: () => debugModeManager.getVConsoleManager().getVConsoleInstance(),
     configurable: true,
   });
+
+  // 标记已设置全局工具
+  debugModeManager.getVConsoleManager().markGlobalToolsSetup();
 
   console.log("🔧 全局调试工具已设置");
   console.log("💡 可用命令:");
@@ -409,4 +509,5 @@ export function setupGlobalDebugTools(): void {
   console.log("   - window.getDebugStatus() - 获取调试状态");
   console.log("   - window.showVConsole() - 显示 vConsole");
   console.log("   - window.hideVConsole() - 隐藏 vConsole");
+  console.log("   - window.updateVConsoleTheme('light'|'dark') - 更新主题");
 } 

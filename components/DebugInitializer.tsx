@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { debugModeManager, setupGlobalDebugTools } from "@/lib/vconsole-manager";
+import { VConsoleThemeListener } from "./VConsoleThemeListener";
 
 // 调试模式的 sessionStorage key
 const DEBUG_MODE_KEY = 'debug_mode_enabled';
@@ -22,7 +23,10 @@ function DebugInitializerContent() {
     
     // 如果URL中有debug参数，写入sessionStorage
     if (debugMode) {
-      console.log(`🔧 URL中检测到debug参数: ${debugMode}`);
+      // 只在第一次检测到debug参数时打印
+      if (!debugModeManager.getVConsoleManager().hasBeenInitialized()) {
+        console.log(`🔧 URL中检测到debug参数: ${debugMode}`);
+      }
       sessionStorage.setItem(DEBUG_MODE_KEY, debugMode);
     }
 
@@ -30,7 +34,10 @@ function DebugInitializerContent() {
     const isDebugModeEnabled = debugModeManager.isDebugModeEnabled();
     
     if (isDebugModeEnabled) {
-      console.log("🔧 调试模式已启用，正在初始化 vConsole...");
+      // 只在第一次启用时打印信息
+      if (!debugModeManager.getVConsoleManager().hasBeenInitialized()) {
+        console.log("🔧 调试模式已启用，正在初始化 vConsole...");
+      }
       
       // 异步初始化 vConsole
       debugModeManager.enableDebugMode().catch((error) => {
@@ -40,7 +47,10 @@ function DebugInitializerContent() {
       // 如果不在调试模式，确保 vConsole 被销毁
       if (debugModeManager.getVConsoleManager().isInitialized()) {
         debugModeManager.getVConsoleManager().destroyVConsole();
-        console.log("🔧 调试模式已关闭，vConsole 已移除");
+        // 只在第一次关闭时打印信息
+        if (!debugModeManager.getVConsoleManager().hasBeenInitialized()) {
+          console.log("🔧 调试模式已关闭，vConsole 已移除");
+        }
       }
       
       // 清除sessionStorage中的调试模式标记
@@ -56,6 +66,7 @@ export function DebugInitializer() {
   return (
     <Suspense fallback={null}>
       <DebugInitializerContent />
+      <VConsoleThemeListener />
     </Suspense>
   );
 } 

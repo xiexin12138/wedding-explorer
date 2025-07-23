@@ -62,7 +62,7 @@ sessionStorage.removeItem('debug_mode_enabled');
 window.location.reload();
 ```
 
-### 3. 控制 vConsole 显示
+### 3. 控制 vConsole 显示和主题
 
 ```javascript
 // 显示 vConsole 面板
@@ -70,6 +70,10 @@ window.showVConsole();
 
 // 隐藏 vConsole 面板
 window.hideVConsole();
+
+// 更新 vConsole 主题
+window.updateVConsoleTheme('light');  // 浅色主题
+window.updateVConsoleTheme('dark');   // 深色主题
 
 // 获取 vConsole 实例
 const vConsole = window.vConsole;
@@ -92,6 +96,7 @@ if (vConsole) {
 | `window.getDebugStatus()` | 获取调试状态 | `const status = window.getDebugStatus()` |
 | `window.showVConsole()` | 显示 vConsole | `window.showVConsole()` |
 | `window.hideVConsole()` | 隐藏 vConsole | `window.hideVConsole()` |
+| `window.updateVConsoleTheme()` | 更新主题 | `window.updateVConsoleTheme('light')` |
 
 ### 调试状态检查
 
@@ -127,6 +132,27 @@ if (window.vConsole) {
 [14:30:27] ERROR: API 调用失败
 [14:30:28] INFO: 用户登录成功
 ```
+
+## 主题支持
+
+### 自动主题切换
+vConsole 现在支持自动跟随系统主题：
+- 当用户切换日间/夜间模式时，vConsole 会自动更新主题
+- 支持跟随系统设置（system 模式）
+- 主题变化时会自动重新初始化 vConsole
+
+### 手动主题控制
+```javascript
+// 手动更新主题
+window.updateVConsoleTheme('light');  // 切换到浅色主题
+window.updateVConsoleTheme('dark');   // 切换到深色主题
+```
+
+### 主题检测
+vConsole 会在初始化时自动检测当前系统主题：
+- 检查 `document.documentElement.classList.contains('dark')`
+- 根据检测结果设置初始主题
+- 支持实时主题变化监听
 
 ## 移动端调试
 
