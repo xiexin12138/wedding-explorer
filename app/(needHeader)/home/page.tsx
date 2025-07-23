@@ -25,14 +25,14 @@ export default async function HomePage() {
           <CardHeader>
             <CardTitle className="text-xl font-semibold">快速开始</CardTitle>
             <CardDescription>
-              开始探索婚礼相关的功能和工具
+              开始探索活动相关的功能和工具
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-sm">浏览婚礼策划工具</span>
+                <span className="text-sm">浏览活动策划工具</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>

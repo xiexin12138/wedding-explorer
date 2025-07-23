@@ -13,7 +13,7 @@ export function WeddingCountdown() {
       const difference = WEDDING_DATE.getTime() - now.getTime();
 
       if (difference <= 0) {
-        setTimeLeft("婚礼已经开始啦！🎉");
+        setTimeLeft("活动已经开始啦！🎉");
         return;
       }
 
@@ -37,7 +37,7 @@ export function WeddingCountdown() {
   return (
     <div className="text-center space-y-2">
       <div className="text-lg font-medium text-muted-foreground">
-        距离婚礼还有
+        距离活动还有
       </div>
       <div className="text-2xl font-bold text-primary">
         {timeLeft}

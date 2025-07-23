@@ -16,7 +16,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            在这里您可以查看婚礼信息，查看活动安排，以及与新人保持联系。
+            在这里您可以查看活动信息，查看活动安排，以及与新人保持联系。
           </p>
         </CardContent>
       </Card>
@@ -26,10 +26,10 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold">
-              婚礼信息
+              活动信息
             </CardTitle>
             <CardDescription>
-              查看婚礼详情
+              查看活动详情
             </CardDescription>
           </CardHeader>
           <CardContent>
