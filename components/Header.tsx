@@ -47,7 +47,7 @@ export function Header() {
       console.log("🔄 Header: 重置登录按钮状态");
       setIsLoginLoading(false);
     }
-  }, [user, loading]);
+  }, [user, loading, isLoginLoading]);
 
   // 添加一个安全机制，如果按钮状态卡住超过3秒，强制重置
   useEffect(() => {
