@@ -10,7 +10,8 @@ import { getCurrentOrigin } from "./utils"
 export const PUBLIC_ROUTES = [
   '/',           // 首页
   '/login',      // 登录页
-  '/callback'    // 登录回调页
+  '/callback',    // 登录回调页
+  '/images'
 ] as const
 
 // 受保护的路由（需要登录才能访问）
