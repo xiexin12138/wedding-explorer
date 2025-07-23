@@ -109,7 +109,6 @@ export function Header() {
           }}
         >
           <Home className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
-          <h1 className="text-xl font-semibold">Wedding Explorer</h1>
         </div>
 
         {/* 右侧控制按钮 */}
