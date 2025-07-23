@@ -61,7 +61,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("_authing_session");
 
         // 清除其他可能的认证相关存储
-        sessionStorage.clear();
+        // sessionStorage.clear();
 
         console.log("✅ 客户端存储已清除");
       }
@@ -79,7 +79,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("_authing_token");
         localStorage.removeItem("_authing_user");
         localStorage.removeItem("_authing_session");
-        sessionStorage.clear();
+        // sessionStorage.clear();
       }
 
       // 确保用户状态被清除
