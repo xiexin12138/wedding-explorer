@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   // 启用实验性功能以优化分包
   experimental: {
     // 启用更细粒度的代码分割
-    optimizePackageImports: ['@authing/guard-react18', 'lucide-react', '@radix-ui/react-alert-dialog', '@radix-ui/react-dropdown-menu'],
-    // 启用服务器组件优化
-    serverComponentsExternalPackages: ['@authing/guard-react18'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-alert-dialog', '@radix-ui/react-dropdown-menu'],
   },
   
   // 配置 webpack 分包策略
