@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, User, Settings, Loader2, LogIn, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,8 +36,12 @@ export function Header() {
 
   // 监听用户状态变化，重置登录按钮状态
   useEffect(() => {
-    console.log("🔄 Header: 用户状态变化", { user: !!user, loading, isLoginLoading });
-    
+    console.log("🔄 Header: 用户状态变化", {
+      user: !!user,
+      loading,
+      isLoginLoading,
+    });
+
     // 当用户未登录且不在加载状态时，重置登录按钮状态
     if (!user && !loading) {
       console.log("🔄 Header: 重置登录按钮状态");
@@ -58,17 +62,21 @@ export function Header() {
   }, [isLoginLoading]);
 
   const handleLoginClick = async () => {
-    console.log("🔄 Header: 点击登录按钮", { isLoginLoading, user: !!user, loading });
-    
+    console.log("🔄 Header: 点击登录按钮", {
+      isLoginLoading,
+      user: !!user,
+      loading,
+    });
+
     // 防止重复点击
     if (isLoginLoading) {
       console.log("⚠️ Header: 登录按钮正在加载中，忽略点击");
       return;
     }
-    
+
     setIsLoginLoading(true);
     console.log("🔄 Header: 设置登录按钮为加载状态");
-    
+
     try {
       // 使用 router.push 进行客户端路由跳转
       console.log("🔄 Header: 跳转到登录页面", SPECIAL_ROUTES.LOGIN);
@@ -102,10 +110,10 @@ export function Header() {
 
           {/* 用户菜单 */}
           {loading ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              disabled 
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
               className="animate-pulse transition-all duration-200"
             >
               <Loader2 className="h-4 w-4 animate-spin mr-2" />

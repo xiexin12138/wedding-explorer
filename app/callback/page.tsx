@@ -1,8 +1,8 @@
 "use client";
 
-import { JwtTokenStatus,  User } from "@authing/guard-react18";
+import { JwtTokenStatus, User } from "@authing/guard-react18";
 import { useUser } from "@/components/UserProvider";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
 import { guard } from "@/lib/auth-graud/config";
@@ -12,7 +12,7 @@ export default function Callback() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
-  const handleCallback = async () => {
+  const handleCallback = useCallback(async () => {
     try {
       setError(null);
 
@@ -91,11 +91,11 @@ export default function Callback() {
         router.push(SPECIAL_ROUTES.LOGIN);
       }, 3000);
     }
-  };
+  }, [router, setUser]);
 
   useEffect(() => {
     handleCallback();
-  }, []); // 添加依赖数组，确保只执行一次
+  }, [handleCallback]); // 添加依赖数组，确保只执行一次
 
   if (error) {
     return (
@@ -106,7 +106,9 @@ export default function Callback() {
           </div>
           <h2 className="text-xl font-semibold text-destructive">认证失败</h2>
           <p className="text-muted-foreground max-w-md">{error}</p>
-          <p className="text-sm text-muted-foreground">3秒后自动跳转到登录页...</p>
+          <p className="text-sm text-muted-foreground">
+            3秒后自动跳转到登录页...
+          </p>
         </div>
       </div>
     );
