@@ -86,6 +86,28 @@ export default function Callback() {
       console.error("❌ Authing 回调处理失败:", e);
       setError(errorMessage);
 
+      // 清空登录态
+      if (typeof window !== "undefined" && localStorage) {
+        // 清除 Authing 相关的 localStorage
+        localStorage.removeItem("_authing_token");
+        localStorage.removeItem("_authing_user");
+        localStorage.removeItem("_authing_session");
+        console.log("✅ 客户端存储已清除");
+      }
+      
+      // 调用 Authing 登出
+      guard.logout();
+      
+      // 调用服务端登出 API 清除 cookie
+      try {
+        await fetch(API_ROUTES.AUTH.LOGOUT, {
+          method: "POST",
+        });
+        console.log("✅ 服务端会话已清除");
+      } catch (logoutError) {
+        console.error("❌ 服务端登出失败:", logoutError);
+      }
+
       // 错误情况下，延迟跳转到登录页
       setTimeout(() => {
         router.push(SPECIAL_ROUTES.LOGIN);
