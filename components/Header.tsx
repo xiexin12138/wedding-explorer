@@ -42,20 +42,20 @@ export function Header() {
       isLoginLoading,
     });
 
-    // 当用户未登录且不在加载状态时，重置登录按钮状态
-    if (!user && !loading) {
+    // 只有在用户状态真正发生变化且不在主动登录过程中时才重置
+    if (!user && !loading && !isLoginLoading) {
       console.log("🔄 Header: 重置登录按钮状态");
       setIsLoginLoading(false);
     }
-  }, [user, loading, isLoginLoading]);
+  }, [user, loading, isLoginLoading]); // 添加 isLoginLoading 依赖
 
-  // 添加一个安全机制，如果按钮状态卡住超过3秒，强制重置
+  // 添加一个安全机制，如果按钮状态卡住超过8秒，强制重置
   useEffect(() => {
     if (isLoginLoading) {
       const timer = setTimeout(() => {
-        console.log("⚠️ Header: 登录按钮状态卡住超过3秒，强制重置");
+        console.log("⚠️ Header: 登录按钮状态卡住超过8秒，强制重置");
         setIsLoginLoading(false);
-      }, 3000);
+      }, 8000);
 
       return () => clearTimeout(timer);
     }
@@ -74,13 +74,22 @@ export function Header() {
       return;
     }
 
+    // 立即设置加载状态
     setIsLoginLoading(true);
     console.log("🔄 Header: 设置登录按钮为加载状态");
 
     try {
+      // 先等待一小段时间，确保用户能看到加载状态的变化
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       // 使用 router.push 进行客户端路由跳转
       console.log("🔄 Header: 跳转到登录页面", SPECIAL_ROUTES.LOGIN);
-      router.push(SPECIAL_ROUTES.LOGIN);
+      
+      // 使用 setTimeout 确保状态更新完成后再跳转
+      setTimeout(() => {
+        router.push(SPECIAL_ROUTES.LOGIN);
+      }, 200);
+
     } catch (error) {
       console.error("❌ Header: 跳转登录页面失败", error);
       // 如果 router.push 失败，回退到 window.location.href
@@ -169,17 +178,21 @@ export function Header() {
               size="sm"
               onClick={handleLoginClick}
               disabled={isLoginLoading}
-              className="h-9 px-3 transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg hover:bg-primary hover:text-primary-foreground"
+              className={`h-9 px-3 transition-all duration-300 ease-out ${
+                isLoginLoading
+                  ? "scale-95 opacity-75 bg-primary/20 border-primary/40 cursor-not-allowed"
+                  : "hover:scale-105 active:scale-95 hover:shadow-lg hover:bg-primary hover:text-primary-foreground"
+              }`}
             >
               {isLoginLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  跳转中...
+                  <Loader2 className="h-4 w-4 animate-spin mr-2 transition-all duration-200" />
+                  <span className="transition-all duration-200 font-medium">跳转中...</span>
                 </>
               ) : (
                 <>
                   <LogIn className="h-4 w-4 mr-2 transition-transform duration-200 hover:rotate-12" />
-                  登录
+                  <span className="transition-all duration-200">登录</span>
                 </>
               )}
             </Button>
