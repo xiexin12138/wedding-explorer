@@ -17,6 +17,7 @@ export default function HomePage() {
   useEffect(() => {
     // 检查是否支持 CSS Scroll-driven Animations
     const supportsScrollTimeline = CSS.supports('animation-timeline', 'scroll()');
+    console.log('设备是否支持 CSS Scroll-driven Animations', supportsScrollTimeline)
     
     if (!supportsScrollTimeline) {
       let ticking = false;
