@@ -1,0 +1,130 @@
+// Wedding Explorer Prisma Schema
+// 婚礼探索系统数据库模型定义
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ==================== 系统设置表 ====================
+
+/// 系统设置表 - 用于存储系统级别的配置项
+model SystemSetting {
+  /// 设置项唯一标识符
+  id          String   @id @default(cuid())
+  /// 设置项键名（唯一）
+  key         String   @unique @db.VarChar(100)
+  /// 设置项显示名称
+  displayName String   @db.VarChar(200)
+  /// 设置项值
+  value       String?  @db.Text
+  /// 设置项类型：string, number, boolean, json, array
+  valueType   SettingValueType @default(STRING)
+  /// 设置项分类
+  category    SettingCategory
+  /// 设置项描述
+  description String?  @db.Text
+  /// 是否为系统内置设置（内置设置不可删除）
+  isSystem    Boolean  @default(false)
+  /// 是否启用
+  isEnabled   Boolean  @default(true)
+  /// 排序权重
+  sortOrder   Int      @default(0)
+  /// 创建时间
+  createdAt   DateTime @default(now())
+  /// 更新时间
+  updatedAt   DateTime @updatedAt
+  /// 创建者ID
+  createdBy   String?  @db.VarChar(50)
+  /// 更新者ID
+  updatedBy   String?  @db.VarChar(50)
+
+  @@map("system_settings")
+  @@index([category])
+  @@index([isEnabled])
+  @@index([sortOrder])
+}
+
+/// 设置值类型枚举
+enum SettingValueType {
+  STRING   // 字符串
+  NUMBER   // 数字
+  BOOLEAN  // 布尔值
+  JSON     // JSON对象
+  ARRAY    // 数组
+  
+  @@map("setting_value_type")
+}
+
+/// 设置分类枚举
+enum SettingCategory {
+  // 基础系统设置
+  SYSTEM       // 系统基础配置
+  SECURITY     // 安全相关设置
+  NOTIFICATION // 通知设置
+  
+  // 婚礼业务设置
+  WEDDING      // 婚礼基本信息
+  VENUE        // 场地相关设置
+  GUEST        // 宾客管理设置
+  SCHEDULE     // 日程安排设置
+  
+  // 功能模块设置
+  MAP          // 地图探索设置
+  CHAT         // 对话咨询设置
+  ANALYTICS    // 分析统计设置
+  UI_UX        // 界面体验设置
+  
+  @@map("setting_category")
+}
+
+// ==================== 用户表 ====================
+
+/// 用户信息表
+model User {
+  /// 用户唯一标识符
+  id          String   @id @default(cuid())
+  /// Authing用户ID
+  authingId   String   @unique @db.VarChar(100)
+  /// 用户邮箱
+  email       String?  @db.VarChar(255)
+  /// 用户昵称
+  nickname    String?  @db.VarChar(100)
+  /// 用户真实姓名
+  name        String?  @db.VarChar(100)
+  /// 用户头像
+  avatar      String?  @db.Text
+  /// 用户角色
+  role        UserRole @default(GUEST)
+  /// 是否启用
+  isActive    Boolean  @default(true)
+  /// 最后登录时间
+  lastLoginAt DateTime?
+  /// 创建时间
+  createdAt   DateTime @default(now())
+  /// 更新时间
+  updatedAt   DateTime @updatedAt
+
+  @@map("users")
+  @@index([authingId])
+  @@index([email])
+  @@index([role])
+}
+
+/// 用户角色枚举
+enum UserRole {
+  ADMIN    // 管理员
+  BRIDE    // 新娘
+  GROOM    // 新郎
+  FAMILY   // 家属
+  FRIEND   // 朋友
+  GUEST    // 普通宾客
+  
+  @@map("user_role")
+}
