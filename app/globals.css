@@ -195,3 +195,27 @@ select {
 .dark * {
   color-scheme: dark;
 }
+
+/* 自定义彩虹渐变 */
+.rainbow-gradient {
+  background: linear-gradient(to right, 
+    #ef4444, /* red-500 */
+    #f97316, /* orange-500 */
+    #eab308, /* yellow-500 */
+    #22c55e, /* green-500 */
+    #3b82f6, /* blue-500 */
+    #6366f1, /* indigo-500 */
+    #a855f7  /* purple-500 */
+  );
+  background-size: 200% 100%;
+  animation: rainbow-flow 2s ease-in-out infinite;
+}
+
+@keyframes rainbow-flow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
