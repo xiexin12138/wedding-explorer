@@ -219,3 +219,50 @@ select {
     background-position: 100% 50%;
   }
 }
+
+/* 移动端背景视差滚动效果 - 纯 CSS 实现 */
+.bg-mobile-parallax {
+  /* 使用 CSS 自定义属性来控制缩放 */
+  --scroll-progress: 0;
+  --scale-min: 1;
+  --scale-max: 1.25;
+  
+  /* 应用缩放变换 */
+  transform: scale(calc(var(--scale-min) + (var(--scale-max) - var(--scale-min)) * var(--scroll-progress)));
+  transform-origin: center center;
+  
+  /* 启用硬件加速 */
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  
+  /* 平滑过渡 */
+  transition: transform 0.1s ease-out;
+}
+
+/* 使用 CSS 动画来模拟滚动效果 */
+@keyframes parallax-scale {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.25);
+  }
+}
+
+/* 当页面滚动时应用动画 */
+.bg-mobile-parallax {
+  animation: parallax-scale 1s ease-out;
+  animation-timeline: scroll(root);
+  animation-range: 0% 100vh;
+  animation-fill-mode: forwards;
+}
+
+/* 为不支持 animation-timeline 的浏览器提供备用方案 */
+@supports not (animation-timeline: scroll()) {
+  .bg-mobile-parallax {
+    animation: none;
+    /* 使用 CSS 变量和 JavaScript 的组合方案 */
+    transform: scale(var(--bg-scale, 1));
+  }
+}

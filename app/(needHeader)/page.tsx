@@ -10,53 +10,51 @@ import {
 import { HomeButton } from "@/components/HomeButton";
 import { WeddingCountdown } from "@/components/WeddingCountdown";
 import Image from "next/image";
-import { useEffect, useState, useRef } from "react";
+import { useEffect } from "react";
 
 export default function HomePage() {
-  const [imageScale, setImageScale] = useState(100);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
+  // 为不支持 CSS Scroll-driven Animations 的浏览器提供备用方案
   useEffect(() => {
-    const handleScroll = () => {
-      if (!cardRef.current) return;
-      
-      const cardRect = cardRef.current.getBoundingClientRect();
-      
-      // 计算卡片底部距离视口顶部的距离
-      const distanceFromTop = cardRect.bottom;
-      
-      // 获取视口高度作为参考
-      const viewportHeight = window.innerHeight;
-      
-      // 计算缩放比例：距离越近（距离越小），缩放越大
-      // 当距离为0时缩放为120%，当距离为视口高度时缩放为80%
-      const maxScale = 125;
-      const minScale = 100;
-      const scaleRange = maxScale - minScale;
-      
-      // 计算距离比例（0-1之间）
-      const distanceRatio = Math.max(0, Math.min(1, distanceFromTop / viewportHeight));
-      
-      // 反向计算缩放：距离比例越小，缩放越大
-      const scale = maxScale - (distanceRatio * scaleRange);
-      
-      // 调试信息（仅在开发环境）
-      if (process.env.NODE_ENV === 'development') {
-        console.log('距离顶部:', distanceFromTop, '视口高度:', viewportHeight, '缩放比例:', scale);
-      }
-      
-      setImageScale(scale);
-    };
-
-    // 监听窗口滚动事件
-    window.addEventListener('scroll', handleScroll);
-    // 初始化时也执行一次
-    handleScroll();
+    // 检查是否支持 CSS Scroll-driven Animations
+    const supportsScrollTimeline = CSS.supports('animation-timeline', 'scroll()');
     
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    if (!supportsScrollTimeline) {
+      let ticking = false;
+      
+      const updateScale = () => {
+        const scrollY = window.scrollY;
+        const windowHeight = window.innerHeight;
+        
+        // 计算滚动进度，但限制在一个视口高度内
+         const scrollProgress = Math.min(scrollY / windowHeight, 1);
+         
+         // 计算缩放值 (从 1 到 1.25)，达到最大值后保持不变
+         const scale = Math.min(1.25, 1 + (scrollProgress * 0.25));
+        
+        // 更新 CSS 变量
+        document.documentElement.style.setProperty('--bg-scale', scale.toString());
+        
+        ticking = false;
+      };
+      
+      const handleScroll = () => {
+        if (!ticking) {
+          requestAnimationFrame(updateScale);
+          ticking = true;
+        }
+      };
+      
+      // 添加滚动监听
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      
+      // 初始化
+      updateScale();
+      
+      // 清理函数
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }
   }, []);
 
   return (
@@ -71,13 +69,7 @@ export default function HomePage() {
           priority
         />
       </div>
-      <div 
-        className="fixed inset-0 z-0 block md:hidden transition-transform duration-300 ease-out"
-        style={{
-          transform: `scale(${imageScale / 100})`,
-          transformOrigin: 'center center'
-        }}
-      >
+      <div className="fixed inset-0 z-0 block md:hidden bg-mobile-parallax">
         <Image
           src="/images/bg-mobile.webp"
           alt="背景图片"
@@ -88,10 +80,10 @@ export default function HomePage() {
       </div>
 
       {/* 可滚动的内容区域 */}
-      <div ref={containerRef} className="relative z-10 min-h-full overflow-y-auto p-4">
+      <div className="relative z-10 min-h-full overflow-y-auto p-4">
         <div className="content-container w-full space-y-8">
           {/* 欢迎卡片 */}
-          <Card ref={cardRef} className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto">
+          <Card className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold">
                 欢迎来到 Wedding Explorer
