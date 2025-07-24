@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import VConsole from "vconsole";
 
 // 声明全局类型
 declare global {
@@ -76,19 +75,27 @@ function initGlobalDebugTools() {
     sessionStorage.setItem(DEBUG_MODE_KEY, "true");
 
     if (!window.vConsole) {
-      // 初始化 vConsole
-      const theme = detectCurrentTheme();
-      window.vConsole = new VConsole({
-        theme: theme,
-        maxLogNumber: 10000,
-        // 禁用网络面板
-        onReady: () => {
-          console.log("vConsole 初始化完成");
-          outputCachedLogs();
-        },
-        // 配置面板选项 - 只启用系统、元素、存储面板，禁用网络面板
-        defaultPlugins: ["system", "storage"],
-      });
+      try {
+        // 动态导入 VConsole
+        const VConsoleModule = await import("vconsole");
+        const VConsole = VConsoleModule.default;
+        
+        // 初始化 vConsole
+        const theme = detectCurrentTheme();
+        window.vConsole = new VConsole({
+          theme: theme,
+          maxLogNumber: 10000,
+          // 禁用网络面板
+          onReady: () => {
+            console.log("vConsole 初始化完成");
+            outputCachedLogs();
+          },
+          // 配置面板选项 - 只启用系统、元素、存储面板，禁用网络面板
+          defaultPlugins: ["system", "storage"],
+        });
+      } catch (error) {
+        console.error("VConsole 初始化失败:", error);
+      }
     }
 
     console.log("调试模式已启用");
