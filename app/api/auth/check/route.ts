@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const token = request.cookies.get(COOKIE_NAME)?.value
 
     if (!token) {
+      console.log("未找到认证 token, request.cookies:", request.cookies.getAll())
       return NextResponse.json({ 
         user: null,
         message: '未找到认证 token' 
