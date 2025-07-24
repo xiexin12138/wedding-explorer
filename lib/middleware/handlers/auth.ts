@@ -18,17 +18,20 @@ export class AuthHandler implements MiddlewareHandler {
     
     // 跳过不需要认证的路由
     if (!this.config.enabled || this.shouldSkipAuth(pathname)) {
+      console.log(`🔄 跳过认证检查: ${pathname}`)
       return null // 继续下一个处理器
     }
 
     // 检查是否是公开路由
     if (isPublicRoute(pathname)) {
+      console.log(`🌐 公开路由，跳过认证: ${pathname}`)
       return null
     }
 
     // 获取 token
     const token = this.extractToken(request)
     if (!token) {
+      console.log(`🔒 未找到认证 token，重定向到登录: ${pathname}`)
       return createUnauthorizedResponse(request, SPECIAL_ROUTES.LOGIN)
     }
 
@@ -71,6 +74,7 @@ export class AuthHandler implements MiddlewareHandler {
     
     // 跳过公开的 API 路由（只有 set-session 接口是公开的）
     if (pathname === API_ROUTES.AUTH.SET_SESSION) {
+      console.log(`🔓 跳过公开 API 路由认证: ${pathname}`)
       return true
     }
     

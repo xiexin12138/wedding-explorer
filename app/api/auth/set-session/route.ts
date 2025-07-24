@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateJWTToken } from '@/lib/auth'
 import { COOKIE_NAME } from '@/lib/routes.config'
 import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
+import { setAuthApiHeaders } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   const startTime = performance.now();
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
       
+      // 设置无缓存响应头
+      setAuthApiHeaders(response);
+      
       // 记录服务端响应
       const duration = performance.now() - startTime;
       logServerResponse(requestId, 'POST', request.nextUrl.pathname, 400, duration);
@@ -35,6 +39,9 @@ export async function POST(request: NextRequest) {
         { error: 'Token 验证失败' },
         { status: 401 }
       );
+      
+      // 设置无缓存响应头
+      setAuthApiHeaders(response);
       
       // 记录服务端响应
       const duration = performance.now() - startTime;
@@ -62,6 +69,9 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ JWT token 已设置到 cookie:', COOKIE_NAME)
 
+    // 设置无缓存响应头
+    setAuthApiHeaders(response);
+
     // 记录服务端响应
     const duration = performance.now() - startTime;
     logServerResponse(requestId, 'POST', request.nextUrl.pathname, 200, duration);
@@ -74,6 +84,9 @@ export async function POST(request: NextRequest) {
       { error: '服务器内部错误' },
       { status: 500 }
     );
+    
+    // 设置无缓存响应头
+    setAuthApiHeaders(response);
     
     // 记录服务端响应
     const duration = performance.now() - startTime;

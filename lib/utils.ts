@@ -59,3 +59,44 @@ export function getCurrentOrigin(): string {
   console.warn('⚠️ 无法获取有效域名，使用默认值')
   return 'http://localhost:3000'
 }
+
+/**
+ * 为 API 路由设置无缓存响应头
+ * 确保 API 响应不被浏览器或 CDN 缓存
+ */
+export function setNoCacheHeaders(response: Response): Response {
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0')
+  response.headers.set('Pragma', 'no-cache')
+  response.headers.set('Expires', '0')
+  response.headers.set('Surrogate-Control', 'no-store')
+  return response
+}
+
+/**
+ * 为认证相关的 API 路由设置额外的安全响应头
+ */
+export function setAuthApiHeaders(response: Response): Response {
+  // 设置无缓存头
+  setNoCacheHeaders(response)
+  
+  // 添加额外的安全头
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  
+  return response
+}
+
+/**
+ * 检查是否为 API 路由
+ */
+export function isApiRoute(pathname: string): boolean {
+  return pathname.startsWith('/api/')
+}
+
+/**
+ * 检查是否为认证相关的 API 路由
+ */
+export function isAuthApiRoute(pathname: string): boolean {
+  return pathname.startsWith('/api/auth/')
+}

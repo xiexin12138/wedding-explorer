@@ -3,6 +3,7 @@ import { validateJWTToken } from '@/lib/auth'
 import { COOKIE_NAME } from '@/lib/routes.config'
 import { getAdminIds } from '@/lib/middleware/config'
 import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
+import { setAuthApiHeaders } from '@/lib/utils'
 
 export async function GET(request: NextRequest) {
   const startTime = performance.now();
@@ -23,6 +24,9 @@ export async function GET(request: NextRequest) {
         message: '未找到认证 token' 
       });
       
+      // 设置无缓存响应头
+      setAuthApiHeaders(response);
+      
       // 记录服务端响应
       const duration = performance.now() - startTime;
       logServerResponse(requestId, 'GET', request.nextUrl.pathname, 200, duration);
@@ -38,6 +42,9 @@ export async function GET(request: NextRequest) {
         user: null,
         message: 'Token 验证失败' 
       });
+      
+      // 设置无缓存响应头
+      setAuthApiHeaders(response);
       
       // 记录服务端响应
       const duration = performance.now() - startTime;
@@ -73,6 +80,9 @@ export async function GET(request: NextRequest) {
       message: '用户已登录'
     });
     
+    // 设置无缓存响应头
+    setAuthApiHeaders(response);
+    
     // 记录服务端响应
     const duration = performance.now() - startTime;
     logServerResponse(requestId, 'GET', request.nextUrl.pathname, 200, duration);
@@ -88,6 +98,9 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
+    
+    // 设置无缓存响应头
+    setAuthApiHeaders(response);
     
     // 记录服务端响应
     const duration = performance.now() - startTime;

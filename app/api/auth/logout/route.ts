@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_NAME } from '@/lib/routes.config'
 import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
+import { setAuthApiHeaders } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   const startTime = performance.now();
@@ -50,6 +51,9 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ 用户已登出，cookies 已清除')
     
+    // 设置无缓存响应头
+    setAuthApiHeaders(response);
+    
     // 记录服务端响应
     const duration = performance.now() - startTime;
     logServerResponse(requestId, 'POST', request.nextUrl.pathname, 200, duration);
@@ -59,9 +63,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ 登出失败:', error)
     const response = NextResponse.json(
-      { error: '登出失败' },
+      { error: '服务器内部错误' },
       { status: 500 }
     );
+    
+    // 设置无缓存响应头
+    setAuthApiHeaders(response);
     
     // 记录服务端响应
     const duration = performance.now() - startTime;

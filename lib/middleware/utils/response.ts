@@ -5,14 +5,28 @@ import type { NextRequest } from 'next/server'
  * 创建重定向响应
  */
 export function createRedirectResponse(request: NextRequest, path: string): NextResponse {
-  return NextResponse.redirect(new URL(path, request.url))
+  const response = NextResponse.redirect(new URL(path, request.url))
+  
+  // 添加缓存控制头，确保重定向不被缓存
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+  response.headers.set('Pragma', 'no-cache')
+  response.headers.set('Expires', '0')
+  
+  return response
 }
 
 /**
  * 创建继续处理的响应
  */
 export function createNextResponse(): NextResponse {
-  return NextResponse.next()
+  const response = NextResponse.next()
+  
+  // 添加缓存控制头，确保中间件响应不被缓存
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+  response.headers.set('Pragma', 'no-cache')
+  response.headers.set('Expires', '0')
+  
+  return response
 }
 
 /**

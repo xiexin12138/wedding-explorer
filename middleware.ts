@@ -15,12 +15,14 @@ export const config = {
   matcher: [
     /*
      * 匹配所有路径除了：
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder files
+     * - 静态资源文件
+     * 
+     * 注意：API 路由也会被中间件处理，但认证相关的 API 路由会被跳过
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|.*\\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot)).*)',
   ],
 }
