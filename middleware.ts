@@ -14,15 +14,12 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * 匹配所有路径除了：
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder files
-     * - 静态资源文件
+     * 匹配需要中间件处理的路径：
+     * - 所有页面路由
+     * - 所有 API 路由
      * 
-     * 注意：API 路由也会被中间件处理，但认证相关的 API 路由会被跳过
+     * 静态资源会自动被 Next.js 跳过
      */
-    '/((?!_next/static|_next/image|favicon.ico|public|.*\\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|eot)).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
