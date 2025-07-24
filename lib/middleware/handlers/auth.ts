@@ -69,8 +69,8 @@ export class AuthHandler implements MiddlewareHandler {
       return true
     }
     
-    // 跳过公开的 API 路由（只有 check 接口是公开的）
-    if (pathname === API_ROUTES.AUTH.CHECK) {
+    // 跳过公开的 API 路由（只有 set-session 接口是公开的）
+    if (pathname === API_ROUTES.AUTH.SET_SESSION) {
       return true
     }
     
