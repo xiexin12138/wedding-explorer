@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default function DashboardPage() {
+export default function HomePage() {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
       {/* 欢迎卡片 */}

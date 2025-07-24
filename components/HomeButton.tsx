@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, User } from "lucide-react";
 import { useState, useEffect } from "react";
+import { SPECIAL_ROUTES } from "@/lib/routes.config";
 
-export function DashboardButton() {
+export function HomeButton() {
   const { user, loading } = useUser();
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -32,7 +33,7 @@ export function DashboardButton() {
     // 添加一个小延迟，让用户看到按钮状态变化
     await new Promise((resolve) => setTimeout(resolve, 100));
     
-    router.push("/dashboard");
+    router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT);
   };
 
   return (

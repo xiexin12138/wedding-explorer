@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateJWTToken } from '@/lib/auth'
 import { COOKIE_NAME } from '@/lib/routes.config'
+import { getAdminIds } from '@/lib/middleware/config'
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,20 +25,26 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    console.log('✅ 用户认证检查通过:', validatedUser.sub)
+    // 检查是否为管理员
+    const adminIds = getAdminIds()
+    const isAdmin = adminIds.includes(validatedUser.sub)
+    
+    console.log('✅ 用户认证检查通过:', validatedUser.sub, isAdmin ? '(管理员)' : '(普通用户)')
 
-    // 返回用户信息，包含 data 字段
+    // 返回用户信息，包含 data 字段和管理员状态
     return NextResponse.json({
       user: {
         id: validatedUser.sub,
         name: validatedUser.name || validatedUser.nickname,
         email: validatedUser.email,
         username: validatedUser.username,
+        isAdmin,
         data: {
           phone: validatedUser.phone || validatedUser.phoneNumber,
           nickname: validatedUser.nickname,
           username: validatedUser.username,
           email: validatedUser.email,
+          isAdmin,
           // 添加其他可能的用户数据字段
           ...validatedUser
         }
@@ -55,4 +62,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}

@@ -16,6 +16,7 @@ interface User {
   email?: string;
   id?: string;
   username?: string;
+  isAdmin?: boolean;
   data: {
     [key: string]: string | number | boolean | undefined;
   };

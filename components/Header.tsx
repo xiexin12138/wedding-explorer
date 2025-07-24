@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User, Settings, Loader2, LogIn, Home } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Settings,
+  Loader2,
+  LogIn,
+  Home,
+  Heart,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import {
@@ -84,12 +92,11 @@ export function Header() {
 
       // 使用 router.push 进行客户端路由跳转
       console.log("🔄 Header: 跳转到登录页面", SPECIAL_ROUTES.LOGIN);
-      
+
       // 使用 setTimeout 确保状态更新完成后再跳转
       setTimeout(() => {
         router.push(SPECIAL_ROUTES.LOGIN);
       }, 200);
-
     } catch (error) {
       console.error("❌ Header: 跳转登录页面失败", error);
       // 如果 router.push 失败，回退到 window.location.href
@@ -158,9 +165,23 @@ export function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  设置
+                {user.isAdmin ? (
+                  <DropdownMenuItem
+                    onClick={() => router.push(SPECIAL_ROUTES.SETTING)}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    设置
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem
+                  onClick={() => router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT)}
+                >
+                  <span className="relative inline-flex items-center gap-2 w-full">
+                    <Heart className="mr-2 h-4 w-4 fill-current text-pink-500 animate-pulse" />
+                    <span className="rainbow-gradient text-white font-bold px-2 py-1 rounded-md w-full">
+                      前往活动 ！
+                    </span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowLogoutDialog(true)}
@@ -186,7 +207,9 @@ export function Header() {
               {isLoginLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2 transition-all duration-200" />
-                  <span className="transition-all duration-200 font-medium">跳转中...</span>
+                  <span className="transition-all duration-200 font-medium">
+                    跳转中...
+                  </span>
                 </>
               ) : (
                 <>
@@ -205,7 +228,9 @@ export function Header() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认退出</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要退出登录吗？退出后需要重新登录才能访问您的账户。
+              您确定要退出登录吗？
+              <br />
+              退出后需要重新登录才能访问您的账户。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -215,7 +240,7 @@ export function Header() {
                 logout();
                 setShowLogoutDialog(false);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               确认退出
             </AlertDialogAction>

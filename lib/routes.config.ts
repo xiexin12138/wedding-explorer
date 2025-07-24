@@ -16,8 +16,12 @@ export const PUBLIC_ROUTES = [
 
 // 受保护的路由（需要登录才能访问）
 export const PROTECTED_ROUTES = [
-  '/home',  // 索引页面
-  '/dashboard' // 活动首页
+  '/home',  // 活动内容页
+] as const
+
+// 管理员路由（需要管理员权限才能访问）
+export const ADMIN_ROUTES = [
+  '/settings',
 ] as const
 
 // 特殊路由配置
@@ -28,6 +32,7 @@ export const SPECIAL_ROUTES = {
   DEFAULT_REDIRECT: '/home',
   // 首页（登录前）
   DEFAULT_HOME: '/',
+  SETTING: '/settings', // 管理员设置页面
 } as const
 
 // API 路由配置
@@ -72,6 +77,15 @@ export function isApiRoute(pathname: string): boolean {
 }
 
 /**
+ * 检查路径是否为管理员路由
+ */
+export function isAdminRoute(pathname: string): boolean {
+  return ADMIN_ROUTES.some(route =>
+    pathname === route || pathname.startsWith(route + '/')
+  )
+}
+
+/**
  * 检查路径是否为静态资源
  */
 export function isStaticAsset(pathname: string): boolean {
@@ -107,11 +121,14 @@ export const ROUTE_CONFIG = {
   special: SPECIAL_ROUTES,
   // API 路由
   api: API_ROUTES,
+  // 管理员路由
+  admin: ADMIN_ROUTES,
   // 工具函数
   utils: {
     isPublicRoute,
     isProtectedRoute,
     isApiRoute,
+    isAdminRoute,
     isStaticAsset,
     getLoginUrl,
   }
@@ -121,4 +138,5 @@ export const COOKIE_NAME = 'authjs.session-token' as const
 
 export type PublicRoute = typeof PUBLIC_ROUTES[number]
 export type ProtectedRoute = typeof PROTECTED_ROUTES[number]
-export type SpecialRoute = typeof SPECIAL_ROUTES[keyof typeof SPECIAL_ROUTES] 
+export type AdminRoute = typeof ADMIN_ROUTES[number]
+export type SpecialRoute = typeof SPECIAL_ROUTES[keyof typeof SPECIAL_ROUTES]
