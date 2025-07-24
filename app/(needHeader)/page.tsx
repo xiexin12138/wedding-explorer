@@ -10,9 +10,12 @@ import {
 import { HomeButton } from "@/components/HomeButton";
 import { WeddingCountdown } from "@/components/WeddingCountdown";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function HomePage() {
+  const bgRef = useRef<HTMLDivElement>(null);
+  const lastHeight = useRef<number>(0);
+
   // 为不支持 CSS Scroll-driven Animations 的浏览器提供备用方案
   useEffect(() => {
     // 检查是否支持 CSS Scroll-driven Animations
@@ -28,6 +31,7 @@ export default function HomePage() {
         
         // 计算滚动进度，但限制在一个视口高度内
          const scrollProgress = Math.min(scrollY / windowHeight, 1);
+         console.log("🚀 ~ updateScale ~ scrollY / windowHeight:", scrollY / windowHeight)
          
          // 计算缩放值 (从 1 到 1.25)，达到最大值后保持不变
          const scale = Math.min(1.25, 1 + (scrollProgress * 0.25));
@@ -58,6 +62,41 @@ export default function HomePage() {
     }
   }, []);
 
+  // 处理视口高度变化，避免突变
+  useEffect(() => {
+    const handleViewportChange = () => {
+      const currentHeight = window.innerHeight;
+      
+      // 如果高度变化很小，则忽略
+      if (Math.abs(currentHeight - lastHeight.current) < 50) {
+        return;
+      }
+      
+      // 使用 requestAnimationFrame 确保平滑过渡
+      requestAnimationFrame(() => {
+        if (bgRef.current) {
+          // 设置最小高度，避免突变
+          const minHeight = Math.max(currentHeight, lastHeight.current);
+          bgRef.current.style.height = `${minHeight}px`;
+          
+          // 延迟更新 lastHeight，给用户一个平滑的过渡
+          setTimeout(() => {
+            lastHeight.current = currentHeight;
+          }, 300);
+        }
+      });
+    };
+
+    // 监听视口变化
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', handleViewportChange);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('orientationchange', handleViewportChange);
+    };
+  }, []);
+
   return (
     <div className="flex-1 relative">
       {/* 固定背景图片 - 响应式处理 */}
@@ -70,7 +109,14 @@ export default function HomePage() {
           priority
         />
       </div>
-      <div className="fixed inset-0 z-0 block md:hidden bg-mobile-parallax">
+      <div 
+        ref={bgRef}
+        className="fixed inset-0 z-0 block md:hidden bg-mobile-parallax"
+        style={{ 
+          height: `${window.innerHeight}px`,
+          transition: 'height 0.3s ease-out'
+        }}
+      >
         <Image
           src="/images/bg-mobile.webp"
           alt="背景图片"
