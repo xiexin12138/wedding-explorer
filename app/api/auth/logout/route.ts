@@ -3,6 +3,7 @@ import { COOKIE_NAME } from '@/lib/routes.config'
 import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
 import { setAuthApiHeaders } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   const startTime = performance.now();
   const requestId = getRequestIdFromHeaders(request.headers) || 'unknown';

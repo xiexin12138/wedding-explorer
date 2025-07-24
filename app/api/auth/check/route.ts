@@ -5,6 +5,8 @@ import { getAdminIds } from '@/lib/middleware/config'
 import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
 import { setAuthApiHeaders } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const startTime = performance.now();
   const requestId = getRequestIdFromHeaders(request.headers) || 'unknown';
