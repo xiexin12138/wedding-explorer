@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import { AnalyticsScript } from "@/components/AnalyticsScript";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { UserProvider } from "@/components/UserProvider";
 import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
-import { AnalyticsScript } from "@/components/AnalyticsScript";
-import { DebugInitializer } from "@/components/DebugInitializer";
+import { VConsoleLoader } from "@/components/VConsoleLoader";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "欢迎您",
@@ -26,6 +26,9 @@ export default async function RootLayout({
         <AnalyticsScript />
       </head>
       <body className="antialiased">
+        {/* vConsole 调试工具 */}
+        <VConsoleLoader />
+        
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -39,7 +42,6 @@ export default async function RootLayout({
               </div>
             </ViewportHeightProvider>
           </UserProvider>
-          <DebugInitializer />
         </ThemeProvider>
       </body>
     </html>
