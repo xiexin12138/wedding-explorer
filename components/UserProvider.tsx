@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
 import { guard } from "@/lib/auth-graud/config";
+import { useRequestTracker } from "@/hooks/useRequestTracker";
 
 interface User {
   name?: string;
@@ -35,6 +36,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { postWithTracking, getWithTracking } = useRequestTracker();
 
   const logout = async () => {
     try {
@@ -47,10 +49,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 1. 调用 Authing 服务端登出
       guard.logout();
 
-      // 2. 调用本地 API 清除 cookie
-      const apiLogout = await fetch(API_ROUTES.AUTH.LOGOUT, {
-        method: "POST",
-      });
+      // 2. 调用本地 API 清除 cookie（使用追踪功能）
+      const apiLogout = await postWithTracking(API_ROUTES.AUTH.LOGOUT);
 
       console.log("🔍 本地 API 登出结果:", apiLogout.ok);
 
@@ -97,8 +97,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         console.log("🔍 开始检查用户登录状态...");
-        const response = await fetch(API_ROUTES.AUTH.CHECK, {
-          method: "GET",
+        const response = await getWithTracking(API_ROUTES.AUTH.CHECK, {
           credentials: "include", // 确保发送 cookies
         });
 

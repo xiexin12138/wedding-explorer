@@ -1,13 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_NAME } from '@/lib/routes.config'
+import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const startTime = performance.now();
+  const requestId = getRequestIdFromHeaders(request.headers) || 'unknown';
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+  
+  // 记录服务端请求
+  logServerRequest(requestId, 'POST', request.nextUrl.pathname, userAgent);
+  
   try {
     // 创建响应对象
     const response = NextResponse.json({
       success: true,
       message: '登出成功'
-    })
+    });
 
     // 清除 JWT token cookie（通过响应 headers）
     // 使用多种方式确保在 iOS Safari 中正确清除
@@ -41,13 +49,24 @@ export async function POST() {
     })
 
     console.log('✅ 用户已登出，cookies 已清除')
-    return response
+    
+    // 记录服务端响应
+    const duration = performance.now() - startTime;
+    logServerResponse(requestId, 'POST', request.nextUrl.pathname, 200, duration);
+    
+    return response;
 
   } catch (error) {
     console.error('❌ 登出失败:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: '登出失败' },
       { status: 500 }
-    )
+    );
+    
+    // 记录服务端响应
+    const duration = performance.now() - startTime;
+    logServerResponse(requestId, 'POST', request.nextUrl.pathname, 500, duration);
+    
+    return response;
   }
 } 

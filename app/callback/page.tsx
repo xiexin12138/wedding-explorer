@@ -6,11 +6,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
 import { guard } from "@/lib/auth-graud/config";
+import { useRequestTracker } from "@/hooks/useRequestTracker";
 
 export default function Callback() {
   const { setUser } = useUser();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const { postWithTracking } = useRequestTracker();
 
   const handleCallback = useCallback(async () => {
     try {
@@ -42,17 +44,16 @@ export default function Callback() {
 
       console.log("✅ 用户信息获取成功:", userInfo);
 
-      // 4. 将认证信息发送到服务端设置 httpOnly cookie
-      const response = await fetch(API_ROUTES.AUTH.SET_SESSION, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
+      // 4. 将认证信息发送到服务端设置 httpOnly cookie（使用追踪功能）
+      const response = await postWithTracking(
+        API_ROUTES.AUTH.SET_SESSION,
+        JSON.stringify({
           userInfo,
         }),
-      });
+        {
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`服务端会话设置失败: ${response.status}`);
@@ -99,11 +100,9 @@ export default function Callback() {
       // 调用 Authing 登出
       guard.logout();
       
-      // 调用服务端登出 API 清除 cookie
+      // 调用服务端登出 API 清除 cookie（使用追踪功能）
       try {
-        await fetch(API_ROUTES.AUTH.LOGOUT, {
-          method: "POST",
-        });
+        await postWithTracking(API_ROUTES.AUTH.LOGOUT);
         console.log("✅ 服务端会话已清除");
       } catch (logoutError) {
         console.error("❌ 服务端登出失败:", logoutError);

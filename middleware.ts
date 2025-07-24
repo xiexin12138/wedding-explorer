@@ -13,8 +13,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // 包含认证相关的 API 路由
-    '/api/auth/:path*',
     /*
      * 匹配所有路径除了：
      * - api (API routes)

@@ -1,26 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateJWTToken } from '@/lib/auth'
 import { COOKIE_NAME } from '@/lib/routes.config'
+import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
 
 export async function POST(request: NextRequest) {
+  const startTime = performance.now();
+  const requestId = getRequestIdFromHeaders(request.headers) || 'unknown';
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+  
+  // 记录服务端请求
+  logServerRequest(requestId, 'POST', request.nextUrl.pathname, userAgent);
+  
   try {
     const { userInfo } = await request.json()
 
     if (!userInfo || !userInfo.token) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: '无效的用户信息' },
         { status: 400 }
-      )
+      );
+      
+      // 记录服务端响应
+      const duration = performance.now() - startTime;
+      logServerResponse(requestId, 'POST', request.nextUrl.pathname, 400, duration);
+      
+      return response;
     }
 
     // 使用公钥验证 Authing 返回的 JWT token
     const validatedUser = await validateJWTToken(userInfo.token)
     if (!validatedUser) {
       console.error('❌ JWT token 验证失败')
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Token 验证失败' },
         { status: 401 }
-      )
+      );
+      
+      // 记录服务端响应
+      const duration = performance.now() - startTime;
+      logServerResponse(requestId, 'POST', request.nextUrl.pathname, 401, duration);
+      
+      return response;
     }
     
     console.log('✅ Authing JWT token HS256 验证通过:', validatedUser.sub)
@@ -42,13 +62,23 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ JWT token 已设置到 cookie:', COOKIE_NAME)
 
-    return response
+    // 记录服务端响应
+    const duration = performance.now() - startTime;
+    logServerResponse(requestId, 'POST', request.nextUrl.pathname, 200, duration);
+
+    return response;
 
   } catch (error) {
     console.error('❌ 设置登录状态失败:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: '服务器内部错误' },
       { status: 500 }
-    )
+    );
+    
+    // 记录服务端响应
+    const duration = performance.now() - startTime;
+    logServerResponse(requestId, 'POST', request.nextUrl.pathname, 500, duration);
+    
+    return response;
   }
 } 
