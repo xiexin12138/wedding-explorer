@@ -72,7 +72,7 @@ export function Header() {
   const handleLoginClick = async () => {
     console.log("🔄 Header: 点击登录按钮", {
       isLoginLoading,
-      user: !!user,
+      user,
       loading,
     });
 
