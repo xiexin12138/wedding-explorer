@@ -15,7 +15,9 @@ export class AuthHandler implements MiddlewareHandler {
 
   async handle(context: MiddlewareContext): Promise<NextResponse | null> {
     const { request, pathname } = context
-
+    console.log("🚀 ~ AuthHandler ~ handle ~ request:", request)
+    console.log("🚀 ~ AuthHandler ~ handle ~ pathname:", pathname)
+    
     // 跳过不需要认证的路由
     if (!this.config.enabled || this.shouldSkipAuth(pathname)) {
       return null // 继续下一个处理器
