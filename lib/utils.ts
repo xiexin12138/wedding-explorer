@@ -65,10 +65,16 @@ export function getCurrentOrigin(): string {
  * 确保 API 响应不被浏览器或 CDN 缓存
  */
 export function setNoCacheHeaders(response: Response): Response {
-  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0')
+  // 使用更强制性的无缓存头
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, private')
   response.headers.set('Pragma', 'no-cache')
   response.headers.set('Expires', '0')
   response.headers.set('Surrogate-Control', 'no-store')
+  
+  // 添加额外的缓存控制头
+  response.headers.set('CDN-Cache-Control', 'no-cache')
+  response.headers.set('Cloudflare-CDN-Cache-Control', 'no-cache')
+  
   return response
 }
 
@@ -83,6 +89,9 @@ export function setAuthApiHeaders(response: Response): Response {
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-XSS-Protection', '1; mode=block')
+  
+  // 确保不被任何缓存层缓存
+  response.headers.set('Vary', 'Authorization, Cookie')
   
   return response
 }

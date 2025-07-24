@@ -30,12 +30,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // 针对所有 API 路由禁用缓存
+        // 针对所有 API 路由禁用缓存并设置安全头
         source: '/api/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate, max-age=0',
+            value: 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, private',
           },
           {
             key: 'Pragma',
@@ -49,34 +49,28 @@ const nextConfig: NextConfig = {
             key: 'Surrogate-Control',
             value: 'no-store',
           },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'no-cache',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Vary',
+            value: 'Authorization, Cookie',
+          },
         ],
       },
-      // {
-      //   // 针对认证相关的 API 路由特别处理
-      //   source: '/api/auth/:path*',
-      //   headers: [
-      //     {
-      //       key: 'Cache-Control',
-      //       value: 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0',
-      //     },
-      //     {
-      //       key: 'Pragma',
-      //       value: 'no-cache',
-      //     },
-      //     {
-      //       key: 'Expires',
-      //       value: '0',
-      //     },
-      //     {
-      //       key: 'Surrogate-Control',
-      //       value: 'no-store',
-      //     },
-      //     {
-      //       key: 'X-Content-Type-Options',
-      //       value: 'nosniff',
-      //     },
-      //   ],
-      // },
     ];
   },
 };
