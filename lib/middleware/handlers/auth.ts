@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { isPublicRoute, isApiRoute, isStaticAsset, SPECIAL_ROUTES } from '@/lib/routes.config'
+import { isPublicRoute, isApiRoute, isStaticAsset, SPECIAL_ROUTES, API_ROUTES } from '@/lib/routes.config'
 import { parseJWTPayload, isTokenExpired, getTokenRemainingTime, formatTimeRemaining } from '../utils/jwt'
 import { createUnauthorizedResponse } from '../utils/response'
 import { shouldSkipRoute } from '../config'
@@ -15,8 +15,6 @@ export class AuthHandler implements MiddlewareHandler {
 
   async handle(context: MiddlewareContext): Promise<NextResponse | null> {
     const { request, pathname } = context
-    console.log("🚀 ~ AuthHandler ~ handle ~ request:", request)
-    console.log("🚀 ~ AuthHandler ~ handle ~ pathname:", pathname)
     
     // 跳过不需要认证的路由
     if (!this.config.enabled || this.shouldSkipAuth(pathname)) {
@@ -66,11 +64,18 @@ export class AuthHandler implements MiddlewareHandler {
    * 检查是否应该跳过认证
    */
   private shouldSkipAuth(pathname: string): boolean {
-    return (
-      shouldSkipRoute(pathname, this.config.skipRoutes) ||
-      isApiRoute(pathname) ||
-      isStaticAsset(pathname)
-    )
+    // 跳过静态资源
+    if (shouldSkipRoute(pathname, this.config.skipRoutes) || isStaticAsset(pathname)) {
+      return true
+    }
+    
+    // 跳过公开的 API 路由（只有 check 接口是公开的）
+    if (pathname === API_ROUTES.AUTH.CHECK) {
+      return true
+    }
+    
+    // 其他所有 API 路由都需要认证
+    return false
   }
 
   /**

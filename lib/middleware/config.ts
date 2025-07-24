@@ -9,7 +9,7 @@ export function getMiddlewareConfig(): MiddlewareConfig {
     auth: {
       enabled: true,
       cookieName: COOKIE_NAME,
-      skipRoutes: ['/api', '/_next', '/favicon.ico', '/public']
+      skipRoutes: ['/_next', '/favicon.ico', '/public']
     },
     admin: {
       enabled: true,
