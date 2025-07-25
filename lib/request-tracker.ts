@@ -131,8 +131,8 @@ export async function trackedFetch(
   try {
     // 添加请求追踪头
     const headers = new Headers(init?.headers);
-    headers.set('X-Request-ID', tracker.requestId);
-    headers.set('X-Request-Timestamp', tracker.timestamp.toString());
+    // headers.set('X-Request-ID', tracker.requestId);
+    // headers.set('X-Request-Timestamp', tracker.timestamp.toString());
     
     // 发起请求
     const response = await fetch(input, {

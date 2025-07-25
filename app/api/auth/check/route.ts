@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateJWTToken } from '@/lib/auth'
-import { COOKIE_NAME } from '@/lib/routes.config'
+import { isRequestAuthenticated } from '@/lib/auth'
 import { getAdminIds } from '@/lib/middleware/config'
 import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
 import { setAuthApiHeaders } from '@/lib/utils'
@@ -16,33 +15,14 @@ export async function GET(request: NextRequest) {
   logServerRequest(requestId, 'GET', request.nextUrl.pathname, userAgent);
   
   try {
-    // 从 cookie 中获取 JWT token
-    const token = request.cookies.get(COOKIE_NAME)?.value
+    // 使用优化后的认证检查，优先使用中间件传递的用户信息
+    const { isLoggedIn, user } = await isRequestAuthenticated(request)
 
-    if (!token) {
-      console.log("未找到认证 token, request.cookies:", request.cookies.getAll())
+    if (!isLoggedIn || !user) {
+      console.log("用户未登录或认证失败")
       const response = NextResponse.json({ 
         user: null,
-        message: '未找到认证 token' 
-      });
-      
-      // 设置无缓存响应头
-      setAuthApiHeaders(response);
-      
-      // 记录服务端响应
-      const duration = performance.now() - startTime;
-      logServerResponse(requestId, 'GET', request.nextUrl.pathname, 200, duration);
-      
-      return response;
-    }
-
-    // 验证 JWT token
-    const validatedUser = await validateJWTToken(token)
-    if (!validatedUser) {
-      console.error('❌ JWT token 验证失败')
-      const response = NextResponse.json({ 
-        user: null,
-        message: 'Token 验证失败' 
+        message: '用户未登录' 
       });
       
       // 设置无缓存响应头
@@ -57,26 +37,26 @@ export async function GET(request: NextRequest) {
 
     // 检查是否为管理员
     const adminIds = getAdminIds()
-    const isAdmin = adminIds.includes(validatedUser.sub)
+    const isAdmin = adminIds.includes(user.sub)
     
-    console.log('✅ 用户认证检查通过:', validatedUser.sub, isAdmin ? '(管理员)' : '(普通用户)')
+    console.log('✅ 用户认证检查通过:', user.sub, isAdmin ? '(管理员)' : '(普通用户)')
 
     // 返回用户信息，包含 data 字段和管理员状态
     const response = NextResponse.json({
       user: {
-        id: validatedUser.sub,
-        name: validatedUser.name || validatedUser.nickname,
-        email: validatedUser.email,
-        username: validatedUser.username,
+        id: user.sub,
+        name: user.name || user.nickname,
+        email: user.email,
+        username: user.username,
         isAdmin,
         data: {
-          phone: validatedUser.phone || validatedUser.phoneNumber,
-          nickname: validatedUser.nickname,
-          username: validatedUser.username,
-          email: validatedUser.email,
+          phone: user.phone || user.phoneNumber,
+          nickname: user.nickname,
+          username: user.username,
+          email: user.email,
           isAdmin,
           // 添加其他可能的用户数据字段
-          ...validatedUser
+          ...user
         }
       },
       message: '用户已登录'

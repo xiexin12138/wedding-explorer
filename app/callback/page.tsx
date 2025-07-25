@@ -49,7 +49,13 @@ export default function Callback() {
         API_ROUTES.AUTH.SET_SESSION,
         JSON.stringify({
           userInfo,
-        })
+        }),
+        {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
 
       if (!response.ok) {

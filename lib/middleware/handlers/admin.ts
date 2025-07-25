@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isAdminRoute, SPECIAL_ROUTES } from '@/lib/routes.config'
 import { createForbiddenResponse } from '../utils/response'
-import type { MiddlewareHandler, MiddlewareContext, AdminConfig, JWTPayload } from '../types'
+import type { MiddlewareHandler, MiddlewareContext, AdminConfig } from '../types'
 
 /**
  * 管理员权限处理器
@@ -13,7 +13,7 @@ export class AdminHandler implements MiddlewareHandler {
 
   async handle(context: MiddlewareContext): Promise<NextResponse | null> {
     const { request, pathname } = context
-    const user = (context as MiddlewareContext & { user?: JWTPayload }).user
+    const user = context.user
 
     // 如果管理员功能未启用，跳过
     if (!this.config.enabled) {

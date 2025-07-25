@@ -57,8 +57,31 @@ class MiddlewareManager {
       }
     }
     
-    // 所有处理器都通过，继续请求
-    return createNextResponse()
+    // 所有处理器都通过，创建响应并传递用户信息
+    const response = createNextResponse()
+    
+    // 如果有用户信息，将其添加到请求头中供 API 路由使用
+    if (context.user) {
+      // 将用户信息编码为 JSON 字符串并添加到请求头
+      // 使用展开运算符避免重复字段
+      const userInfo = JSON.stringify({
+        ...context.user,
+        // 确保关键字段存在
+        sub: context.user.sub,
+        email: context.user.email,
+        name: context.user.name,
+        nickname: context.user.nickname,
+        exp: context.user.exp,
+      })
+      
+      // 使用 Base64 编码避免特殊字符问题
+      const encodedUserInfo = Buffer.from(userInfo).toString('base64')
+      
+      response.headers.set('x-middleware-user', encodedUserInfo)
+      console.log(`🔄 中间件传递用户信息到请求头: ${context.user.sub}`)
+    }
+    
+    return response
   }
 
   /**

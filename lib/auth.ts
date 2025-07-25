@@ -47,6 +47,35 @@ export async function getAuthingSession(): Promise<AuthingUser | null> {
 }
 
 /**
+ * 从中间件传递的请求头中获取用户信息
+ */
+export function getUserFromMiddleware(request: NextRequest): AuthingUser | null {
+  try {
+    const encodedUserInfo = request.headers.get('x-middleware-user')
+    if (!encodedUserInfo) {
+      return null
+    }
+
+    // 解码 Base64 编码的用户信息
+    const userInfoJson = Buffer.from(encodedUserInfo, 'base64').toString('utf-8')
+    const userInfo = JSON.parse(userInfoJson)
+
+    // 验证基本字段
+    if (!userInfo.sub) {
+      console.error('中间件传递的用户信息缺少 sub 字段')
+      return null
+    }
+
+    console.log('✅ 从中间件获取用户信息:', userInfo.sub)
+    return userInfo as AuthingUser
+
+  } catch (error) {
+    console.error('❌ 解析中间件用户信息失败:', error)
+    return null
+  }
+}
+
+/**
  * 从请求中获取 JWT token（Next.js 15 推荐方案）
  */
 export function getTokenFromRequest(request: NextRequest): string | null {
@@ -118,19 +147,28 @@ export async function isAuthenticated(): Promise<{
 
 /**
  * 检查请求是否来自已登录用户（用于 API 路由）
+ * 优先使用中间件传递的用户信息，避免重复验证
  */
 export async function isRequestAuthenticated(request: NextRequest): Promise<{
   isLoggedIn: boolean;
   user: AuthingUser | null;
 }> {
-  const token = getTokenFromRequest(request)
+  // 优先尝试从中间件获取已验证的用户信息
+  const middlewareUser = getUserFromMiddleware(request)
+  if (middlewareUser) {
+    return { isLoggedIn: true, user: middlewareUser }
+  }
 
+  // 如果中间件没有传递用户信息，回退到传统的 token 验证
+  // 这种情况可能发生在直接调用 API 或中间件被跳过的情况下
+  console.log('⚠️ 未从中间件获取到用户信息，回退到 token 验证')
+  
+  const token = getTokenFromRequest(request)
   if (!token) {
     return { isLoggedIn: false, user: null }
   }
 
   const user = await validateJWTToken(token)
-
   return {
     isLoggedIn: !!user,
     user

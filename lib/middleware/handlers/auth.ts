@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { isPublicRoute, isApiRoute, isStaticAsset, SPECIAL_ROUTES, API_ROUTES } from '@/lib/routes.config'
+import { isPublicRoute, isStaticAsset, SPECIAL_ROUTES } from '@/lib/routes.config'
 import { parseJWTPayload, isTokenExpired, getTokenRemainingTime, formatTimeRemaining } from '../utils/jwt'
 import { createUnauthorizedResponse } from '../utils/response'
 import { shouldSkipRoute } from '../config'
@@ -54,8 +54,8 @@ export class AuthHandler implements MiddlewareHandler {
       // 记录认证成功信息
       this.logAuthSuccess(payload, pathname)
       
-      // 将用户信息添加到上下文中，供后续处理器使用
-      ;(context as MiddlewareContext & { user: JWTPayload }).user = payload
+      // 将用户信息添加到上下文中，供后续处理器和 API 路由使用
+      context.user = payload
       
       return null // 继续下一个处理器
     } catch (error) {
@@ -69,12 +69,6 @@ export class AuthHandler implements MiddlewareHandler {
   private shouldSkipAuth(pathname: string): boolean {
     // 跳过静态资源
     if (shouldSkipRoute(pathname, this.config.skipRoutes) || isStaticAsset(pathname)) {
-      return true
-    }
-    
-    // 跳过公开的 API 路由（只有 set-session 接口是公开的）
-    if (pathname === API_ROUTES.AUTH.SET_SESSION) {
-      console.log(`🔓 跳过公开 API 路由认证: ${pathname}`)
       return true
     }
     

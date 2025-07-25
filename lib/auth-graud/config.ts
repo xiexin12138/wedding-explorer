@@ -23,4 +23,6 @@ const config = {
   redirectUri: getRedirectUri(),
 }
 
+console.log('🔧 Authing 配置:', config)
+
 export const guard = new Guard(config)

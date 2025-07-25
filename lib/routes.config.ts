@@ -11,7 +11,8 @@ export const PUBLIC_ROUTES = [
   '/',           // 首页
   '/login',      // 登录页
   '/callback',    // 登录回调页
-  '/images'
+  '/images',
+  '/api/auth/set-session', // 设置会话接口（登录过程中调用）
 ] as const
 
 // 受保护的路由（需要登录才能访问）

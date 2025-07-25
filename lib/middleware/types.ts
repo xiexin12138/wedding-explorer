@@ -10,6 +10,7 @@ export interface MiddlewareContext {
   isMobile: boolean
   isIOS: boolean
   isAndroid: boolean
+  user?: JWTPayload // 添加用户信息字段
 }
 
 /**
