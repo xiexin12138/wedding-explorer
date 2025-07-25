@@ -9,7 +9,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
-// import { guard } from "@/lib/auth-graud/config";
 import { useRequestTracker } from "@/hooks/useRequestTracker";
 import { AUTHING_APP_HOST } from "@/lib/client-config";
 
@@ -78,19 +77,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 4. 完成加载状态
       setLoading(false);
 
-      // 2.  调用 Authing 服务端登出
-      // guard.logout();
+      // 5. 调用 Authing 指定的 url 进行登出
       const redirectUri = `${AUTHING_APP_HOST}/login/profile/logout?redirect_uri=${encodeURIComponent(
         window.location.href
       )}`;
       window.location.href = redirectUri;
-
-      // 5. 使用 window.location 进行硬重定向，避免 React Router 问题
-      // if (typeof window !== "undefined") {
-      //   window.location.href = SPECIAL_ROUTES.DEFAULT_HOME;
-      // } else {
-      //   router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
-      // }
     } catch (error) {
       console.error("❌ 登出请求失败:", error);
 
@@ -99,7 +90,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("_authing_token");
         localStorage.removeItem("_authing_user");
         localStorage.removeItem("_authing_session");
-        // sessionStorage.clear();
       }
 
       // 确保用户状态被清除
