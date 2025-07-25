@@ -81,7 +81,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 2.  调用 Authing 服务端登出
       // guard.logout();
       const redirectUri = `${AUTHING_APP_HOST}/login/profile/logout?redirect_uri=${encodeURIComponent(
-        window.location.href + SPECIAL_ROUTES.DEFAULT_HOME
+        window.location.href
       )}`;
       window.location.href = redirectUri;
 
