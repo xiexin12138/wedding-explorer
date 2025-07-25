@@ -52,7 +52,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 2. 调用本地 API 清除 cookie（使用追踪功能）
       try {
         const apiLogout = await postWithTracking(API_ROUTES.AUTH.LOGOUT, JSON.stringify({}), {
-          credentials: "include",
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -116,9 +115,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         console.log("🔍 开始检查用户登录状态...");
-        const response = await getWithTracking(API_ROUTES.AUTH.CHECK, {
-          credentials: "include", // 确保发送 cookies
-        });
+        const response = await getWithTracking(API_ROUTES.AUTH.CHECK);
 
         console.log("📡 API 响应状态:", response.status);
 

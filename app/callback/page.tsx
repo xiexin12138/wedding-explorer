@@ -49,10 +49,7 @@ export default function Callback() {
         API_ROUTES.AUTH.SET_SESSION,
         JSON.stringify({
           userInfo,
-        }),
-        {
-          credentials: "include",
-        }
+        })
       );
 
       if (!response.ok) {
@@ -96,10 +93,10 @@ export default function Callback() {
         localStorage.removeItem("_authing_session");
         console.log("✅ 客户端存储已清除");
       }
-      
+
       // 调用 Authing 登出
       guard.logout();
-      
+
       // 调用服务端登出 API 清除 cookie（使用追踪功能）
       try {
         await postWithTracking(API_ROUTES.AUTH.LOGOUT);
