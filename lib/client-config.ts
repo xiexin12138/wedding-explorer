@@ -18,8 +18,7 @@ if (!AUTHING_APP_ID) {
 }
 
 if (!AUTHING_APP_HOST) {
-  console.error('❌ AUTHING_APP_HOST 环境变量未设置');
-  throw new Error('AUTHING_APP_HOST environment variable is required');
+  console.warn('⚠️ NEXT_PUBLIC_AUTHING_APP_HOST 环境变量未设置');
 }
 
 // ✅ 只导出客户端安全的配置

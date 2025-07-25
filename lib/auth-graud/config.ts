@@ -18,10 +18,13 @@ function getRedirectUri(): string {
 
 const config = {
   appId: AUTHING_APP_ID || '',
-  // 配置托管页相关设置
-  host: AUTHING_APP_HOST,
-  // 设置回调 URL
-  redirectUri: getRedirectUri(),
+  // 设置回调 URL， 在控制台配置多个默认返回第一个，除非这里指定要哪个
+  redirectUri: getRedirectUri() || '',
+}
+
+// 配置托管页相关设置
+if (AUTHING_APP_HOST) {
+  (config as { host?: string }).host = AUTHING_APP_HOST
 }
 
 console.log('🔧 Authing 配置:', config)
