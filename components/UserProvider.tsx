@@ -50,9 +50,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
       guard.logout();
 
       // 2. 调用本地 API 清除 cookie（使用追踪功能）
-      const apiLogout = await postWithTracking(API_ROUTES.AUTH.LOGOUT);
-
-      console.log("🔍 本地 API 登出结果:", apiLogout.ok);
+      try {
+        const apiLogout = await postWithTracking(API_ROUTES.AUTH.LOGOUT, undefined, {
+          credentials: "include",
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+        console.log("🔍 本地 API 登出结果:", apiLogout.ok);
+      } catch (apiError) {
+        console.warn("⚠️ API 登出请求失败，但继续清除本地状态:", apiError);
+      }
 
       // 3. 清除客户端存储
       if (typeof window !== "undefined" && localStorage) {
@@ -70,8 +80,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 4. 完成加载状态
       setLoading(false);
 
-      // 5. 重定向到默认页
-      router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
+      // 5. 使用 window.location 进行硬重定向，避免 React Router 问题
+      if (typeof window !== "undefined") {
+        window.location.href = SPECIAL_ROUTES.DEFAULT_HOME;
+      } else {
+        router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
+      }
     } catch (error) {
       console.error("❌ 登出请求失败:", error);
 
@@ -87,8 +101,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setLoading(false);
 
-      // 重定向到默认页
-      router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
+      // 使用硬重定向避免 React 相关错误
+      if (typeof window !== "undefined") {
+        window.location.href = SPECIAL_ROUTES.DEFAULT_HOME;
+      } else {
+        router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
+      }
     }
   };
 
