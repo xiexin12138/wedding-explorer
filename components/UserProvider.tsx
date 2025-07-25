@@ -28,6 +28,7 @@ interface UserContextType {
   setUser: (user: User | null) => void;
   loading: boolean;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -37,6 +38,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { postWithTracking, getWithTracking } = useRequestTracker();
+
+  const refreshUser = async () => {
+    try {
+      console.log("🔄 刷新用户状态...");
+      const response = await getWithTracking(API_ROUTES.AUTH.CHECK);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          setUser(data.user);
+          console.log("✅ 用户状态刷新成功:", data.user);
+        } else {
+          setUser(null);
+          console.log("❌ 用户未登录");
+        }
+      } else {
+        console.log("❌ 刷新用户状态失败:", response.status);
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("刷新用户状态失败:", error);
+      setUser(null);
+    }
+  };
 
   const logout = async () => {
     try {
@@ -110,6 +135,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       try {
         console.log("🔍 开始检查用户登录状态...");
+        
+        // 检查是否在回调页面，如果是则跳过初始检查
+        const isCallbackPage = typeof window !== 'undefined' && window.location.pathname === '/callback';
+        if (isCallbackPage) {
+          console.log("🔄 检测到回调页面，跳过初始用户状态检查，等待回调完成...");
+          setLoading(false);
+          return;
+        }
+        
         const response = await getWithTracking(API_ROUTES.AUTH.CHECK);
 
         console.log("📡 API 响应状态:", response.status);
@@ -139,10 +173,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
 
     checkAuth();
-  }, []);
+  }, [getWithTracking]);
 
   return (
-    <UserContext.Provider value={{ user, setUser, loading, logout }}>
+    <UserContext.Provider value={{ user, setUser, loading, logout, refreshUser }}>
       {children}
     </UserContext.Provider>
   );
