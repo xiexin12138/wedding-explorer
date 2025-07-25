@@ -9,7 +9,7 @@ import { guard } from "@/lib/auth-graud/config";
 import { useRequestTracker } from "@/hooks/useRequestTracker";
 
 export default function Callback() {
-  const { setUser, refreshUser } = useUser();
+  const { setUser } = useUser();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const { postWithTracking } = useRequestTracker();
@@ -64,9 +64,25 @@ export default function Callback() {
 
       console.log("✅ 服务端会话设置成功");
 
-      // 5. 刷新用户状态（从服务端重新获取）
-      await refreshUser();
-      console.log("✅ 用户状态刷新成功，准备跳转到默认页面");
+      // 5. 更新客户端用户状态
+      setUser({
+        id: userInfo.id || undefined,
+        name: userInfo.name || userInfo.nickname || undefined,
+        email: userInfo.email || undefined,
+        data: {
+          phone: userInfo.phone || undefined,
+          nickname: userInfo.nickname || undefined,
+          username: userInfo.username || undefined,
+          email: userInfo.email || undefined,
+          // 添加其他可能的用户数据字段
+          ...Object.fromEntries(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            Object.entries(userInfo).filter(([_, value]) => value != null)
+          ),
+        },
+      });
+
+      console.log("✅ 用户状态更新成功，准备跳转到默认页面");
 
       // 6. 跳转到默认页面
       router.push(SPECIAL_ROUTES.DEFAULT_HOME);
@@ -100,7 +116,7 @@ export default function Callback() {
         router.push(SPECIAL_ROUTES.LOGIN);
       }, 3000);
     }
-  }, [router, refreshUser, postWithTracking]);
+  }, [router, setUser]);
 
   useEffect(() => {
     handleCallback();
