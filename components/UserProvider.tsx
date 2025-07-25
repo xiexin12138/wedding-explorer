@@ -46,23 +46,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setLoading(true); // 重新设置加载状态
 
-      // 1. 调用 Authing 服务端登出
-      guard.logout();
-
-      // 2. 调用本地 API 清除 cookie（使用追踪功能）
+      // 1.调用本地 API 清除 cookie（使用追踪功能）
       try {
-        const apiLogout = await postWithTracking(API_ROUTES.AUTH.LOGOUT, undefined, {
-          credentials: 'include',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+        const apiLogout = await postWithTracking(
+          API_ROUTES.AUTH.LOGOUT,
+          undefined,
+          {
+            credentials: "include",
+            headers: {
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
           }
-        });
+        );
         console.log("🔍 本地 API 登出结果:", apiLogout.ok);
       } catch (apiError) {
         console.warn("⚠️ API 登出请求失败，但继续清除本地状态:", apiError);
       }
+
+      // 2.  调用 Authing 服务端登出
+      guard.logout();
 
       // 3. 清除客户端存储
       if (typeof window !== "undefined" && localStorage) {
@@ -70,9 +74,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("_authing_token");
         localStorage.removeItem("_authing_user");
         localStorage.removeItem("_authing_session");
-
-        // 清除其他可能的认证相关存储
-        // sessionStorage.clear();
 
         console.log("✅ 客户端存储已清除");
       }
