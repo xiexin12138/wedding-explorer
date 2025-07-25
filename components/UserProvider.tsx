@@ -65,9 +65,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         console.warn("⚠️ API 登出请求失败，但继续清除本地状态:", apiError);
       }
 
-      // 2.  调用 Authing 服务端登出
-      guard.logout();
-
       // 3. 清除客户端存储
       if (typeof window !== "undefined" && localStorage) {
         // 清除 Authing 相关的 localStorage
@@ -77,16 +74,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         console.log("✅ 客户端存储已清除");
       }
-
       // 4. 完成加载状态
       setLoading(false);
 
+      // 2.  调用 Authing 服务端登出
+      guard.logout();
+
+
       // 5. 使用 window.location 进行硬重定向，避免 React Router 问题
-      if (typeof window !== "undefined") {
-        window.location.href = SPECIAL_ROUTES.DEFAULT_HOME;
-      } else {
-        router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
-      }
+      // if (typeof window !== "undefined") {
+      //   window.location.href = SPECIAL_ROUTES.DEFAULT_HOME;
+      // } else {
+      //   router.replace(SPECIAL_ROUTES.DEFAULT_HOME);
+      // }
     } catch (error) {
       console.error("❌ 登出请求失败:", error);
 
