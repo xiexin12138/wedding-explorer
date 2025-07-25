@@ -1,3 +1,4 @@
+'use client'
 import { Guard } from '@authing/guard-react18'
 import { AUTHING_APP_ID, AUTHING_APP_HOST } from '../client-config'
 
