@@ -11,36 +11,40 @@ interface ConfettiEffectProps {
   origin?: { x: number; y: number };
 }
 
-export function ConfettiEffect({ 
-  trigger = true, 
-  particleCount = 100, 
+export function ConfettiEffect({
+  trigger = true,
+  particleCount = 100,
   spread = 70,
-  origin = { x: 0.5, y: 0.6 }
+  origin = { x: 0.5, y: 0.6 },
 }: ConfettiEffectProps) {
   const { user, loading } = useUser();
-  
+
   useEffect(() => {
     // 只有在用户已登录且不在加载状态时才显示confetti
     if (trigger && user && !loading) {
-      // 单次爆发效果，增加初始速度让confetti飞得更高，延长掉落时间
-        const defaults = { startVelocity: 60, spread, ticks: 160, zIndex: 9999 };
-
-      // 从左下角发射
-      confetti({
-        ...defaults,
-        particleCount: particleCount / 2,
-        origin: { x: 0.1, y: 0.9 }, // 左下角位置
-        angle: 60, // 向右上方发射
-        colors: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7']
+      // 创建爱心形状
+      const heart = confetti.shapeFromPath({
+        path: "M167 72c19,-38 37,-56 75,-56 42,0 76,33 76,75 0,76 -76,151 -151,227 -76,-76 -151,-151 -151,-227 0,-42 33,-75 75,-75 38,0 57,18 76,56z",
       });
-      
-      // 从右下角发射
+
+      // 从顶部有力地喷出爱心confetti
+      const defaults = {
+        startVelocity: 30,
+        spread: 160,
+        ticks: 180,
+        zIndex: 9999,
+        scalar: 1.6,
+        shapes: [heart],
+        colors: [ "#fbbf24", "#f59e0b", "#ea580c"],
+      };
+
+      // 从顶部中央发射
       confetti({
         ...defaults,
-        particleCount: particleCount / 2,
-        origin: { x: 0.9, y: 0.9 }, // 右下角位置
-        angle: 120, // 向左上方发射
-        colors: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#6366f1', '#a855f7']
+        particleCount: particleCount,
+        origin: { x: 0.5, y: 0 },
+        angle: 270,
+        gravity: 0.9,
       });
     }
   }, [trigger, particleCount, spread, origin, user, loading]);
