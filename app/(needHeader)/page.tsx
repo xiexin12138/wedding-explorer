@@ -7,11 +7,15 @@ import {
 } from "@/components/ui/card";
 import { HomeButton } from "@/components/HomeButton";
 import { WeddingCountdown } from "@/components/WeddingCountdown";
+import { ConfettiEffect } from "@/components/ConfettiEffect"; // 方案二
 import Image from "next/image";
 
 export default function HomePage() {
   return (
     <div className="flex-1 relative">
+      {/* 彩色碎纸动效 */}
+      <ConfettiEffect trigger={true} />
+
       {/* 固定背景图片 - 响应式处理 */}
       <div className="fixed inset-0 z-0 hidden md:block">
         <Image
