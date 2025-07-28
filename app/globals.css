@@ -51,7 +51,9 @@ html {
 }
 
 /* 确保输入框字体大小不小于 16px，避免 Safari 自动缩放 */
-input, textarea, select {
+input,
+textarea,
+select {
   font-size: 16px !important;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -60,7 +62,9 @@ input, textarea, select {
 
 /* 针对 Safari 的特殊处理 */
 @supports (-webkit-touch-callout: none) {
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px !important;
   }
 }
@@ -92,7 +96,9 @@ select {
 
 /* 针对移动设备的特殊处理 */
 @media screen and (max-width: 768px) {
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px !important;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -107,19 +113,18 @@ select {
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.147 0.004 49.25);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.147 0.004 49.25);
-  --primary: #019863;
-  --primary-foreground: #ffffff;
-  --secondary: #f0fdf4;
-  --secondary-foreground: #019863;
-  --muted: #f0fdf4;
-  --muted-foreground: #6b7280;
-  --accent: #f0fdf4;
-  --accent-foreground: #019863;
-  --destructive: #ef4444;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #019863;
+  --primary: oklch(0.57 0.17 160);
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.97 0.001 106.424);
+  --secondary-foreground: oklch(0.57 0.17 160);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.553 0.013 58.071);
+  --accent: oklch(0.97 0.001 106.424);
+  --accent-foreground: oklch(0.57 0.17 160);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.923 0.003 48.717);
+  --input: oklch(0.923 0.003 48.717);
+  --ring: oklch(0.57 0.17 160);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -127,12 +132,12 @@ select {
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0.001 106.423);
   --sidebar-foreground: oklch(0.147 0.004 49.25);
-  --sidebar-primary: #019863;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0fdf4;
-  --sidebar-accent-foreground: #019863;
+  --sidebar-primary: oklch(0.57 0.17 160);
+  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-accent: oklch(0.97 0.001 106.424);
+  --sidebar-accent-foreground: oklch(0.57 0.17 160);
   --sidebar-border: oklch(0.923 0.003 48.717);
-  --sidebar-ring: oklch(0.38 0.15 158);
+  --sidebar-ring: oklch(0.57 0.17 160);
 }
 
 .dark {
@@ -142,18 +147,18 @@ select {
   --card-foreground: oklch(0.985 0.001 106.423);
   --popover: oklch(0.216 0.006 56.043);
   --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: #019863;
-  --primary-foreground: #ffffff;
-  --secondary: #1f2937;
-  --secondary-foreground: #d1fae5;
-  --muted: #1f2937;
-  --muted-foreground: #9ca3af;
-  --accent: #1f2937;
-  --accent-foreground: #d1fae5;
-  --destructive: #ef4444;
-  --border: #374151;
-  --input: #374151;
-  --ring: #019863;
+  --primary: oklch(0.62 0.15 160);
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.268 0.007 34.298);
+  --secondary-foreground: oklch(0.985 0.001 106.423);
+  --muted: oklch(0.268 0.007 34.298);
+  --muted-foreground: oklch(0.709 0.01 56.259);
+  --accent: oklch(0.268 0.007 34.298);
+  --accent-foreground: oklch(0.985 0.001 106.423);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.62 0.15 160);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -161,12 +166,12 @@ select {
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.216 0.006 56.043);
   --sidebar-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-primary: #019863;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1f2937;
-  --sidebar-accent-foreground: #d1fae5;
+  --sidebar-primary: oklch(0.62 0.15 160);
+  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-accent: oklch(0.268 0.007 34.298);
+  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.55 0.18 158);
+  --sidebar-ring: oklch(0.62 0.15 160);
 }
 
 @layer base {
@@ -198,21 +203,23 @@ select {
 
 /* 自定义彩虹渐变 */
 .rainbow-gradient {
-  background: linear-gradient(to right, 
-    #ef4444, /* red-500 */
-    #f97316, /* orange-500 */
-    #eab308, /* yellow-500 */
-    #22c55e, /* green-500 */
-    #3b82f6, /* blue-500 */
-    #6366f1, /* indigo-500 */
-    #a855f7  /* purple-500 */
+  background: linear-gradient(
+    to right,
+    #ef4444,
+    /* red-500 */ #f97316,
+    /* orange-500 */ #eab308,
+    /* yellow-500 */ #22c55e,
+    /* green-500 */ #3b82f6,
+    /* blue-500 */ #6366f1,
+    /* indigo-500 */ #a855f7 /* purple-500 */
   );
   background-size: 200% 100%;
   animation: rainbow-flow 2s ease-in-out infinite;
 }
 
 @keyframes rainbow-flow {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -226,26 +233,31 @@ select {
   --scroll-progress: 0;
   --scale-min: 1;
   --scale-max: 1.25;
-  
+
   /* 应用缩放变换 */
-  transform: scale(calc(var(--scale-min) + (var(--scale-max) - var(--scale-min)) * var(--scroll-progress)));
+  transform: scale(
+    calc(
+      var(--scale-min) + (var(--scale-max) - var(--scale-min)) *
+        var(--scroll-progress)
+    )
+  );
   transform-origin: center center;
-  
+
   /* 启用硬件加速 */
   will-change: transform;
   backface-visibility: hidden;
   perspective: 1000px;
-  
+
   /* 平滑过渡 */
   transition: transform 0.1s ease-out;
-  
+
   /* 针对视口高度变化的优化 */
   transition: height 0.3s ease-out, transform 0.1s ease-out;
-  
+
   /* 防止在高度变化时出现闪烁 */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  
+
   /* 确保背景图片始终覆盖整个容器 */
   overflow: hidden;
 }
@@ -256,16 +268,16 @@ select {
     /* 使用更稳定的高度计算 */
     height: 100vh;
     height: calc(var(--vh, 1vh) * 100);
-    
+
     /* 添加额外的平滑过渡 */
     transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   /* 防止在视口变化时出现滚动条 */
   body {
     overflow-x: hidden;
   }
-  
+
   /* 优化背景图片的显示 */
   .bg-mobile-parallax img {
     object-fit: cover;

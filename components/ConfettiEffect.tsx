@@ -44,7 +44,7 @@ export function ConfettiEffect({
         particleCount: particleCount,
         origin: { x: 0.5, y: 0 },
         angle: 270,
-        gravity: 0.9,
+        gravity: 0.8,
       });
     }
   }, [trigger, particleCount, spread, origin, user, loading]);
