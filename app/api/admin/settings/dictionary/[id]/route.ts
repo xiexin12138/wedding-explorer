@@ -41,7 +41,7 @@ export async function GET(
 // 更新字典项
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth(request);
@@ -51,7 +51,7 @@ export async function PATCH(
       return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const data = await request.json();
     const { displayName, value, description, isEnabled, sortOrder } = data;
 
@@ -101,7 +101,7 @@ export async function PATCH(
 // 删除字典项
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth(request);
@@ -114,7 +114,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // 检查字典项是否存在
     const setting = await db.systemSetting.findUnique({
