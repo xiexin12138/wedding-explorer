@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
+    "postinstall": "prisma generate",
     "build": "next build",
     "build:turbo": "next build --turbo",
     "start": "next start",
