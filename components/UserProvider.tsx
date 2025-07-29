@@ -7,6 +7,7 @@ import {
   useEffect,
   ReactNode,
   useRef,
+  useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
@@ -108,7 +109,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     // 防止并发请求
     if (isCheckingAuth.current) {
       console.log("🔍 认证检查正在进行中，跳过重复请求");
@@ -145,11 +146,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isCheckingAuth.current = false;
       console.log("🏁 用户状态检查完成");
     }
-  };
+  }, [getWithTracking]);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   return (
     <UserContext.Provider value={{ user, setUser, loading, logout, checkAuth }}>
