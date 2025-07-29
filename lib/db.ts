@@ -1,11 +1,14 @@
-import { PrismaClient } from "@/app/generated/prisma";
+import { PrismaClient } from '@/app/generated/prisma'
 
-// PrismaClient 是线程安全的单例，可以在整个应用程序中共享
-declare global {
-  var prisma: PrismaClient | undefined;
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
 }
 
-// 在开发环境中避免热重载时创建多个实例
-export const db = global.prisma || new PrismaClient();
+export const db =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+  })
 
-if (process.env.NODE_ENV !== "production") global.prisma = db;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
