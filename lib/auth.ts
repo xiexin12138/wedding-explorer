@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose'
 import { COOKIE_NAME } from '@/lib/routes.config'
 
 import { AUTHING_APP_SECRET } from './server-config'
+import { getAdminIds } from './middleware/config'
 
 // 获取 Authing 密钥（HS256 对称加密）
 function getAuthingSecret() {
@@ -17,6 +18,7 @@ export interface AuthingUser {
   name?: string
   nickname?: string
   picture?: string
+  isAdmin?: boolean
   data?: {
     phone?: string
     [key: string]: unknown
@@ -155,14 +157,15 @@ export async function isRequestAuthenticated(request: NextRequest): Promise<{
 }> {
   // 优先尝试从中间件获取已验证的用户信息
   const middlewareUser = getUserFromMiddleware(request)
+  const adminIds = getAdminIds()
   if (middlewareUser) {
-    return { isLoggedIn: true, user: middlewareUser }
+    return { isLoggedIn: true, user: { ...middlewareUser, isAdmin: adminIds.includes(middlewareUser?.sub || '') } }
   }
 
   // 如果中间件没有传递用户信息，回退到传统的 token 验证
   // 这种情况可能发生在直接调用 API 或中间件被跳过的情况下
   console.log('⚠️ 未从中间件获取到用户信息，回退到 token 验证')
-  
+
   const token = getTokenFromRequest(request)
   if (!token) {
     return { isLoggedIn: false, user: null }
@@ -171,7 +174,7 @@ export async function isRequestAuthenticated(request: NextRequest): Promise<{
   const user = await validateJWTToken(token)
   return {
     isLoggedIn: !!user,
-    user
+    user: user ? { ...user, isAdmin: adminIds.includes(user.sub) } : null
   }
 }
 

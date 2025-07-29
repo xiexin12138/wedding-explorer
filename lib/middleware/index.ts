@@ -104,8 +104,12 @@ class MiddlewareManager {
   /**
    * 判断是否为关键错误
    */
-  private isCriticalError(_error: unknown): boolean {
+  private isCriticalError(error: unknown): boolean {
     // 这里可以定义哪些错误是关键的，需要中断整个请求
+    // 例如：数据库连接失败、配置错误等
+    if (error instanceof Error && error.message.includes('CRITICAL')) {
+      return true
+    }
     return false
   }
 }

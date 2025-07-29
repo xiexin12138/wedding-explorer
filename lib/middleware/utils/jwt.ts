@@ -16,8 +16,8 @@ function base64UrlDecode(str: string): string {
     // 尝试标准解码
     try {
       return atob(base64)
-    } catch (_error) {
-      console.log('⚠️ 标准 Base64 解码失败，尝试备用方法')
+    } catch (decodeError) {
+      console.log('⚠️ 标准 Base64 解码失败，尝试备用方法', decodeError)
       
       // 方法2：处理可能的编码问题
       // 移除所有可能的填充字符
@@ -32,7 +32,7 @@ function base64UrlDecode(str: string): string {
     }
   } catch (error) {
     // 方法3：最后的备用方案 - 手动解码
-    console.log('⚠️ 备用 Base64 解码也失败，尝试手动解码')
+    console.log('⚠️ 备用 Base64 解码也失败，尝试手动解码', error)
     return manualBase64Decode(str)
   }
 }

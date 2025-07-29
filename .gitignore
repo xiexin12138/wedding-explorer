@@ -43,5 +43,6 @@ next-env.d.ts
 
 # cursor
 .cursor
+.claude
 
-/lib/generated/prisma
+/app/generated/prisma
