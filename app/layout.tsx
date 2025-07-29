@@ -3,6 +3,7 @@ import { AnalyticsScript } from "@/components/AnalyticsScript";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { UserProvider } from "@/components/UserProvider";
 import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default async function RootLayout({
             <ViewportHeightProvider>
               <div className="h-screen-dynamic flex flex-col">
                 <main className="flex-1">{children}</main>
+                <Toaster />
               </div>
             </ViewportHeightProvider>
           </UserProvider>
