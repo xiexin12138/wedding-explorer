@@ -2,19 +2,27 @@
 
 import { JwtTokenStatus, User } from "@authing/guard-react18";
 import { useUser } from "@/components/UserProvider";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
 import { guard } from "@/lib/auth-graud/config";
 import { useRequestTracker } from "@/hooks/useRequestTracker";
 
 export default function Callback() {
-  const { setUser } = useUser();
+  const { checkAuth } = useUser();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const { postWithTracking } = useRequestTracker();
+  const hasProcessed = useRef(false);
 
   const handleCallback = useCallback(async () => {
+    // 防止重复执行
+    if (hasProcessed.current) {
+      console.log("🔄 回调处理已经执行过，跳过重复执行");
+      return;
+    }
+    
+    hasProcessed.current = true;
     try {
       setError(null);
 
@@ -64,23 +72,8 @@ export default function Callback() {
 
       console.log("✅ 服务端会话设置成功");
 
-      // 5. 更新客户端用户状态
-      setUser({
-        id: userInfo.id || undefined,
-        name: userInfo.name || userInfo.nickname || undefined,
-        email: userInfo.email || undefined,
-        data: {
-          phone: userInfo.phone || undefined,
-          nickname: userInfo.nickname || undefined,
-          username: userInfo.username || undefined,
-          email: userInfo.email || undefined,
-          // 添加其他可能的用户数据字段
-          ...Object.fromEntries(
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            Object.entries(userInfo).filter(([_, value]) => value != null)
-          ),
-        },
-      });
+      // 5. 触发 UserProvider 中的 checkAuth 来更新全局用户状态
+      await checkAuth();
 
       console.log("✅ 用户状态更新成功，准备跳转到默认页面");
 
@@ -111,12 +104,15 @@ export default function Callback() {
         console.error("❌ 服务端登出失败:", logoutError);
       }
 
+      // 触发 UserProvider 中的 checkAuth 来更新全局用户状态
+      await checkAuth();
+
       // 错误情况下，延迟跳转到登录页
       setTimeout(() => {
         router.push(SPECIAL_ROUTES.LOGIN);
       }, 3000);
     }
-  }, [router, setUser]);
+  }, [router, checkAuth, postWithTracking]);
 
   useEffect(() => {
     handleCallback();

@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useRef,
 } from "react";
 import { useRouter } from "next/navigation";
 import { API_ROUTES, SPECIAL_ROUTES } from "@/lib/routes.config";
@@ -28,6 +29,7 @@ interface UserContextType {
   setUser: (user: User | null) => void;
   loading: boolean;
   logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -37,6 +39,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { postWithTracking, getWithTracking } = useRequestTracker();
+  const isCheckingAuth = useRef(false);
 
   const logout = async () => {
     try {
@@ -105,47 +108,55 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    // 检查用户登录状态
-    const checkAuth = async () => {
-      try {
-        console.log("🔍 开始检查用户登录状态...");
-        const response = await getWithTracking(API_ROUTES.AUTH.CHECK);
+  const checkAuth = async () => {
+    // 防止并发请求
+    if (isCheckingAuth.current) {
+      console.log("🔍 认证检查正在进行中，跳过重复请求");
+      return;
+    }
+    
+    isCheckingAuth.current = true;
+    try {
+      console.log("🔍 开始检查用户登录状态...");
+      const response = await getWithTracking(API_ROUTES.AUTH.CHECK);
 
-        console.log("📡 API 响应状态:", response.status);
+      console.log("📡 API 响应状态:", response);
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log("📦 API 返回数据:", data);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("📦 API 返回数据:", data);
 
-          if (data.user) {
-            setUser(data.user);
-            console.log("✅ 用户已登录:", data.user);
-          } else {
-            setUser(null);
-            console.log("❌ 用户未登录");
-          }
+        if (data.user) {
+          setUser(data.user);
+          console.log("✅ 用户已登录:", data.user);
         } else {
-          console.log("❌ 检查认证状态失败:", response.status);
           setUser(null);
+          console.log("❌ 用户未登录");
         }
-      } catch (error) {
-        console.error("检查认证状态失败:", error);
+      } else {
+        console.log("❌ 检查认证状态失败:", response.status);
         setUser(null);
-      } finally {
-        setLoading(false);
-        console.log("🏁 用户状态检查完成");
       }
-    };
+    } catch (error) {
+      console.error("检查认证状态失败:", error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+      isCheckingAuth.current = false;
+      console.log("🏁 用户状态检查完成");
+    }
+  };
 
+  useEffect(() => {
     checkAuth();
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, setUser, loading, logout }}>
+    <UserContext.Provider value={{ user, setUser, loading, logout, checkAuth }}>
       {children}
     </UserContext.Provider>
   );
+
 }
 
 export function useUser() {
