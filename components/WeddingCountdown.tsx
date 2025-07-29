@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getDictionaryValueByKey } from "@/lib/services/dictionary";
 
 export function WeddingCountdown() {
-  const [timeLeft, setTimeLeft] = useState("");
+  const [timeLeft, setTimeLeft] = useState("- 天 - 小时 - 分钟 - 秒");
   const [weddingDate, setWeddingDate] = useState<Date | null>(null);  
 
   // 只在组件初始化时获取一次字典值
