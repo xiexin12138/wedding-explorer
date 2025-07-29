@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   LogOut,
   User,
@@ -108,15 +109,12 @@ export function Header() {
     <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <div
+        <Link
+          href={SPECIAL_ROUTES.DEFAULT_HOME}
           className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 hover:text-primary"
-          onClick={() => {
-            // 使用 router.push 进行客户端路由跳转
-            router.push(SPECIAL_ROUTES.DEFAULT_HOME);
-          }}
         >
           <Home className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
-        </div>
+        </Link>
 
         {/* 右侧控制按钮 */}
         <div className="flex items-center space-x-3">
