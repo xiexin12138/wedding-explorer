@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth";
 // 获取单个字典项
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth(request);
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const setting = await db.systemSetting.findUnique({
       where: { id },
