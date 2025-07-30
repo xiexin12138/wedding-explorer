@@ -35,18 +35,23 @@ function createGuardConfig() {
 // 延迟初始化 Guard 实例，只在客户端环境中创建
 let guardInstance: Guard | null = null
 
+function getGuard(): Guard {
+  if (typeof window === 'undefined') {
+    throw new Error('Guard 只能在客户端环境中使用')
+  }
+  
+  if (!guardInstance) {
+    guardInstance = new Guard(createGuardConfig())
+  }
+  
+  return guardInstance
+}
+
+// 导出一个函数而不是直接导出实例
 export const guard = new Proxy({} as Guard, {
   get(target, prop: keyof Guard) {
-    // 确保只在客户端环境中初始化 Guard
-    if (typeof window === 'undefined') {
-      throw new Error('Guard 只能在客户端环境中使用')
-    }
-    
-    if (!guardInstance) {
-      guardInstance = new Guard(createGuardConfig())
-    }
-    
-    const value = guardInstance[prop]
-    return typeof value === 'function' ? value.bind(guardInstance) : value
+    const instance = getGuard()
+    const value = instance[prop]
+    return typeof value === 'function' ? value.bind(instance) : value
   }
 })

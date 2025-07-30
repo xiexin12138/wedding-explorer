@@ -1,8 +1,14 @@
 "use client";
+import { useEffect } from "react";
 import { guard } from "@/lib/auth-graud/config";
 
 export default function LoginPage() {
-  guard.startWithRedirect();
+  useEffect(() => {
+    // 确保只在客户端环境中调用
+    if (typeof window !== "undefined") {
+      guard.startWithRedirect();
+    }
+  }, []);
 
   return (
     <div className="min-h-screen-dynamic flex items-center justify-center">
