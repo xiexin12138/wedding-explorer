@@ -85,7 +85,7 @@ export default function Callback() {
       setError(errorMessage);
 
       // 清空登录态
-      if (typeof window !== "undefined" && localStorage) {
+      if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
         // 清除 Authing 相关的 localStorage
         localStorage.removeItem("_authing_token");
         localStorage.removeItem("_authing_user");

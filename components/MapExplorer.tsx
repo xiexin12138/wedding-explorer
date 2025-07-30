@@ -1,0 +1,345 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Plus, ChevronLeft, ChevronRight, MapPin, List } from "lucide-react";
+
+// 定义景点类型
+interface Attraction {
+  id: string;
+  name: string;
+  position: [number, number]; // 经纬度坐标
+  description: string;
+}
+
+// 示例景点数据
+const SAMPLE_ATTRACTIONS: Attraction[] = [
+  {
+    id: "1",
+    name: "陈桥文化广场",
+    position: [113.2815, 23.1231], // 这里使用示例坐标，需要替换为实际坐标
+    description: "文化广场，提供休闲娱乐场所",
+  },
+  {
+    id: "2",
+    name: "陈桥村",
+    position: [113.2825, 23.1241], // 示例坐标
+    description: "历史悠久的村落",
+  },
+  {
+    id: "3",
+    name: "人民广场",
+    position: [113.2835, 23.1251], // 示例坐标
+    description: "城市中心广场",
+  },
+];
+
+export function MapExplorer() {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  // 所有状态声明放在组件顶部
+  const [map, setMap] = useState<AMap.Map | null>(null);
+  const [AMapInstance, setAMapInstance] = useState<typeof AMap | null>(null);
+  const [attractions, setAttractions] = useState<Attraction[]>(SAMPLE_ATTRACTIONS);
+  const [currentAttractionIndex, setCurrentAttractionIndex] = useState<number>(0);
+  const [showAttractionsList, setShowAttractionsList] = useState<boolean>(false);
+  const [markers, setMarkers] = useState<AMap.Marker[]>([]);
+
+  // 初始化地图
+  useEffect(() => {
+    // 确保代码只在客户端执行
+    if (typeof window === 'undefined') return;
+    
+    if (!mapRef.current) return;
+
+    // 确保只初始化一次地图
+    if (map) return;
+
+    let mapInstance: AMap.Map | null = null;
+
+    // 动态加载高德地图
+    const loadAMap = async () => {
+      const AMapLoader = (await import("@amap/amap-jsapi-loader")).default;
+      return AMapLoader.load({
+        key: process.env.NEXT_PUBLIC_AMAP_KEY || "", // 使用环境变量中的API密钥
+        version: "2.0",
+        plugins: ["AMap.Scale", "AMap.ToolBar", "AMap.Geolocation"],
+      });
+    };
+
+    loadAMap()
+      .then((AMap) => {
+        // 保存AMap对象以便后续使用
+        setAMapInstance(AMap);
+
+        // 创建地图实例
+        const instance = new AMap.Map(mapRef.current, {
+          zoom: 15,
+          center: [113.2815, 23.1231], // 初始中心点，需要替换为实际坐标
+          resizeEnable: true,
+        });
+
+        mapInstance = instance;
+
+        // 添加比例尺控件
+        instance.addControl(new AMap.Scale());
+
+        // 添加工具条控件
+        instance.addControl(new AMap.ToolBar());
+
+        // 添加定位控件
+        const geolocation = new AMap.Geolocation({
+          enableHighAccuracy: true,
+          timeout: 10000,
+          buttonPosition: "RB",
+          buttonOffset: new AMap.Pixel(10, 20),
+          zoomToAccuracy: true,
+        });
+        instance.addControl(geolocation);
+
+        setMap(instance);
+      })
+      .catch((e) => {
+        console.error("地图加载失败", e);
+      });
+
+    // 清理函数
+    return () => {
+      if (mapInstance) {
+        mapInstance.destroy();
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在组件挂载时初始化一次
+
+  // 添加景点标记
+  useEffect(() => {
+    // 确保代码只在客户端执行
+    if (typeof window === 'undefined') return;
+    
+    if (!map || !AMapInstance) return;
+
+    // 清除现有标记
+    markers.forEach((marker) => {
+      map.remove(marker);
+    });
+
+    const newMarkers = attractions.map((attraction, index) => {
+      const marker = new AMapInstance.Marker({
+        position: attraction.position,
+        title: attraction.name,
+        clickable: true,
+      });
+
+      marker.on("click", () => {
+        setCurrentAttractionIndex(index);
+        map.setCenter(attraction.position);
+      });
+
+      map.add(marker);
+      return marker;
+    });
+
+    setMarkers(newMarkers);
+
+    // 清理函数
+    return () => {
+      newMarkers.forEach((marker) => {
+        if (map) {
+          map.remove(marker);
+        }
+      });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, AMapInstance, attractions]); // 移除markers依赖项以避免无限循环
+
+  // 单独处理当前景点变化时的地图中心设置
+  useEffect(() => {
+    if (!map || attractions.length === 0) return;
+    map.setCenter(attractions[currentAttractionIndex].position);
+  }, [map, attractions, currentAttractionIndex]);
+
+  // 切换到下一个景点
+  const goToNextAttraction = () => {
+    // 确保代码只在客户端执行
+    if (typeof window === 'undefined') return;
+    
+    if (attractions.length === 0 || !map) return;
+    const nextIndex = (currentAttractionIndex + 1) % attractions.length;
+    setCurrentAttractionIndex(nextIndex);
+    map.setCenter(attractions[nextIndex].position);
+  };
+
+  // 切换到上一个景点
+  const goToPreviousAttraction = () => {
+    // 确保代码只在客户端执行
+    if (typeof window === 'undefined') return;
+    
+    if (attractions.length === 0 || !map) return;
+    const prevIndex =
+      (currentAttractionIndex - 1 + attractions.length) % attractions.length;
+    setCurrentAttractionIndex(prevIndex);
+    map.setCenter(attractions[prevIndex].position);
+  };
+
+  // 回到当前位置
+  const goToCurrentLocation = () => {
+    // 确保代码只在客户端执行
+    if (typeof window === 'undefined') return;
+    
+    if (!map || !AMapInstance) return;
+
+    const geolocation = new AMapInstance.Geolocation({
+      enableHighAccuracy: true,
+      timeout: 10000,
+      zoomToAccuracy: true,
+    });
+
+    geolocation.getCurrentPosition(
+      (status: AMap.Geolocation.SearchStatus, result: AMap.Geolocation.GeolocationResult | AMap.Geolocation.ErrorStatus) => {
+        if (status === "complete" && 'position' in result) {
+          const position = result.position;
+          map.setCenter([position.getLng(), position.getLat()]);
+        } else {
+          console.error("定位失败");
+        }
+      }
+    );
+  };
+
+  // 添加新景点
+  const addNewAttraction = () => {
+    // 确保代码只在客户端执行
+    if (typeof window === 'undefined') return;
+    
+    if (!map) return;
+
+    const center = map.getCenter();
+    const newAttraction: Attraction = {
+      id: `new-${Date.now()}`,
+      name: "新景点",
+      position: [center.getLng(), center.getLat()],
+      description: "新添加的景点",
+    };
+
+    setAttractions([...attractions, newAttraction]);
+    setCurrentAttractionIndex(attractions.length);
+  };
+
+  return (
+    <div className="relative w-full h-screen -mt-16">
+      {/* 地图容器 */}
+      <div ref={mapRef} className="w-full h-full" />
+
+      {/* 底部控制栏 */}
+      <div className="absolute bottom-24 left-0 right-0 flex justify-center">
+        <div className="flex space-x-2 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={goToPreviousAttraction}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={goToCurrentLocation}
+          >
+            <MapPin className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={goToNextAttraction}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={() => setShowAttractionsList(!showAttractionsList)}
+          >
+            <List className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* 添加景点按钮 */}
+      <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+        <Button
+          variant="default"
+          size="icon"
+          className="rounded-full h-14 w-14 bg-primary shadow-lg"
+          onClick={addNewAttraction}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* 景点信息浮框 */}
+      {attractions.length > 0 && (
+        <div className="absolute bottom-40 left-0 right-0 flex justify-center">
+          <Card className="p-4 w-11/12 max-w-md bg-white/90 backdrop-blur-sm shadow-lg">
+            <h3 className="text-lg font-bold">
+              {attractions[currentAttractionIndex].name}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {attractions[currentAttractionIndex].description}
+            </p>
+          </Card>
+        </div>
+      )}
+
+      {/* 景点列表浮框 */}
+      {showAttractionsList && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-10">
+          <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-sm shadow-lg">
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">景点列表</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAttractionsList(false)}
+                >
+                  关闭
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {attractions.map((attraction, index) => (
+                  <div
+                    key={attraction.id}
+                    className={`p-3 rounded-lg cursor-pointer ${
+                      index === currentAttractionIndex
+                        ? "bg-primary/10 border border-primary"
+                        : "bg-gray-100"
+                    }`}
+                    onClick={() => {
+                      setCurrentAttractionIndex(index);
+                      if (map) {
+                        map.setCenter(attraction.position);
+                      }
+                      setShowAttractionsList(false);
+                    }}
+                  >
+                    <h3 className="font-medium">{attraction.name}</h3>
+                    <p className="text-sm text-gray-600 truncate">
+                      {attraction.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

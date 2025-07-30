@@ -70,7 +70,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
 
       // 3. 清除客户端存储
-      if (typeof window !== "undefined" && localStorage) {
+      if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
         // 清除 Authing 相关的 localStorage
         localStorage.removeItem("_authing_token");
         localStorage.removeItem("_authing_user");
@@ -90,7 +90,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.error("❌ 登出请求失败:", error);
 
       // 即使网络错误，也清除客户端存储和用户状态
-      if (typeof window !== "undefined" && localStorage) {
+      if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
         localStorage.removeItem("_authing_token");
         localStorage.removeItem("_authing_user");
         localStorage.removeItem("_authing_session");

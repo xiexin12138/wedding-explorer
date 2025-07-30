@@ -20,6 +20,7 @@ export const PUBLIC_ROUTES = [
 // 受保护的路由（需要登录才能访问）
 export const PROTECTED_ROUTES = [
   '/home',  // 活动内容页
+  '/map',   // 地图探索页
 ] as const
 
 // 管理员路由（需要管理员权限才能访问）
@@ -36,6 +37,7 @@ export const SPECIAL_ROUTES = {
   // 首页（登录前）
   DEFAULT_HOME: '/',
   SETTING: '/settings', // 管理员设置页面
+  MAP: '/map',         // 地图探索页面
 } as const
 
 // API 路由配置

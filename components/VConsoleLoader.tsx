@@ -72,7 +72,9 @@ function detectCurrentTheme(): "light" | "dark" {
 function initGlobalDebugTools() {
   // 启用调试模式
   window.enableDebugMode = async () => {
-    sessionStorage.setItem(DEBUG_MODE_KEY, "true");
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(DEBUG_MODE_KEY, "true");
+    }
 
     if (!window.vConsole) {
       try {
@@ -103,7 +105,9 @@ function initGlobalDebugTools() {
 
   // 清除调试模式
   window.clearDebugMode = () => {
-    sessionStorage.removeItem(DEBUG_MODE_KEY);
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem(DEBUG_MODE_KEY);
+    }
     if (window.vConsole) {
       window.vConsole.destroy();
       window.vConsole = undefined;
@@ -123,7 +127,10 @@ function initGlobalDebugTools() {
 
   // 获取调试状态
   window.getDebugStatus = () => {
-    return sessionStorage.getItem(DEBUG_MODE_KEY) === "true";
+    if (typeof sessionStorage !== "undefined") {
+      return sessionStorage.getItem(DEBUG_MODE_KEY) === "true";
+    }
+    return false;
   };
 
   // 显示 vConsole
@@ -192,12 +199,17 @@ export function VConsoleLoader() {
 
       if (debugParam) {
         // 如果 URL 中有 debug 参数，写入 sessionStorage
-        sessionStorage.setItem(DEBUG_MODE_KEY, debugParam);
+        if (typeof sessionStorage !== "undefined") {
+          sessionStorage.setItem(DEBUG_MODE_KEY, debugParam);
+        }
         return debugParam === "true";
       }
 
       // 检查 sessionStorage
-      return sessionStorage.getItem(DEBUG_MODE_KEY) === "true";
+      if (typeof sessionStorage !== "undefined") {
+        return sessionStorage.getItem(DEBUG_MODE_KEY) === "true";
+      }
+      return false;
     };
 
     // 只在需要时初始化 vConsole

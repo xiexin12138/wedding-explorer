@@ -1,5 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { SPECIAL_ROUTES } from "@/lib/routes.config";
+import { Map } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -70,6 +73,25 @@ export default function HomePage() {
             </Button>
           </CardContent>
         </Card>
+        
+        <Card className="border-primary/50 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Map className="h-5 w-5" />
+              地图探索
+            </CardTitle>
+            <CardDescription>
+              探索活动地点和周边景点
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="default" className="w-full">
+              <Link href={SPECIAL_ROUTES.MAP}>
+                开始探索
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* 账户操作 */}
@@ -85,4 +107,4 @@ export default function HomePage() {
       </Card>
     </div>
   );
-} 
+}

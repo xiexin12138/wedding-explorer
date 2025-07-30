@@ -7,6 +7,9 @@ export function useViewportHeight() {
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // 确保只在客户端执行
+    if (typeof window === 'undefined') return;
+    
     const setRealHeight = () => {
       const currentHeight = window.innerHeight;
       
@@ -45,4 +48,4 @@ export function useViewportHeight() {
       }
     };
   }, []);
-} 
+}

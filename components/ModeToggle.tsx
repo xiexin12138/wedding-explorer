@@ -14,9 +14,20 @@ import {
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  // 在客户端挂载后更新状态
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 获取当前主题的图标
   const getCurrentThemeIcon = () => {
+    // 如果尚未挂载，返回默认图标以避免水合不匹配
+    if (!mounted) {
+      return <Monitor className="h-4 w-4" />;
+    }
+    
     if (theme === "system") {
       return <Monitor className="h-4 w-4" />;
     } else if (theme === "dark") {
@@ -33,6 +44,7 @@ export function ModeToggle() {
           variant="outline"
           size="sm"
           className="flex items-center space-x-2 h-9 px-3"
+          suppressHydrationWarning
         >
           {getCurrentThemeIcon()}
         </Button>

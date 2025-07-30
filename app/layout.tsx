@@ -25,7 +25,7 @@ export default async function RootLayout({
         />
         <AnalyticsScript />
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         
         <ThemeProvider
           attribute="class"

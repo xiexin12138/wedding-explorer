@@ -1,3 +1,4 @@
+import "@types/amap-js-api";
 export interface User {
   id: string;
   name?: string;

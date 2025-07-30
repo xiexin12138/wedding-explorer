@@ -11,6 +11,7 @@ import {
   LogIn,
   Home,
   Heart,
+  Map,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -109,15 +110,33 @@ export function Header() {
     <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link
-          href={SPECIAL_ROUTES.DEFAULT_HOME}
+        <div
           className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 hover:text-primary"
+          onClick={() => {
+            // 使用 router.push 进行客户端路由跳转，并强制刷新
+            router.push(SPECIAL_ROUTES.DEFAULT_HOME);
+            // 强制刷新路由缓存
+            router.refresh();
+          }}
         >
           <Home className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
-        </Link>
+        </div>
 
         {/* 右侧控制按钮 */}
         <div className="flex items-center space-x-3">
+          {/* 地图导航 - 仅在用户登录后显示 */}
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push(SPECIAL_ROUTES.MAP)}
+              className="h-9 w-9 transition-all duration-200 hover:scale-105 active:scale-95 hover:bg-primary/10"
+              title="地图探索"
+            >
+              <Map className="h-5 w-5 transition-transform duration-200 hover:rotate-12" />
+            </Button>
+          )}
+
           {/* 主题切换 */}
           <ModeToggle />
 
@@ -180,6 +199,12 @@ export function Header() {
                       前往活动 ！
                     </span>
                   </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => router.push(SPECIAL_ROUTES.MAP)}
+                >
+                  <Map className="mr-2 h-4 w-4 text-primary" />
+                  地图探索
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowLogoutDialog(true)}

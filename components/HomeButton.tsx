@@ -34,6 +34,8 @@ export function HomeButton() {
     await new Promise((resolve) => setTimeout(resolve, 100));
     
     router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT);
+    // 强制刷新路由缓存
+    router.refresh();
   };
 
   return (
