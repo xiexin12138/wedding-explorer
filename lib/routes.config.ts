@@ -36,6 +36,7 @@ export const SPECIAL_ROUTES = {
   // 首页（登录前）
   DEFAULT_HOME: '/',
   SETTING: '/settings', // 管理员设置页面
+  TIMELINE: '/timeline', // 时间线页面
 } as const
 
 // API 路由配置
