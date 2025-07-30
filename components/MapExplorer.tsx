@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, ChevronLeft, ChevronRight, MapPin, List } from "lucide-react";
+import { useUser } from "@/components/UserProvider";
 
 // 定义景点类型
 interface Attraction {
@@ -42,22 +43,33 @@ export function MapExplorer() {
   // 所有状态声明放在组件顶部
   const [map, setMap] = useState<AMap.Map | null>(null);
   const [AMapInstance, setAMapInstance] = useState<typeof AMap | null>(null);
-  const [attractions, setAttractions] = useState<Attraction[]>(SAMPLE_ATTRACTIONS);
-  const [currentAttractionIndex, setCurrentAttractionIndex] = useState<number>(0);
-  const [showAttractionsList, setShowAttractionsList] = useState<boolean>(false);
+  const [attractions, setAttractions] =
+    useState<Attraction[]>(SAMPLE_ATTRACTIONS);
+  const [currentAttractionIndex, setCurrentAttractionIndex] =
+    useState<number>(0);
+  const [showAttractionsList, setShowAttractionsList] =
+    useState<boolean>(false);
   const [markers, setMarkers] = useState<AMap.Marker[]>([]);
+  const { user } = useUser();
 
   // 初始化地图
   useEffect(() => {
     // 确保代码只在客户端执行
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     if (!mapRef.current) return;
 
     // 确保只初始化一次地图
     if (map) return;
 
     let mapInstance: AMap.Map | null = null;
+
+    // 设置安全密钥（如果有的话）
+    if (process.env.NEXT_PUBLIC_AMAP_SECURITY_KEY) {
+      (window as typeof window & { _AMapSecurityConfig?: { securityJsCode: string } })._AMapSecurityConfig = {
+        securityJsCode: process.env.NEXT_PUBLIC_AMAP_SECURITY_KEY,
+      };
+    }
 
     // 动态加载高德地图
     const loadAMap = async () => {
@@ -87,14 +99,23 @@ export function MapExplorer() {
         instance.addControl(new AMap.Scale());
 
         // 添加工具条控件
-        instance.addControl(new AMap.ToolBar());
+        const toolbar = new AMap.ToolBar({
+          position: "RT" // 设置工具栏在右上角
+        });
+        instance.addControl(toolbar);
 
         // 添加定位控件
         const geolocation = new AMap.Geolocation({
           enableHighAccuracy: true,
-          timeout: 10000,
-          buttonPosition: "RB",
+          timeout: 15000, // 增加超时时间
+          maximumAge: 0, // 不使用缓存位置
+          convert: true, // 自动偏移坐标
+          showButton: true,
+          buttonPosition: "RB", // 右下角，工具栏已移至右上角
           buttonOffset: new AMap.Pixel(10, 20),
+          showMarker: true,
+          showCircle: true,
+          panToLocation: true,
           zoomToAccuracy: true,
         });
         instance.addControl(geolocation);
@@ -111,14 +132,14 @@ export function MapExplorer() {
         mapInstance.destroy();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 只在组件挂载时初始化一次
 
   // 添加景点标记
   useEffect(() => {
     // 确保代码只在客户端执行
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     if (!map || !AMapInstance) return;
 
     // 清除现有标记
@@ -152,7 +173,7 @@ export function MapExplorer() {
         }
       });
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, AMapInstance, attractions]); // 移除markers依赖项以避免无限循环
 
   // 单独处理当前景点变化时的地图中心设置
@@ -164,8 +185,8 @@ export function MapExplorer() {
   // 切换到下一个景点
   const goToNextAttraction = () => {
     // 确保代码只在客户端执行
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     if (attractions.length === 0 || !map) return;
     const nextIndex = (currentAttractionIndex + 1) % attractions.length;
     setCurrentAttractionIndex(nextIndex);
@@ -175,8 +196,8 @@ export function MapExplorer() {
   // 切换到上一个景点
   const goToPreviousAttraction = () => {
     // 确保代码只在客户端执行
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     if (attractions.length === 0 || !map) return;
     const prevIndex =
       (currentAttractionIndex - 1 + attractions.length) % attractions.length;
@@ -187,23 +208,38 @@ export function MapExplorer() {
   // 回到当前位置
   const goToCurrentLocation = () => {
     // 确保代码只在客户端执行
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     if (!map || !AMapInstance) return;
 
     const geolocation = new AMapInstance.Geolocation({
       enableHighAccuracy: true,
-      timeout: 10000,
+      timeout: 15000, // 增加超时时间
+      maximumAge: 0, // 不使用缓存位置
+      convert: true, // 自动偏移坐标
+      showButton: false,
+      showMarker: true,
+      showCircle: true,
+      panToLocation: true,
       zoomToAccuracy: true,
     });
 
     geolocation.getCurrentPosition(
-      (status: AMap.Geolocation.SearchStatus, result: AMap.Geolocation.GeolocationResult | AMap.Geolocation.ErrorStatus) => {
-        if (status === "complete" && 'position' in result) {
+      (
+        status: AMap.Geolocation.SearchStatus,
+        result:
+          | AMap.Geolocation.GeolocationResult
+          | AMap.Geolocation.ErrorStatus
+      ) => {
+        if (status === "complete" && "position" in result) {
           const position = result.position;
+          const geolocationResult = result as AMap.Geolocation.GeolocationResult;
+          console.log("定位成功，精度：", geolocationResult.accuracy, "米");
           map.setCenter([position.getLng(), position.getLat()]);
         } else {
-          console.error("定位失败");
+          const errorResult = result as AMap.Geolocation.ErrorStatus;
+          console.error("定位失败，错误信息：", errorResult.message);
+          console.error("错误详情：", result);
         }
       }
     );
@@ -212,8 +248,8 @@ export function MapExplorer() {
   // 添加新景点
   const addNewAttraction = () => {
     // 确保代码只在客户端执行
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     if (!map) return;
 
     const center = map.getCenter();
@@ -229,12 +265,14 @@ export function MapExplorer() {
   };
 
   return (
-    <div className="relative w-full h-screen -mt-16">
+    <div className="relative w-full h-screen -mt-16 pt-16">
       {/* 地图容器 */}
       <div ref={mapRef} className="w-full h-full" />
 
       {/* 底部控制栏 */}
-      <div className="absolute bottom-24 left-0 right-0 flex justify-center">
+      <div className={`absolute left-0 right-0 flex justify-center ${
+        user?.isAdmin ? 'bottom-24' : 'bottom-8'
+      }`}>
         <div className="flex space-x-2 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
           <Button
             variant="outline"
@@ -272,20 +310,24 @@ export function MapExplorer() {
       </div>
 
       {/* 添加景点按钮 */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-        <Button
-          variant="default"
-          size="icon"
-          className="rounded-full h-14 w-14 bg-primary shadow-lg"
-          onClick={addNewAttraction}
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </div>
+      {user?.isAdmin && (
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+          <Button
+            variant="default"
+            size="icon"
+            className="rounded-full h-14 w-14 bg-primary shadow-lg"
+            onClick={addNewAttraction}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
 
       {/* 景点信息浮框 */}
       {attractions.length > 0 && (
-        <div className="absolute bottom-40 left-0 right-0 flex justify-center">
+        <div className={`absolute left-0 right-0 flex justify-center ${
+          user?.isAdmin ? 'bottom-40' : 'bottom-24'
+        }`}>
           <Card className="p-4 w-11/12 max-w-md bg-white/90 backdrop-blur-sm shadow-lg">
             <h3 className="text-lg font-bold">
               {attractions[currentAttractionIndex].name}
