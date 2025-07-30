@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDictionaryValueByKey } from "@/lib/services/dictionary";
 
 interface TimelineItem {
@@ -16,7 +16,7 @@ interface TimelineItem {
 // 默认的兜底数据（空数组，用于显示空状态）
 const defaultTimelineData: TimelineItem[] = [];
 
-export function Timeline() {
+function Timeline() {
   const timelineRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [timelineData, setTimelineData] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ export function Timeline() {
   };
 
   // 找到当前应该高亮的时间线项目
-  const getCurrentTimelineIndex = (): number => {
+  const getCurrentTimelineIndex = useCallback((): number => {
     const now = new Date();
 
     // 找到最接近当前时间且不超过当前时间的项目
@@ -70,7 +70,7 @@ export function Timeline() {
     }
 
     return currentIndex;
-  };
+  }, [timelineData]);
 
   // 加载时间线数据
   useEffect(() => {
@@ -118,7 +118,7 @@ export function Timeline() {
         });
       }, 300);
     }
-  }, [loading, timelineData]);
+  }, [loading, timelineData, getCurrentTimelineIndex]);
 
   const currentIndex = getCurrentTimelineIndex();
 
@@ -177,7 +177,6 @@ export function Timeline() {
         {timelineData.map((item, index) => {
           const isCurrent = index === currentIndex;
           const isPast = index < currentIndex;
-          const isFuture = index > currentIndex;
 
           return (
             <div
