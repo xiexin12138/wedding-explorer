@@ -124,18 +124,6 @@ export function Header() {
 
         {/* 右侧控制按钮 */}
         <div className="flex items-center space-x-3">
-          {/* 地图导航 - 仅在用户登录后显示 */}
-          {user && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push(SPECIAL_ROUTES.MAP)}
-              className="h-9 w-9 transition-all duration-200 hover:scale-105 active:scale-95 hover:bg-primary/10"
-              title="地图探索"
-            >
-              <Map className="h-5 w-5 transition-transform duration-200 hover:rotate-12" />
-            </Button>
-          )}
 
           {/* 主题切换 */}
           <ModeToggle />

@@ -38,6 +38,7 @@ export const SPECIAL_ROUTES = {
   DEFAULT_HOME: '/',
   SETTING: '/settings', // 管理员设置页面
   MAP: '/map',         // 地图探索页面
+  TIMELINE: '/timeline', // 时间线页面
 } as const
 
 // API 路由配置
