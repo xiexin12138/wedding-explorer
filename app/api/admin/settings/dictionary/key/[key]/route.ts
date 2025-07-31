@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
 
 // 通过key获取字典项的值
 export async function GET(
@@ -8,13 +7,6 @@ export async function GET(
   { params }: { params: Promise<{ key: string }> }
 ) {
   try {
-    const user = await requireAuth(request);
-    
-    // 检查用户是否为管理员
-    if (!user.isAdmin) {
-      return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
-    }
-
     const { key } = await params;
 
     const setting = await db.systemSetting.findUnique({
