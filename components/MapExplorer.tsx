@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, ChevronLeft, ChevronRight, MapPin, List } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, MapPin, List, Moon, Sun } from "lucide-react";
 import { useUser } from "@/components/UserProvider";
 import gcoord from "gcoord";
 
@@ -51,7 +52,14 @@ export function MapExplorer() {
   const [showAttractionsList, setShowAttractionsList] =
     useState<boolean>(false);
   const [markers, setMarkers] = useState<AMap.Marker[]>([]);
+  const [mounted, setMounted] = useState<boolean>(false);
+  const { theme } = useTheme();
   const { user } = useUser();
+
+  // 在客户端挂载后更新状态
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 初始化地图
   useEffect(() => {
@@ -98,6 +106,7 @@ export function MapExplorer() {
           zoom: 15,
           center: [113.2815, 23.1231], // 初始中心点，需要替换为实际坐标
           resizeEnable: true,
+          mapStyle: theme === "dark" ? "amap://styles/dark" : "amap://styles/normal", // 根据主题设置地图样式
         });
 
         mapInstance = instance;
@@ -203,6 +212,12 @@ export function MapExplorer() {
     map.setCenter(attractions[currentAttractionIndex].position);
   }, [map, attractions, currentAttractionIndex]);
 
+  // 监听主题变化
+  useEffect(() => {
+    if (!map || !mounted) return;
+    map.setMapStyle(theme === "dark" ? "amap://styles/dark" : "amap://styles/normal");
+  }, [map, theme, mounted]);
+
   // 切换到下一个景点
   const goToNextAttraction = () => {
     // 确保代码只在客户端执行
@@ -244,6 +259,8 @@ export function MapExplorer() {
     setAttractions([...attractions, newAttraction]);
     setCurrentAttractionIndex(attractions.length);
   };
+
+
 
   // 回到当前位置
   const goToCurrentLocation = () => {
@@ -383,6 +400,38 @@ export function MapExplorer() {
     }
   };
 
+  // 定义控制按钮数组
+  const controlButtons = [
+    {
+      icon: <ChevronLeft className="h-5 w-5" />,
+      onClick: goToPreviousAttraction,
+      label: "上一个景点",
+      variant: "outline" as const,
+      adminOnly: false, // 管理员和普通用户都可见
+    },
+    {
+      icon: <ChevronRight className="h-5 w-5" />,
+      onClick: goToNextAttraction,
+      label: "下一个景点",
+      variant: "outline" as const,
+      adminOnly: false, // 管理员和普通用户都可见
+    },
+    {
+      icon: <List className="h-5 w-5" />,
+      onClick: () => setShowAttractionsList(!showAttractionsList),
+      label: "景点列表",
+      variant: "outline" as const,
+      adminOnly: false, // 管理员和普通用户都可见
+    },
+    {
+      icon: <Plus className="h-5 w-5" />,
+      onClick: addNewAttraction,
+      label: "添加新景点",
+      variant: "default" as const,
+      adminOnly: true, // 仅管理员可见
+    },
+  ];
+
   return (
     <div className="relative w-full h-screen -mt-16 pt-16">
       {/* 地图容器 */}
@@ -390,61 +439,34 @@ export function MapExplorer() {
 
       {/* 底部控制栏 */}
       <div className={`absolute left-0 right-0 flex justify-center bottom-8`}>
-        <div className="flex space-x-2 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={goToPreviousAttraction}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={goToCurrentLocation}
-          >
-            <MapPin className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={goToNextAttraction}
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={() => setShowAttractionsList(!showAttractionsList)}
-          >
-            <List className="h-5 w-5" />
-          </Button>
-          {/* 添加景点按钮 */}
-          {user?.isAdmin && (
-            <Button
-              variant="default"
-              size="icon"
-              className="rounded-full"
-              onClick={addNewAttraction}
-            >
-              <Plus className="h-6 w-6" />
-            </Button>
-          )}
+        <div className="flex space-x-2 bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
+          {/* 渲染控制按钮 - 先根据管理员权限过滤，再映射渲染 */}
+          {controlButtons
+            .filter(button => !button.adminOnly || (button.adminOnly && user?.isAdmin))
+            .map((button, index) => (
+              <Button
+                key={index}
+                variant={button.variant}
+                size="icon"
+                className="rounded-full"
+                onClick={button.onClick}
+                title={button.label}
+              >
+                {button.icon}
+              </Button>
+            ))
+          }
         </div>
       </div>
 
       {/* 景点信息浮框 */}
       {attractions.length > 0 && (
         <div className="absolute left-0 right-0 flex justify-center bottom-24">
-          <Card className="p-4 w-11/12 max-w-md bg-white/90 backdrop-blur-sm shadow-lg">
+          <Card className="p-4 w-11/12 max-w-md bg-background/90 backdrop-blur-sm shadow-lg">
             <h3 className="text-lg font-bold">
               {attractions[currentAttractionIndex].name}
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {attractions[currentAttractionIndex].description}
             </p>
           </Card>
@@ -454,7 +476,7 @@ export function MapExplorer() {
       {/* 景点列表浮框 */}
       {showAttractionsList && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-10">
-          <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto bg-white/95 backdrop-blur-sm shadow-lg">
+          <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto bg-background/95 backdrop-blur-sm shadow-lg">
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">景点列表</h2>
@@ -473,7 +495,7 @@ export function MapExplorer() {
                     className={`p-3 rounded-lg cursor-pointer ${
                       index === currentAttractionIndex
                         ? "bg-primary/10 border border-primary"
-                        : "bg-gray-100"
+                        : "bg-muted"
                     }`}
                     onClick={() => {
                       setCurrentAttractionIndex(index);
@@ -484,7 +506,7 @@ export function MapExplorer() {
                     }}
                   >
                     <h3 className="font-medium">{attraction.name}</h3>
-                    <p className="text-sm text-gray-600 truncate">
+                    <p className="text-sm text-muted-foreground truncate">
                       {attraction.description}
                     </p>
                   </div>
