@@ -244,8 +244,8 @@ export function MapExplorer() {
           ]; // WGS84 坐标
           const gcj02Point = gcoord.transform(
             wgs84Point,
-            gcoord.WGS84,
-            gcoord.GCJ02
+            gcoord.GCJ02,
+            gcoord.WGS84
           ) as [number, number];
           const geolocationResult =
             result as AMap.Geolocation.GeolocationResult;
