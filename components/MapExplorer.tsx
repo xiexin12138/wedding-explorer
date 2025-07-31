@@ -74,6 +74,16 @@ export function MapExplorer() {
       )._AMapSecurityConfig = {
         securityJsCode: process.env.NEXT_PUBLIC_AMAP_SECURITY_KEY,
       };
+      console.log(
+        "window._AMapSecurityConfig",
+        (
+          window as typeof window & {
+            _AMapSecurityConfig?: { securityJsCode: string };
+          }
+        )._AMapSecurityConfig
+      );
+    } else {
+      console.log("加载失败");
     }
 
     // 动态加载高德地图
