@@ -21,7 +21,7 @@ export const PUBLIC_ROUTES = [
 // 受保护的路由（需要登录才能访问）
 export const PROTECTED_ROUTES = [
   '/home',  // 活动内容页
-  '/map',   // 地图探索页
+  // '/map',   // 地图探索页
 ] as const
 
 // 管理员路由（需要管理员权限才能访问）
