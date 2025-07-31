@@ -217,50 +217,94 @@ export function MapExplorer() {
 
     if (!map || !AMapInstance) return;
 
-    const geolocation = new AMapInstance.Geolocation({
-      enableHighAccuracy: true,
-      timeout: 15000, // 增加超时时间
-      maximumAge: 0, // 不使用缓存位置
-      showButton: false,
-      showMarker: true,
-      showCircle: true,
-      panToLocation: true,
-      zoomToAccuracy: true,
-      convert: false, // 关闭高德自动转换，使用gcoord手动转换
-    });
-
-    geolocation.getCurrentPosition(
-      (
-        status: AMap.Geolocation.SearchStatus,
-        result:
-          | AMap.Geolocation.GeolocationResult
-          | AMap.Geolocation.ErrorStatus
-      ) => {
-        if (status === "complete" && "position" in result) {
-          const position = result.position;
+    // 方案1: 使用浏览器原生定位API + gcoord转换
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
           const wgs84Point: [number, number] = [
-            position.getLng(),
-            position.getLat(),
-          ]; // WGS84 坐标
+            position.coords.longitude,
+            position.coords.latitude,
+          ];
+          
+          // 使用gcoord转换为GCJ02坐标
           const gcj02Point = gcoord.transform(
             wgs84Point,
-            gcoord.GCJ02,
-            gcoord.WGS84
+            gcoord.WGS84,
+            gcoord.GCJ02
           ) as [number, number];
-          const geolocationResult =
-            result as AMap.Geolocation.GeolocationResult;
-          console.log("定位成功，精度：", geolocationResult.accuracy, "米");
+          
+          console.log("浏览器定位成功，精度：", position.coords.accuracy, "米");
           console.log("原始坐标(WGS84)：", wgs84Point);
           console.log("转换后坐标(GCJ02)：", gcj02Point);
-          // 使用gcoord转换后的GCJ02坐标设置地图中心
+          
+          // 创建标记显示当前位置
+          const marker = new AMapInstance.Marker({
+            position: gcj02Point,
+            title: "当前位置",
+            icon: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
+          });
+          map.add(marker);
+          
+          // 设置地图中心和缩放级别
           map.setCenter(gcj02Point);
-        } else {
-          const errorResult = result as AMap.Geolocation.ErrorStatus;
-          console.error("定位失败，错误信息：", errorResult.message);
-          console.error("错误详情：", result);
+          map.setZoom(16);
+        },
+        (error) => {
+          console.error("浏览器定位失败：", error.message);
+          // 降级到高德定位
+          fallbackToAmapGeolocation();
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
         }
-      }
-    );
+      );
+    } else {
+      // 浏览器不支持原生定位，使用高德定位
+      fallbackToAmapGeolocation();
+    }
+
+    // 高德定位备用方案
+    function fallbackToAmapGeolocation() {
+      const geolocation = new AMapInstance.Geolocation({
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+        showButton: false,
+        showMarker: true,
+        showCircle: true,
+        panToLocation: true,
+        zoomToAccuracy: true,
+        convert: true, // 让高德自动转换坐标
+      });
+
+      geolocation.getCurrentPosition(
+        (
+          status: AMap.Geolocation.SearchStatus,
+          result:
+            | AMap.Geolocation.GeolocationResult
+            | AMap.Geolocation.ErrorStatus
+        ) => {
+          if (status === "complete" && "position" in result) {
+            const position = result.position;
+            const gcj02Point: [number, number] = [
+              position.getLng(),
+              position.getLat(),
+            ];
+            const geolocationResult =
+              result as AMap.Geolocation.GeolocationResult;
+            console.log("高德定位成功，精度：", geolocationResult.accuracy, "米");
+            console.log("高德转换后坐标(GCJ02)：", gcj02Point);
+            map.setCenter(gcj02Point);
+          } else {
+            const errorResult = result as AMap.Geolocation.ErrorStatus;
+            console.error("高德定位失败，错误信息：", errorResult.message);
+            console.error("错误详情：", result);
+          }
+        }
+      );
+    }
   };
 
   // 添加新景点
