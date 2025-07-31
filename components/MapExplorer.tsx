@@ -113,23 +113,22 @@ export function MapExplorer() {
         const geolocation = new AMap.Geolocation({
           enableHighAccuracy: true,
           timeout: 15000, // 增加超时时间
-          maximumAge: 0, // 不使用缓存位置
-          convert: false, // 自动偏移坐标
-          showButton: true,
-          buttonPosition: "RB", // 右下角，工具栏已移至右上角
-          buttonOffset: new AMap.Pixel(10, 20),
-          showMarker: true,
-          showCircle: true,
-          panToLocation: true,
-          zoomToAccuracy: true,
+          maximumAge: 0, // 不使用浏览器原生定位的缓存时间，毫秒
+          convert: true, // 是否将定位结果转换为高德坐标
+          position: "RT", // 右上角
+          offset: [15, 85], // 缩略图距离悬停位置的像素距离
+          panToLocation: true, // 定位成功后是否自动移动到响应位置
+          zoomToAccuracy: true, // 定位成功后是否自动调整级别
         });
+
         instance.addControl(geolocation);
 
         setMap(instance);
+        
       })
       .catch((e) => {
         console.error("地图加载失败", e);
-      });
+      })
 
     // 清理函数
     return () => {
@@ -208,6 +207,25 @@ export function MapExplorer() {
       (currentAttractionIndex - 1 + attractions.length) % attractions.length;
     setCurrentAttractionIndex(prevIndex);
     map.setCenter(attractions[prevIndex].position);
+  };
+
+  // 添加新景点
+  const addNewAttraction = () => {
+    // 确保代码只在客户端执行
+    if (typeof window === "undefined") return;
+
+    if (!map) return;
+
+    const center = map.getCenter();
+    const newAttraction: Attraction = {
+      id: `new-${Date.now()}`,
+      name: "新景点",
+      position: [center.getLng(), center.getLat()],
+      description: "新添加的景点",
+    };
+
+    setAttractions([...attractions, newAttraction]);
+    setCurrentAttractionIndex(attractions.length);
   };
 
   // 回到当前位置
@@ -332,14 +350,14 @@ export function MapExplorer() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             size="icon"
             className="rounded-full"
             onClick={goToCurrentLocation}
           >
             <MapPin className="h-5 w-5" />
-          </Button>
+          </Button> */}
           <Button
             variant="outline"
             size="icon"
@@ -356,22 +374,19 @@ export function MapExplorer() {
           >
             <List className="h-5 w-5" />
           </Button>
+          {/* 添加景点按钮 */}
+          {user?.isAdmin && (
+            <Button
+              variant="default"
+              size="icon"
+              className="rounded-full"
+              onClick={addNewAttraction}
+            >
+              <Plus className="h-6 w-6" />
+            </Button>
+          )}
         </div>
       </div>
-
-      {/* 添加景点按钮 */}
-      {/* {user?.isAdmin && (
-        <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-          <Button
-            variant="default"
-            size="icon"
-            className="rounded-full h-14 w-14 bg-primary shadow-lg"
-            onClick={addNewAttraction}
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </div>
-      )} */}
 
       {/* 景点信息浮框 */}
       {attractions.length > 0 && (
