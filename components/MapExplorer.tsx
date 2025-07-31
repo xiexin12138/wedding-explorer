@@ -225,18 +225,18 @@ export function MapExplorer() {
             position.coords.longitude,
             position.coords.latitude,
           ];
-          
+
           // 使用gcoord转换为GCJ02坐标
           const gcj02Point = gcoord.transform(
             wgs84Point,
             gcoord.WGS84,
             gcoord.GCJ02
           ) as [number, number];
-          
+
           console.log("浏览器定位成功，精度：", position.coords.accuracy, "米");
           console.log("原始坐标(WGS84)：", wgs84Point);
           console.log("转换后坐标(GCJ02)：", gcj02Point);
-          
+
           // 创建标记显示当前位置
           const marker = new AMapInstance.Marker({
             position: gcj02Point,
@@ -244,7 +244,7 @@ export function MapExplorer() {
             icon: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
           });
           map.add(marker);
-          
+
           // 设置地图中心和缩放级别
           map.setCenter(gcj02Point);
           map.setZoom(16);
@@ -267,6 +267,11 @@ export function MapExplorer() {
 
     // 高德定位备用方案
     function fallbackToAmapGeolocation() {
+      if (!map || !AMapInstance) {
+        console.warn("地图实例或高德定位实例不存在，无法使用高德定位");
+        return;
+      }
+
       const geolocation = new AMapInstance.Geolocation({
         enableHighAccuracy: true,
         timeout: 15000,
@@ -294,7 +299,11 @@ export function MapExplorer() {
             ];
             const geolocationResult =
               result as AMap.Geolocation.GeolocationResult;
-            console.log("高德定位成功，精度：", geolocationResult.accuracy, "米");
+            console.log(
+              "高德定位成功，精度：",
+              geolocationResult.accuracy,
+              "米"
+            );
             console.log("高德转换后坐标(GCJ02)：", gcj02Point);
             map.setCenter(gcj02Point);
           } else {
@@ -305,25 +314,6 @@ export function MapExplorer() {
         }
       );
     }
-  };
-
-  // 添加新景点
-  const addNewAttraction = () => {
-    // 确保代码只在客户端执行
-    if (typeof window === "undefined") return;
-
-    if (!map) return;
-
-    const center = map.getCenter();
-    const newAttraction: Attraction = {
-      id: `new-${Date.now()}`,
-      name: "新景点",
-      position: [center.getLng(), center.getLat()],
-      description: "新添加的景点",
-    };
-
-    setAttractions([...attractions, newAttraction]);
-    setCurrentAttractionIndex(attractions.length);
   };
 
   return (
