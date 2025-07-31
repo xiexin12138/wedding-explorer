@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, ChevronLeft, ChevronRight, MapPin, List } from "lucide-react";
 import { useUser } from "@/components/UserProvider";
+import gcoord from "gcoord";
 
 // 定义景点类型
 interface Attraction {
@@ -66,7 +67,11 @@ export function MapExplorer() {
 
     // 设置安全密钥（如果有的话）
     if (process.env.NEXT_PUBLIC_AMAP_SECURITY_KEY) {
-      (window as typeof window & { _AMapSecurityConfig?: { securityJsCode: string } })._AMapSecurityConfig = {
+      (
+        window as typeof window & {
+          _AMapSecurityConfig?: { securityJsCode: string };
+        }
+      )._AMapSecurityConfig = {
         securityJsCode: process.env.NEXT_PUBLIC_AMAP_SECURITY_KEY,
       };
     }
@@ -100,7 +105,7 @@ export function MapExplorer() {
 
         // 添加工具条控件
         const toolbar = new AMap.ToolBar({
-          position: "RT" // 设置工具栏在右上角
+          position: "RT", // 设置工具栏在右上角
         });
         instance.addControl(toolbar);
 
@@ -216,12 +221,12 @@ export function MapExplorer() {
       enableHighAccuracy: true,
       timeout: 15000, // 增加超时时间
       maximumAge: 0, // 不使用缓存位置
-      // convert: true, // 自动偏移坐标
       showButton: false,
       showMarker: true,
       showCircle: true,
       panToLocation: true,
       zoomToAccuracy: true,
+      convert: false, // 关闭高德自动转换，使用gcoord手动转换
     });
 
     geolocation.getCurrentPosition(
@@ -233,9 +238,22 @@ export function MapExplorer() {
       ) => {
         if (status === "complete" && "position" in result) {
           const position = result.position;
-          const geolocationResult = result as AMap.Geolocation.GeolocationResult;
+          const wgs84Point: [number, number] = [
+            position.getLng(),
+            position.getLat(),
+          ]; // WGS84 坐标
+          const gcj02Point = gcoord.transform(
+            wgs84Point,
+            gcoord.WGS84,
+            gcoord.GCJ02
+          ) as [number, number];
+          const geolocationResult =
+            result as AMap.Geolocation.GeolocationResult;
           console.log("定位成功，精度：", geolocationResult.accuracy, "米");
-          map.setCenter([position.getLng(), position.getLat()]);
+          console.log("原始坐标(WGS84)：", wgs84Point);
+          console.log("转换后坐标(GCJ02)：", gcj02Point);
+          // 使用gcoord转换后的GCJ02坐标设置地图中心
+          map.setCenter(gcj02Point);
         } else {
           const errorResult = result as AMap.Geolocation.ErrorStatus;
           console.error("定位失败，错误信息：", errorResult.message);
@@ -270,9 +288,7 @@ export function MapExplorer() {
       <div ref={mapRef} className="w-full h-full" />
 
       {/* 底部控制栏 */}
-      <div className={`absolute left-0 right-0 flex justify-center ${
-        user?.isAdmin ? 'bottom-24' : 'bottom-8'
-      }`}>
+      <div className={`absolute left-0 right-0 flex justify-center bottom-8`}>
         <div className="flex space-x-2 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
           <Button
             variant="outline"
@@ -310,7 +326,7 @@ export function MapExplorer() {
       </div>
 
       {/* 添加景点按钮 */}
-      {user?.isAdmin && (
+      {/* {user?.isAdmin && (
         <div className="absolute bottom-8 left-0 right-0 flex justify-center">
           <Button
             variant="default"
@@ -321,13 +337,11 @@ export function MapExplorer() {
             <Plus className="h-6 w-6" />
           </Button>
         </div>
-      )}
+      )} */}
 
       {/* 景点信息浮框 */}
       {attractions.length > 0 && (
-        <div className={`absolute left-0 right-0 flex justify-center ${
-          user?.isAdmin ? 'bottom-40' : 'bottom-24'
-        }`}>
+        <div className="absolute left-0 right-0 flex justify-center bottom-24">
           <Card className="p-4 w-11/12 max-w-md bg-white/90 backdrop-blur-sm shadow-lg">
             <h3 className="text-lg font-bold">
               {attractions[currentAttractionIndex].name}
