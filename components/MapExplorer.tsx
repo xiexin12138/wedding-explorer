@@ -121,6 +121,19 @@ export function MapExplorer() {
           zoomToAccuracy: true, // 定位成功后是否自动调整级别
         });
 
+        // 添加定位回调
+        geolocation.on("complete", (data: AMap.Geolocation.GeolocationResult) => {
+          console.log("定位成功", data);
+          // 可以在这里处理定位成功后的逻辑
+          // 例如：显示当前位置标记、更新位置信息等
+        });
+
+        geolocation.on("error", (error: AMap.Geolocation.ErrorStatus) => {
+          console.error("定位失败", error);
+          // 可以在这里处理定位失败后的逻辑
+          // 例如：显示错误提示、使用备用定位方案等
+        });
+
         instance.addControl(geolocation);
 
         setMap(instance);
@@ -302,6 +315,38 @@ export function MapExplorer() {
         convert: true, // 让高德自动转换坐标
       });
 
+      // 添加定位回调
+      geolocation.on("complete", (data: AMap.Geolocation.GeolocationResult) => {
+        console.log("高德定位回调成功", data);
+        // 可以在这里处理定位成功后的逻辑
+        if (data && data.position) {
+          const position = data.position;
+          const gcj02Point: [number, number] = [
+            position.getLng(),
+            position.getLat(),
+          ];
+          console.log("高德定位回调成功，精度：", data.accuracy, "米");
+          console.log("高德回调转换后坐标(GCJ02)：", gcj02Point);
+          
+          // 创建标记显示当前位置
+          const marker = new AMapInstance.Marker({
+            position: gcj02Point,
+            title: "当前位置",
+            icon: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
+          });
+          map.add(marker);
+          
+          // 设置地图中心和缩放级别
+          map.setCenter(gcj02Point);
+          map.setZoom(16);
+        }
+      });
+
+      geolocation.on("error", (error: AMap.Geolocation.ErrorStatus) => {
+        console.error("高德定位回调失败", error);
+        // 可以在这里处理定位失败后的逻辑
+      });
+
       geolocation.getCurrentPosition(
         (
           status: AMap.Geolocation.SearchStatus,
@@ -350,14 +395,14 @@ export function MapExplorer() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          {/* <Button
+          <Button
             variant="outline"
             size="icon"
             className="rounded-full"
             onClick={goToCurrentLocation}
           >
             <MapPin className="h-5 w-5" />
-          </Button> */}
+          </Button>
           <Button
             variant="outline"
             size="icon"
