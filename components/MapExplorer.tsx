@@ -216,7 +216,7 @@ export function MapExplorer() {
       enableHighAccuracy: true,
       timeout: 15000, // 增加超时时间
       maximumAge: 0, // 不使用缓存位置
-      convert: true, // 自动偏移坐标
+      // convert: true, // 自动偏移坐标
       showButton: false,
       showMarker: true,
       showCircle: true,
