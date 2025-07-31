@@ -114,7 +114,7 @@ export function MapExplorer() {
           enableHighAccuracy: true,
           timeout: 15000, // 增加超时时间
           maximumAge: 0, // 不使用缓存位置
-          convert: true, // 自动偏移坐标
+          convert: false, // 自动偏移坐标
           showButton: true,
           buttonPosition: "RB", // 右下角，工具栏已移至右上角
           buttonOffset: new AMap.Pixel(10, 20),
