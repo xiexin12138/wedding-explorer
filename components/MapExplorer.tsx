@@ -74,16 +74,8 @@ export function MapExplorer() {
       )._AMapSecurityConfig = {
         securityJsCode: process.env.NEXT_PUBLIC_AMAP_SECURITY_KEY,
       };
-      console.log(
-        "window._AMapSecurityConfig",
-        (
-          window as typeof window & {
-            _AMapSecurityConfig?: { securityJsCode: string };
-          }
-        )._AMapSecurityConfig
-      );
     } else {
-      console.log("加载失败");
+      console.warn("SECURITY_KEY 加载失败");
     }
 
     // 动态加载高德地图
@@ -132,11 +124,14 @@ export function MapExplorer() {
         });
 
         // 添加定位回调
-        geolocation.on("complete", (data: AMap.Geolocation.GeolocationResult) => {
-          console.log("定位成功", data);
-          // 可以在这里处理定位成功后的逻辑
-          // 例如：显示当前位置标记、更新位置信息等
-        });
+        geolocation.on(
+          "complete",
+          (data: AMap.Geolocation.GeolocationResult) => {
+            console.log("定位成功", data);
+            // 可以在这里处理定位成功后的逻辑
+            // 例如：显示当前位置标记、更新位置信息等
+          }
+        );
 
         geolocation.on("error", (error: AMap.Geolocation.ErrorStatus) => {
           console.error("定位失败", error);
@@ -147,11 +142,10 @@ export function MapExplorer() {
         instance.addControl(geolocation);
 
         setMap(instance);
-        
       })
       .catch((e) => {
         console.error("地图加载失败", e);
-      })
+      });
 
     // 清理函数
     return () => {
@@ -337,7 +331,7 @@ export function MapExplorer() {
           ];
           console.log("高德定位回调成功，精度：", data.accuracy, "米");
           console.log("高德回调转换后坐标(GCJ02)：", gcj02Point);
-          
+
           // 创建标记显示当前位置
           const marker = new AMapInstance.Marker({
             position: gcj02Point,
@@ -345,7 +339,7 @@ export function MapExplorer() {
             icon: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
           });
           map.add(marker);
-          
+
           // 设置地图中心和缩放级别
           map.setCenter(gcj02Point);
           map.setZoom(16);
