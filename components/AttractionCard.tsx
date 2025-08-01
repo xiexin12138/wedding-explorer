@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronUp, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronUp, X, ChevronLeft, ChevronRight, Map } from "lucide-react";
 import Image from "next/image";
 
 // 定义景点类型枚举
@@ -279,6 +279,57 @@ export function AttractionCard({
           <div className="mt-4">
             <div className="prose dark:prose-invert">
               <p>{attraction.description}</p>
+            </div>
+
+            {/* 地图中打开按钮 */}
+            <div className="mt-4">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    const [lng, lat] = attraction.position;
+                    const name = encodeURIComponent(attraction.name);
+                    // 高德地图 App URL Scheme
+                    const url = `amapuri://route/plan/?dlat=${lat}&dlon=${lng}&dname=${name}&dev=0&t=0`;
+                    window.location.href = url;
+                  }}
+                >
+                  <Map className="h-4 w-4" />
+                  高德地图
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    const [lng, lat] = attraction.position;
+                    const name = encodeURIComponent(attraction.name);
+                    // 百度地图 App URL Scheme
+                    const url = `baidumap://map/marker?location=${lat},${lng}&title=${name}&content=${name}`;
+                    window.location.href = url;
+                  }}
+                >
+                  <Map className="h-4 w-4" />
+                  百度地图
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    const [lng, lat] = attraction.position;
+                    const name = encodeURIComponent(attraction.name);
+                    // 腾讯地图 App URL Scheme
+                    const url = `qqmap://map/routeplan?type=drive&to=${name}&tocoord=${lat},${lng}`;
+                    window.location.href = url;
+                  }}
+                >
+                  <Map className="h-4 w-4" />
+                  腾讯地图
+                </Button>
+              </div>
             </div>
 
             {!isUnlocked && (
