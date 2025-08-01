@@ -719,12 +719,15 @@ export function MapExplorer() {
   ];
 
   return (
-    <div className="relative w-full h-screen -mt-16 pt-16">
+    <div 
+      className="relative w-full -mt-16 pt-16" 
+      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+    >
       {/* 地图容器 */}
       <div ref={mapRef} className="w-full h-full" />
 
       {/* 底部控制栏 */}
-      <div className={`absolute left-0 right-0 flex justify-center bottom-8`}>
+      <div className={`absolute left-0 right-0 flex justify-center`} style={{ bottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
         <div className="flex space-x-2 bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-lg">
           {/* 渲染控制按钮 - 先根据管理员权限过滤，再映射渲染 */}
           {controlButtons
@@ -754,8 +757,9 @@ export function MapExplorer() {
           className={
             cardExpanded
               ? "fixed inset-0 z-[200]"
-              : "absolute left-0 right-0 flex justify-center bottom-24"
+              : "absolute left-0 right-0 flex justify-center"
           }
+          style={!cardExpanded ? { bottom: 'max(6rem, calc(env(safe-area-inset-bottom, 2rem) + 4rem))' } : undefined}
         >
           <AttractionCard
             attraction={attractions[currentAttractionIndex]}

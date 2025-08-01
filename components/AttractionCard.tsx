@@ -136,7 +136,7 @@ export function AttractionCard({
       openMap(mapType, attraction.position, attraction.name, environment);
       
       // 模拟地图应用打开的延迟，给用户反馈
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
       console.error('打开地图失败:', error);
     } finally {
