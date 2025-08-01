@@ -74,14 +74,21 @@ const mapConfigGenerators: Record<MapType, MapConfigGenerator> = {
 
 /**
  * App唤起方法
+ * 针对iOS Safari浏览器的特殊处理：
+ * - iOS 9+ Safari中iframe方式无法成功唤起App
+ * - 需要使用window.location.href方式
+ * - 其他浏览器继续使用iframe方式以避免页面跳转
  * @param config 地图配置
  */
 function tryLaunchApp(config: MapConfig): void {
-  // 使用更可靠的App唤起方法
-  const iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  iframe.src = config.appUrl;
-  document.body.appendChild(iframe);
+  // 获取用户代理字符串
+  const userAgent = navigator.userAgent.toLowerCase();
+  // 检测是否是iOS Safari浏览器（排除其他iOS浏览器如Chrome、Firefox等）
+  const isIOSSafari = /iphone|ipad|ipod/.test(userAgent) && 
+                     /safari/.test(userAgent) && 
+                     !/crios/.test(userAgent) && // 排除Chrome on iOS
+                     !/fxios/.test(userAgent) && // 排除Firefox on iOS
+                     !/edgios/.test(userAgent); // 排除Edge on iOS
   
   // 设置定时器检测是否成功唤起App
   const timer = setTimeout(() => {
@@ -96,12 +103,49 @@ function tryLaunchApp(config: MapConfig): void {
   };
   window.addEventListener('blur', handleBlur);
   
-  // 清理iframe
-  setTimeout(() => {
-    if (iframe.parentNode) {
-      document.body.removeChild(iframe);
+  // 对于iOS Safari浏览器，使用location.href方式唤起应用
+  // 对于其他浏览器，使用iframe方式唤起应用
+  if (isIOSSafari) {
+    // iOS Safari使用location.href方式
+    // 记录当前时间，用于检测是否成功唤起应用
+    const startTime = Date.now();
+    
+    // 监听页面可见性变化，如果应用成功唤起，页面会变为隐藏状态
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 页面变为隐藏状态，可能是应用被唤起
+        clearTimeout(timer);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
+    
+    // 添加页面可见性监听（iOS Safari支持）
+    if (typeof document.hidden !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
     }
-  }, 1000);
+    
+    // 尝试唤起应用
+    try {
+      window.location.href = config.appUrl;
+    } catch (e) {
+      // 如果唤起失败，立即跳转到网页版
+      clearTimeout(timer);
+      window.open(config.webUrl, '_blank');
+    }
+  } else {
+    // 其他浏览器使用iframe方式
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = config.appUrl;
+    document.body.appendChild(iframe);
+    
+    // 清理iframe
+    setTimeout(() => {
+      if (iframe.parentNode) {
+        document.body.removeChild(iframe);
+      }
+    }, 1000);
+  }
 }
 
 /**
