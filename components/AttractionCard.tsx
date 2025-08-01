@@ -152,8 +152,9 @@ export function AttractionCard({
       },
       baidu: {
         // 百度地图使用BD-09坐标系，已进行坐标转换
-        appUrl: `baidumap://map/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}`,
-        webUrl: `https://map.baidu.com/search/${name}/@${finalLng},${finalLat},19z?querytype=s&da_src=shareurl&wd=${name}&c=1&src=0&pn=0&sug=0&l=19&b=(${finalLng-0.01},${finalLat-0.01};${finalLng+0.01},${finalLat+0.01})&from=webmap&biz_forward=%7B%22scaler%22:1,%22styles%22:%22pl%22%7D`
+        // 使用最新的百度地图URL Scheme格式
+        appUrl: `baidumap://map/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&src=wedding-explorer`,
+        webUrl: `http://api.map.baidu.com/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&output=html&src=wedding-explorer`
       },
       tencent: {
         // 腾讯地图使用GCJ-02坐标系
