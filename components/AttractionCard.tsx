@@ -14,6 +14,7 @@ import { openMap } from "@/lib/map-launcher";
 export enum AttractionType {
   SCENIC = "scenic",
   FOOD = "food",
+  SHOPPING = "shopping",
   OTHER = "other",
 }
 
@@ -151,6 +152,10 @@ export function AttractionCard({
     [AttractionType.FOOD]: {
       label: "美食",
       className: "bg-orange-500/90 hover:bg-orange-500 text-white border-transparent"
+    },
+    [AttractionType.SHOPPING]: {
+      label: "购物",
+      className: "bg-purple-500/90 hover:bg-purple-500 text-white border-transparent"
     },
     [AttractionType.OTHER]: {
       label: "其他",

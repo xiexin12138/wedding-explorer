@@ -90,6 +90,26 @@ const SAMPLE_ATTRACTIONS: Attraction[] = [
     ],
     unlockDistance: 80,
   },
+  {
+    id: "4",
+    name: "深圳万象城",
+    position:  [114.11056116258436, 22.538851422581348], // 示例坐标
+    description: "极尽奢华的超级老牌商场",
+    type: AttractionType.SHOPPING,
+    media: [
+      {
+        type: "image",
+        url: "https://example.com/images/food-court-1.jpg",
+        title: "美食广场全景",
+      },
+      {
+        type: "image",
+        url: "https://example.com/images/food-court-2.jpg",
+        title: "特色小吃",
+      },
+    ],
+    unlockDistance: 80,
+  },
 ];
 
 export function MapExplorer() {
