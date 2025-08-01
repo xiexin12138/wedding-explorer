@@ -6,16 +6,16 @@ import gcoord from "gcoord";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Plus,
   ChevronLeft,
   ChevronRight,
   MapPin,
   List,
-  Moon,
-  Sun,
   Loader2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useUser } from "@/components/UserProvider";
 
 // 导入新的 AttractionCard 组件和相关类型
@@ -27,6 +27,35 @@ import {
 
 // 使用新的景点类型
 type Attraction = AttractionDetail;
+
+// 导出类型配置供其他组件使用
+export const attractionTypeConfig = {
+  [AttractionType.SCENIC]: {
+    label: "景点",
+    className:
+      "bg-blue-500/90 hover:bg-blue-500 text-white border-transparent",
+  },
+  [AttractionType.FOOD]: {
+    label: "美食",
+    className:
+      "bg-orange-500/90 hover:bg-orange-500 text-white border-transparent",
+  },
+  [AttractionType.SHOPPING]: {
+    label: "购物",
+    className:
+      "bg-purple-500/90 hover:bg-purple-500 text-white border-transparent",
+  },
+  [AttractionType.OTHER]: {
+    label: "其他",
+    className:
+      "bg-slate-500/90 hover:bg-slate-500 text-white border-transparent",
+  },
+};
+
+// 获取景点类型配置的辅助函数
+export const getAttractionTypeConfig = (type: AttractionType) => {
+  return attractionTypeConfig[type];
+};
 
 // 示例景点数据
 const SAMPLE_ATTRACTIONS: Attraction[] = [
@@ -93,7 +122,7 @@ const SAMPLE_ATTRACTIONS: Attraction[] = [
   {
     id: "4",
     name: "深圳万象城",
-    position:  [114.11056116258436, 22.538851422581348], // 示例坐标
+    position: [114.11056116258436, 22.538851422581348], // 示例坐标
     description: "极尽奢华的超级老牌商场",
     type: AttractionType.SHOPPING,
     media: [
@@ -773,7 +802,18 @@ export function MapExplorer() {
                       setShowAttractionsList(false);
                     }}
                   >
-                    <h3 className="font-medium">{attraction.name}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium">{attraction.name}</h3>
+                      <Badge
+                        className={cn(
+                          attractionTypeConfig[attraction.type]?.className ||
+                            attractionTypeConfig[AttractionType.OTHER].className
+                        )}
+                      >
+                        {attractionTypeConfig[attraction.type]?.label ||
+                          attractionTypeConfig[AttractionType.OTHER].label}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-muted-foreground truncate">
                       {attraction.description}
                     </p>

@@ -9,6 +9,7 @@ import { ChevronUp, X, ChevronLeft, ChevronRight, Map } from "lucide-react";
 import Image from "next/image";
 import { detectEnvironment } from "@/lib/environment-detector";
 import { openMap } from "@/lib/map-launcher";
+import { attractionTypeConfig } from "@/components/MapExplorer";
 
 // 定义景点类型枚举
 export enum AttractionType {
@@ -143,25 +144,7 @@ export function AttractionCard({
     );
   };
 
-  // 定义类型配置
-  const typeConfig = {
-    [AttractionType.SCENIC]: {
-      label: "景点",
-      className: "bg-blue-500/90 hover:bg-blue-500 text-white border-transparent"
-    },
-    [AttractionType.FOOD]: {
-      label: "美食",
-      className: "bg-orange-500/90 hover:bg-orange-500 text-white border-transparent"
-    },
-    [AttractionType.SHOPPING]: {
-      label: "购物",
-      className: "bg-purple-500/90 hover:bg-purple-500 text-white border-transparent"
-    },
-    [AttractionType.OTHER]: {
-      label: "其他",
-      className: "bg-slate-500/90 hover:bg-slate-500 text-white border-transparent"
-    }
-  };
+
   
   // 渲染媒体
   const renderMedia = () => {
@@ -283,10 +266,10 @@ export function AttractionCard({
               {/* 在展开视图中使用内联样式而不是绝对定位 */}
               <Badge 
                 className={cn(
-                  typeConfig[attraction.type]?.className || typeConfig[AttractionType.OTHER].className
+                  attractionTypeConfig[attraction.type]?.className || attractionTypeConfig[AttractionType.OTHER].className
                 )}
               >
-                {typeConfig[attraction.type]?.label || typeConfig[AttractionType.OTHER].label}
+                {attractionTypeConfig[attraction.type]?.label || attractionTypeConfig[AttractionType.OTHER].label}
               </Badge>
             </div>
           </div>
@@ -381,10 +364,10 @@ export function AttractionCard({
         <h3 className="text-lg font-bold">{attraction.name}</h3>
         <Badge 
           className={cn(
-            typeConfig[attraction.type]?.className || typeConfig[AttractionType.OTHER].className
+            attractionTypeConfig[attraction.type]?.className || attractionTypeConfig[AttractionType.OTHER].className
           )}
         >
-          {typeConfig[attraction.type]?.label || typeConfig[AttractionType.OTHER].label}
+          {attractionTypeConfig[attraction.type]?.label || attractionTypeConfig[AttractionType.OTHER].label}
         </Badge>
       </div>
       <p className="text-sm text-muted-foreground">{attraction.description}</p>
