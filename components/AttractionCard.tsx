@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronUp, X, ChevronLeft, ChevronRight, Map } from "lucide-react";
+import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { detectEnvironment } from "@/lib/environment-detector";
 import { openMap } from "@/lib/map-launcher";
@@ -54,6 +54,7 @@ export function AttractionCard({
 }: AttractionCardProps) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [openingMapType, setOpeningMapType] = useState<'amap' | 'baidu' | 'tencent' | null>(null);
 
   // 使用外部传入的 expanded 状态，如果没有则使用内部状态
   const expanded =
@@ -126,9 +127,21 @@ export function AttractionCard({
   };
 
   // 通用地图打开方法
-  const handleOpenMap = (mapType: 'amap' | 'baidu' | 'tencent') => {
-    const { environment } = detectEnvironment();
-    openMap(mapType, attraction.position, attraction.name, environment);
+  const handleOpenMap = async (mapType: 'amap' | 'baidu' | 'tencent') => {
+    if (openingMapType) return; // 防止重复点击
+    
+    setOpeningMapType(mapType);
+    try {
+      const { environment } = detectEnvironment();
+      openMap(mapType, attraction.position, attraction.name, environment);
+      
+      // 模拟地图应用打开的延迟，给用户反馈
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error('打开地图失败:', error);
+    } finally {
+      setOpeningMapType(null);
+    }
   };
 
   // 处理媒体导航
@@ -282,33 +295,32 @@ export function AttractionCard({
             {/* 地图中打开按钮 */}
             <div className="mt-4">
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                  onClick={() => handleOpenMap('amap')}
-                >
-                  <Map className="h-4 w-4" />
-                  高德地图
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                  onClick={() => handleOpenMap('baidu')}
-                >
-                  <Map className="h-4 w-4" />
-                  百度地图
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                  onClick={() => handleOpenMap('tencent')}
-                >
-                  <Map className="h-4 w-4" />
-                  腾讯地图
-                </Button>
+                {[
+                  { type: 'amap' as const, label: '高德地图' },
+                  { type: 'baidu' as const, label: '百度地图' },
+                  { type: 'tencent' as const, label: '腾讯地图' }
+                ].map((mapProvider) => {
+                  const isCurrentLoading = openingMapType === mapProvider.type;
+                  const isAnyLoading = openingMapType !== null;
+                  
+                  return (
+                    <Button
+                      key={mapProvider.type}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      onClick={() => handleOpenMap(mapProvider.type)}
+                      disabled={isAnyLoading}
+                    >
+                      {isCurrentLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Map className="h-4 w-4" />
+                      )}
+                      {isCurrentLoading ? '打开中...' : mapProvider.label}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
 

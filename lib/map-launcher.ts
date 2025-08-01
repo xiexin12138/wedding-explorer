@@ -40,17 +40,38 @@ const generateAmapConfig: MapConfigGenerator = (lng, lat, name, environment) => 
 
 /**
  * 百度地图配置生成器
+ * 根据百度地图官方文档重写，支持Android、iOS、鸿蒙平台
  */
 const generateBaiduConfig: MapConfigGenerator = (lng, lat, name, environment) => {
   // 百度地图需要从GCJ-02转换为BD-09坐标系
   const [finalLng, finalLat] = gcj02ToBd09(lng, lat);
   
+  // 统一的src参数，用于统计
+  const srcParam = 'wedding-explorer';
+  
+  let appUrl: string;
+  
+  if (environment.isIOS) {
+    // iOS平台：使用baidumap://协议
+    // 参考文档：https://lbs.baidu.com/faq/api?title=webapi/uri/ios
+    // 格式：baidumap://map/marker?location=lat,lng&title=标题&content=内容&src=来源
+    appUrl = `baidumap://map/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&coord_type=bd09ll&src=${srcParam}`;
+  } else if (environment.isHarmonyOS) {
+    // 鸿蒙平台：使用baidumap://协议
+    // 参考文档：https://lbs.baidu.com/faq/api?title=webapi/uri/harmony
+    // 格式：baidumap://map/marker?location=lat,lng&title=标题&content=内容&coord_type=坐标类型
+    appUrl = `baidumap://map/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&coord_type=bd09ll`;
+  } else {
+    // Android平台：使用baidumap://协议（新版）或bdapp://协议（兼容）
+    // 参考文档：https://lbs.baidu.com/faq/api?title=webapi/uri/andriod
+    // 优先使用新版baidumap://协议，格式：baidumap://map/marker?location=lat,lng&title=标题&content=内容&coord_type=坐标类型&src=来源
+    appUrl = `baidumap://map/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&coord_type=bd09ll&src=${srcParam}`;
+  }
+  
   return {
-    // iOS和Android使用不同的URL格式，鸿蒙支持Android格式
-    appUrl: environment.isIOS
-      ? `baidumap://map/direction?destination=name:${name}|latlng:${finalLat},${finalLng}&coord_type=bd09ll&mode=driving&src=wedding-explorer`
-      : `bdapp://map/direction?destination=name:${name}|latlng:${finalLat},${finalLng}&coord_type=bd09ll&mode=driving&src=wedding-explorer`,
-    webUrl: `http://api.map.baidu.com/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&output=html&src=wedding-explorer`
+    appUrl,
+    // 网页版百度地图
+    webUrl: `http://api.map.baidu.com/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&output=html&src=${srcParam}`
   };
 };
 
