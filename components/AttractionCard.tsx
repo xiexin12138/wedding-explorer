@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ChevronUp, X, ChevronLeft, ChevronRight, Map } from "lucide-react";
 import Image from "next/image";
-import gcoord from "gcoord";
+import { detectEnvironment } from "@/lib/environment-detector";
+import { openMap } from "@/lib/map-launcher";
 
 // 定义景点类型枚举
 export enum AttractionType {
@@ -55,6 +56,8 @@ export function AttractionCard({
   // 使用外部传入的 expanded 状态，如果没有则使用内部状态
   const expanded =
     externalExpanded !== undefined ? externalExpanded : internalExpanded;
+
+
 
   // 监听外部 expanded 状态变化
   useEffect(() => {
@@ -120,65 +123,10 @@ export function AttractionCard({
     return distance; // 返回距离（米）
   };
 
-  // 使用gcoord进行坐标转换：GCJ-02 转 BD-09
-  const gcj02ToBd09 = (lng: number, lat: number): [number, number] => {
-    return gcoord.transform([lng, lat], gcoord.GCJ02, gcoord.BD09) as [number, number];
-  };
-
   // 通用地图打开方法
-  const openMap = (mapType: 'amap' | 'baidu' | 'tencent') => {
-    const [lng, lat] = attraction.position;
-    const name = encodeURIComponent(attraction.name);
-    
-    // 检测是否在微信环境中
-    const isWeChat = /micromessenger/i.test(navigator.userAgent);
-    
-    // 根据地图类型进行坐标转换
-    let finalLng = lng;
-    let finalLat = lat;
-    
-    if (mapType === 'baidu') {
-      // 百度地图需要从GCJ-02转换为BD-09坐标系
-      [finalLng, finalLat] = gcj02ToBd09(lng, lat);
-    }
-    // 高德和腾讯地图都使用GCJ-02坐标系，无需转换
-    
-    // 地图配置
-    const mapConfigs = {
-      amap: {
-        // 高德地图使用GCJ-02坐标系（火星坐标系）
-        appUrl: `amapuri://route/plan/?dlat=${lat}&dlon=${lng}&dname=${name}&dev=0&t=0`,
-        webUrl: `https://uri.amap.com/marker?position=${lng},${lat}&name=${name}&src=wedding-explorer`
-      },
-      baidu: {
-        // 百度地图使用BD-09坐标系，已进行坐标转换
-        // 使用最新的百度地图URL Scheme格式
-        appUrl: `baidumap://map/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&src=wedding-explorer`,
-        webUrl: `http://api.map.baidu.com/marker?location=${finalLat},${finalLng}&title=${name}&content=${name}&output=html&src=wedding-explorer`
-      },
-      tencent: {
-        // 腾讯地图使用GCJ-02坐标系
-        appUrl: `qqmap://map/routeplan?type=drive&to=${name}&tocoord=${lat},${lng}`,
-        webUrl: `https://apis.map.qq.com/uri/v1/marker?marker=coord:${lat},${lng};title:${name}&referer=wedding-explorer`
-      }
-    };
-    
-    const config = mapConfigs[mapType];
-    
-    if (isWeChat) {
-      // 微信环境直接打开网页版
-      window.open(config.webUrl, '_blank');
-    } else {
-      // 非微信环境尝试唤起App，失败则降级到网页版
-      const startTime = Date.now();
-      window.location.href = config.appUrl;
-      
-      setTimeout(() => {
-        if (Date.now() - startTime < 2000) {
-          window.open(config.webUrl, '_blank');
-        }
-      }, 1000);
-    }
+  const handleOpenMap = (mapType: 'amap' | 'baidu' | 'tencent') => {
+    const { environment } = detectEnvironment();
+    openMap(mapType, attraction.position, attraction.name, environment);
   };
 
   // 处理媒体导航
@@ -350,7 +298,7 @@ export function AttractionCard({
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
-                  onClick={() => openMap('amap')}
+                  onClick={() => handleOpenMap('amap')}
                 >
                   <Map className="h-4 w-4" />
                   高德地图
@@ -359,7 +307,7 @@ export function AttractionCard({
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
-                  onClick={() => openMap('baidu')}
+                  onClick={() => handleOpenMap('baidu')}
                 >
                   <Map className="h-4 w-4" />
                   百度地图
@@ -368,7 +316,7 @@ export function AttractionCard({
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
-                  onClick={() => openMap('tencent')}
+                  onClick={() => handleOpenMap('tencent')}
                 >
                   <Map className="h-4 w-4" />
                   腾讯地图
