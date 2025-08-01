@@ -291,9 +291,8 @@ export function AttractionCard({
                   onClick={() => {
                     const [lng, lat] = attraction.position;
                     const name = encodeURIComponent(attraction.name);
-                    // 高德地图 App URL Scheme
-                    const url = `amapuri://route/plan/?dlat=${lat}&dlon=${lng}&dname=${name}&dev=0&t=0`;
-                    window.location.href = url;
+                    const url = `https://uri.amap.com/marker?position=${lng},${lat}&name=${name}&src=wedding-explorer`;
+                    window.open(url, '_blank');
                   }}
                 >
                   <Map className="h-4 w-4" />
@@ -306,9 +305,8 @@ export function AttractionCard({
                   onClick={() => {
                     const [lng, lat] = attraction.position;
                     const name = encodeURIComponent(attraction.name);
-                    // 百度地图 App URL Scheme
-                    const url = `baidumap://map/marker?location=${lat},${lng}&title=${name}&content=${name}`;
-                    window.location.href = url;
+                    const url = `https://map.baidu.com/search/${name}/@${lng},${lat},19z?querytype=s&da_src=shareurl&wd=${name}&c=1&src=0&pn=0&sug=0&l=19&b=(${lng-0.01},${lat-0.01};${lng+0.01},${lat+0.01})&from=webmap&biz_forward=%7B%22scaler%22:1,%22styles%22:%22pl%22%7D`;
+                    window.open(url, '_blank');
                   }}
                 >
                   <Map className="h-4 w-4" />
@@ -321,9 +319,8 @@ export function AttractionCard({
                   onClick={() => {
                     const [lng, lat] = attraction.position;
                     const name = encodeURIComponent(attraction.name);
-                    // 腾讯地图 App URL Scheme
-                    const url = `qqmap://map/routeplan?type=drive&to=${name}&tocoord=${lat},${lng}`;
-                    window.location.href = url;
+                    const url = `https://apis.map.qq.com/uri/v1/marker?marker=coord:${lat},${lng};title:${name}&referer=wedding-explorer`;
+                    window.open(url, '_blank');
                   }}
                 >
                   <Map className="h-4 w-4" />
