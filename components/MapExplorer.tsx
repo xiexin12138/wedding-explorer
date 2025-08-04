@@ -641,7 +641,7 @@ export function MapExplorer() {
 
           // 设置地图中心，向上偏移以适应底部空间栏
           // 将用户位置转换为像素坐标
-          const pixel = map.lnglatToPixel(gcj02Point);
+          const pixel = map.lngLatToPixel(gcj02Point);
           // 向上偏移10像素，使用AMap.Pixel的正确方法
           const offsetPixel = new AMapInstance.Pixel(
             pixel.getX(),
