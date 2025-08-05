@@ -2,6 +2,7 @@
   "name": "wedding-explorer",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "pnpm@9.9.0",
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
