@@ -15,8 +15,10 @@ import {
   List,
   Loader2,
 } from "lucide-react";
+import { AttractionForm } from "@/components/AttractionForm";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/components/UserProvider";
+import { useToast } from "@/components/ui/use-toast";
 
 // 导入新的 AttractionCard 组件和相关类型
 import {
@@ -170,8 +172,10 @@ export function MapExplorer() {
   const [cardExpanded, setCardExpanded] = useState<boolean>(false);
   const [userPositionCircle, setUserPositionCircle] =
     useState<AMap.Circle | null>(null);
+  const [showAttractionForm, setShowAttractionForm] = useState<boolean>(false);
   const { theme } = useTheme();
   const { user } = useUser();
+  const { toast } = useToast();
 
   // 在客户端挂载后更新状态
   useEffect(() => {
@@ -446,26 +450,37 @@ export function MapExplorer() {
     map.setCenter(attractions[prevIndex].position);
   };
 
-  // 添加新景点
+  // 显示添加景点表单
   const addNewAttraction = () => {
     // 确保代码只在客户端执行
     if (typeof window === "undefined") return;
 
     if (!map) return;
 
-    const center = map.getCenter();
-    const newAttraction: Attraction = {
-      id: `new-${Date.now()}`,
-      name: "新景点",
-      position: [center.getLng(), center.getLat()],
-      description: "新添加的景点",
-      type: AttractionType.SCENIC, // 默认为景点类型
-      unlockDistance: 100, // 默认解锁距离为100米
-      media: [], // 默认没有媒体内容
-    };
+    setShowAttractionForm(true);
+  };
 
+  // 处理景点表单提交
+  const handleAttractionSubmit = (newAttraction: Attraction) => {
     setAttractions([...attractions, newAttraction]);
     setCurrentAttractionIndex(attractions.length);
+    setShowAttractionForm(false);
+    
+    // 将地图中心移动到新添加的景点
+    if (map) {
+      map.setCenter(newAttraction.position);
+    }
+
+    // 显示成功提示
+    toast({
+      title: "景点添加成功",
+      description: `景点「${newAttraction.name}」已成功添加到地图中`,
+    });
+  };
+
+  // 处理景点表单取消
+  const handleAttractionCancel = () => {
+    setShowAttractionForm(false);
   };
 
   // 更新用户位置标记和精度圈的函数
@@ -641,7 +656,7 @@ export function MapExplorer() {
 
           // 设置地图中心，向上偏移以适应底部空间栏
           // 将用户位置转换为像素坐标
-          const pixel = map.lngLatToPixel(gcj02Point);
+          const pixel = map.lnglatToPixel(gcj02Point);
           // 向上偏移10像素，使用AMap.Pixel的正确方法
           const offsetPixel = new AMapInstance.Pixel(
             pixel.getX(),
@@ -827,6 +842,15 @@ export function MapExplorer() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* 添加景点表单 */}
+      {showAttractionForm && map && (
+        <AttractionForm
+          position={[map.getCenter().getLng(), map.getCenter().getLat()]}
+          onSubmit={handleAttractionSubmit}
+          onCancel={handleAttractionCancel}
+        />
       )}
     </div>
   );
