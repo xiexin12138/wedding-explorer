@@ -84,6 +84,25 @@ enum SettingCategory {
   @@map("setting_category")
 }
 
+
+// ==================== 活动时间线表 ====================
+model ActivityTimeline {
+  id          String   @id @default(cuid())
+  title       String   // 活动标题，例如 "新功能上线"
+  description String?  // 活动的详细描述 (可选)
+
+  // --- 关键改动在这里 ---
+  // 将 startTime 和 endTime 都设置为可选的 DateTime 类型
+  // DateTime 类型本身就支持时分秒的精度
+  startTime   DateTime?  // 活动开始时间 (可选)
+  endTime     DateTime?  // 活动结束时间 (可选)
+
+  type        String?    // 活动类型 (可选)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // // ==================== 用户表 ====================
 
 // /// 用户信息表
