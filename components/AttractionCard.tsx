@@ -101,7 +101,7 @@ export function AttractionCard({
     // 检查是否在解锁距离内
     const unlockDistance = attraction.unlockDistance || 100; // 默认100米
     setIsUnlocked(distance <= unlockDistance);
-  }, [userPosition, attraction]);
+  }, [userPosition, attraction, calculateDistance]);
 
   // 计算两点之间的距离（米）- 使用高德地图的距离计算功能
   const calculateDistance = (

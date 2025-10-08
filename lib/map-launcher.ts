@@ -78,7 +78,7 @@ const generateBaiduConfig: MapConfigGenerator = (lng, lat, name, environment) =>
 /**
  * 腾讯地图配置生成器
  */
-const generateTencentConfig: MapConfigGenerator = (lng, lat, name, _environment) => {
+const generateTencentConfig: MapConfigGenerator = (lng, lat, name) => {
   return {
     // 统一使用qqmap://格式，支持所有平台
     appUrl: `qqmap://map/routeplan?type=drive&to=${name}&tocoord=${lat},${lng}&referer=wedding-explorer`,
@@ -128,8 +128,7 @@ function tryLaunchApp(config: MapConfig): void {
   // 对于其他浏览器，使用iframe方式唤起应用
   if (isIOSSafari) {
     // iOS Safari使用location.href方式
-    // 记录当前时间，用于检测是否成功唤起应用
-    const startTime = Date.now();
+    // iOS Safari使用location.href方式
     
     // 监听页面可见性变化，如果应用成功唤起，页面会变为隐藏状态
     const handleVisibilityChange = () => {
@@ -148,7 +147,7 @@ function tryLaunchApp(config: MapConfig): void {
     // 尝试唤起应用
     try {
       window.location.href = config.appUrl;
-    } catch (e) {
+    } catch {
       // 如果唤起失败，立即跳转到网页版
       clearTimeout(timer);
       window.open(config.webUrl, '_blank');
