@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 import { SettingCategory, SettingValueType } from "@/app/generated/prisma";
+import { cache, CACHE_KEYS } from "@/lib/cache";
 
 // 获取所有字典项
 export async function GET(request: NextRequest) {
@@ -13,6 +14,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "需要管理员权限" }, { status: 403 });
     }
 
+    // 先尝试从缓存获取
+    const cached = cache.get(CACHE_KEYS.DICTIONARY_ITEMS);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const settings = await db.systemSetting.findMany({
       where: {
         category: SettingCategory.SYSTEM,
@@ -22,6 +29,9 @@ export async function GET(request: NextRequest) {
         sortOrder: "asc",
       },
     });
+
+    // 缓存结果（缓存10分钟）
+    cache.set(CACHE_KEYS.DICTIONARY_ITEMS, settings, 10 * 60 * 1000);
 
     return NextResponse.json(settings);
   } catch (error) {
@@ -78,6 +88,9 @@ export async function POST(request: NextRequest) {
         createdBy: user.sub,
       },
     });
+
+    // 清除相关缓存
+    cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
 
     return NextResponse.json(newSetting, { status: 201 });
   } catch (error) {

@@ -3,9 +3,16 @@
  */
 
 import { SystemSetting } from "@/app/generated/prisma";
+import { cache, CACHE_KEYS } from "@/lib/cache";
 
 // 获取所有字典项
 export async function getAllDictionaryItems() {
+  // 先尝试从缓存获取
+  const cached = cache.get<SystemSetting[]>(CACHE_KEYS.DICTIONARY_ITEMS);
+  if (cached) {
+    return cached;
+  }
+
   const response = await fetch("/api/admin/settings/dictionary", {
     method: "GET",
     headers: {
@@ -18,7 +25,12 @@ export async function getAllDictionaryItems() {
     throw new Error(error.error || "获取字典项失败");
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // 缓存结果（缓存10分钟）
+  cache.set(CACHE_KEYS.DICTIONARY_ITEMS, data, 10 * 60 * 1000);
+  
+  return data;
 }
 
 // 获取单个字典项
