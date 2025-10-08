@@ -1,25 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getDictionaryValueByKey } from "@/lib/services/dictionary";
 
 export function WeddingCountdown() {
   const [timeLeft, setTimeLeft] = useState("- 天 - 小时 - 分钟 - 秒");
   const [weddingDate, setWeddingDate] = useState<Date | null>(null);  
 
-  // 只在组件初始化时获取一次字典值
+  // 开始日期直接硬编码为 2025-10-25 06:00
   useEffect(() => {
-    const loadWeddingDate = async () => {
-      try {
-        const WEDDING_DATE_KEY = await getDictionaryValueByKey("beginDate");
-        setWeddingDate(new Date(WEDDING_DATE_KEY));
-      } catch (error) {
-        console.error("获取婚礼日期失败:", error);
-        setTimeLeft("无法获取活动日期");
-      }
-    };
-
-    loadWeddingDate();
+    setWeddingDate(new Date("2025-10-25 06:00"));
   }, []);
 
   // 计算倒计时的定时器
