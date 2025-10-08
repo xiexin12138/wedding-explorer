@@ -1,6 +1,7 @@
 /**
  * 管理员设置页面
  */
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Card,
@@ -10,6 +11,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "管理员设置 - Xie & Feng Wedding",
+  description: "管理系统配置和数据字典",
+};
 
 export default function AdminSettingsPage() {
   return (

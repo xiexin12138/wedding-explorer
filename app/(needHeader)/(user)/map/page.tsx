@@ -4,10 +4,16 @@ import { MapExplorer } from "@/components/MapExplorer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 
 export default function MapPage() {
   const router = useRouter();
+
+  // 设置页面标题
+  useEffect(() => {
+    document.title = "地图探索 - Xie & Feng Wedding";
+  }, []);
 
   const handleBackToHome = () => {
     // 使用 router.push 进行客户端路由跳转，并强制刷新

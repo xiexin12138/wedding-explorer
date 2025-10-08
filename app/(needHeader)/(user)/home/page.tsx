@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   Card,
   CardContent,
@@ -9,6 +10,11 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 import { Map } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "首页 - Xie & Feng Wedding",
+  description: "欢迎来到我们的婚礼探索项目",
+};
 
 export default function HomePage() {
   return (

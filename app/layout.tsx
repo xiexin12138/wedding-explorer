@@ -7,8 +7,8 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "欢迎您",
-  description: "欢迎您参加我们的活动",
+  title: "Xie & Feng Wedding",
+  description: "欢迎您参加我们的婚礼",
 };
 
 export default async function RootLayout({

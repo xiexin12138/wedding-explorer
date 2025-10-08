@@ -48,6 +48,11 @@ export default function DictionaryConfigPage() {
   const [dictionaryItems, setDictionaryItems] = useState<DictionaryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<DictionaryItem | null>(null);
+
+  // 设置页面标题
+  useEffect(() => {
+    document.title = "数据字典管理 - Xie & Feng Wedding";
+  }, []);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const { toast } = useToast();
   

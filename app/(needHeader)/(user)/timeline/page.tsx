@@ -22,6 +22,11 @@ function Timeline() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 设置页面标题
+  useEffect(() => {
+    document.title = "活动时间安排 - Xie & Feng Wedding";
+  }, []);
+
   // 解析日期字符串为Date对象
   const parseDate = (dateStr: string): Date => {
     // 处理不同的日期格式

@@ -4,6 +4,9 @@ import { guard } from "@/lib/auth-graud/config";
 
 export default function LoginPage() {
   useEffect(() => {
+    // 设置页面标题
+    document.title = "登录 - Xie & Feng Wedding";
+    
     // 确保只在客户端环境中调用
     if (typeof window !== "undefined") {
       guard.startWithRedirect();
