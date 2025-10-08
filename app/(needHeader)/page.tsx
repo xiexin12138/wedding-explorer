@@ -46,13 +46,13 @@ export default function HomePage() {
       <div className="relative z-10 min-h-full overflow-y-auto p-4">
         <div className="content-container w-full space-y-8">
           {/* 欢迎卡片 */}
-          <Card className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto">
+          <Card className="w-full pt-4 max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold">
-                欢迎来到 Wedding Explorer
+                欢迎参加我们的婚礼
               </CardTitle>
               <CardDescription className="text-lg">
-                您的探索之旅即将开始
+                我们将共度一个愉快的周六
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-6">
@@ -64,7 +64,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
           {/* 测试用的额外卡片 */}
-          {Array.from({ length: 5 }).map((_, index) => (
+          {/* {Array.from({ length: 5 }).map((_, index) => (
             <Card
               key={index}
               className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto mt-110"
@@ -86,7 +86,7 @@ export default function HomePage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ))} */}
         </div>
       </div>
     </div>

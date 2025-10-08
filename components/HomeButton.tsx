@@ -15,15 +15,15 @@ export function HomeButton() {
 
   // 根据用户状态决定是否显示按钮
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading) {
       setShouldShow(true);
     } else {
       setShouldShow(false);
     }
-  }, [loading, user]);
+  }, [loading]);
 
-  // 如果正在加载或用户未登录，不显示按钮
-  if (loading || !user || !shouldShow) {
+  // 如果正在加载，不显示按钮
+  if (loading || !shouldShow) {
     return null;
   }
 
@@ -33,18 +33,27 @@ export function HomeButton() {
     // 添加一个小延迟，让用户看到按钮状态变化
     await new Promise((resolve) => setTimeout(resolve, 100));
     
-    router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT);
+    if (user) {
+      // 已登录用户，跳转到活动页面
+      router.push(SPECIAL_ROUTES.DEFAULT_REDIRECT);
+    } else {
+      // 未登录用户，跳转到登录页面
+      router.push(SPECIAL_ROUTES.LOGIN);
+    }
+    
     // 强制刷新路由缓存
     router.refresh();
   };
 
   return (
     <div className="space-y-3">
-      {/* 用户信息显示 */}
-      <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-        <User className="h-4 w-4" />
-        <span>欢迎，{user.name || user.email || user.username || "用户"}</span>
-      </div>
+      {/* 用户信息显示 - 只在已登录时显示 */}
+      {user && (
+        <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+          <User className="h-4 w-4" />
+          <span>欢迎，{user.name || user.email || user.username || "用户"}</span>
+        </div>
+      )}
       
       {/* 按钮 */}
       <Button 
@@ -60,7 +69,7 @@ export function HomeButton() {
           </>
         ) : (
           <>
-            <span>立即参加活动！</span>
+            <span>{user ? "立即参加活动！" : "去登录"}</span>
             <ArrowRight className="h-4 w-4" />
           </>
         )}

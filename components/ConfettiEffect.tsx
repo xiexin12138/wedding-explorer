@@ -21,7 +21,7 @@ export function ConfettiEffect({
 
   useEffect(() => {
     // 只有在用户已登录且不在加载状态时才显示confetti
-    if (trigger && user && !loading) {
+    if (trigger && !loading) {
       // 创建爱心形状
       const heart = confetti.shapeFromPath({
         path: "M167 72c19,-38 37,-56 75,-56 42,0 76,33 76,75 0,76 -76,151 -151,227 -76,-76 -151,-151 -151,-227 0,-42 33,-75 75,-75 38,0 57,18 76,56z",
