@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,29 @@ export function AttractionCard({
 
 
 
+  // 计算两点之间的距离（米）- 使用高德地图的距离计算功能
+  const calculateDistance = useCallback((
+    lng1: number,
+    lat1: number,
+    lng2: number,
+    lat2: number
+  ): number => {
+    // 如果高德地图实例不存在，使用默认值
+    if (!AMapInstance) {
+      return 10000; // 默认返回一个较大的距离，确保未解锁
+    }
+    
+    // 创建两个点
+    const point1 = new AMapInstance.LngLat(lng1, lat1);
+    const point2 = new AMapInstance.LngLat(lng2, lat2);
+    
+    // 计算两点之间的距离
+    const distance = point1.distance(point2);
+    console.log("🚀 ~ calculateDistance ~ distance:", distance)
+    
+    return distance; // 返回距离（米）
+  }, [AMapInstance]);
+
   // 监听外部 expanded 状态变化
   useEffect(() => {
     // 只有当 externalExpanded 不为 undefined 时才处理
@@ -80,6 +103,7 @@ export function AttractionCard({
       }
     }
   }, [externalExpanded, internalExpanded]);
+  
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
@@ -102,29 +126,6 @@ export function AttractionCard({
     const unlockDistance = attraction.unlockDistance || 100; // 默认100米
     setIsUnlocked(distance <= unlockDistance);
   }, [userPosition, attraction, calculateDistance]);
-
-  // 计算两点之间的距离（米）- 使用高德地图的距离计算功能
-  const calculateDistance = (
-    lng1: number,
-    lat1: number,
-    lng2: number,
-    lat2: number
-  ): number => {
-    // 如果高德地图实例不存在，使用默认值
-    if (!AMapInstance) {
-      return 10000; // 默认返回一个较大的距离，确保未解锁
-    }
-    
-    // 创建两个点
-    const point1 = new AMapInstance.LngLat(lng1, lat1);
-    const point2 = new AMapInstance.LngLat(lng2, lat2);
-    
-    // 计算两点之间的距离
-    const distance = point1.distance(point2);
-    console.log("🚀 ~ calculateDistance ~ distance:", distance)
-    
-    return distance; // 返回距离（米）
-  };
 
   // 通用地图打开方法
   const handleOpenMap = async (mapType: 'amap' | 'baidu' | 'tencent') => {
