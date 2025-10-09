@@ -68,7 +68,7 @@ const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
     itemLabel: '礼物名称',
     itemPlaceholder: '请输入礼物名称',
     defaultEmoji: '🎁',
-    tipText: '游戏币可以在游园会各个游戏环节中赢取，赢取的游戏币可以兑换对应的礼品。汇率会根据活动进度实时调整，页面每10秒自动刷新，为您提供最新信息。',
+    tipText: '游戏币可以在游园会各个游戏环节中赢取，赢取的游戏币可以兑换对应的礼品。\n\n汇率会根据活动进度实时调整，页面每10秒自动刷新，为您提供最新信息。',
   },
   'auction': {
     key: 'auction',
@@ -79,7 +79,7 @@ const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
     itemLabel: '行为名称',
     itemPlaceholder: '请输入行为名称（如：喝酒、俯卧撑等）',
     defaultEmoji: '🍺',
-    tipText: '在礼物拍卖环节，除了使用游戏币，您还可以通过完成特定行为来代替游戏币。汇率会根据活动进度实时调整，页面每10秒自动刷新，为您提供最新信息。',
+    tipText: '在礼物拍卖环节，除了使用游戏币，您还可以通过完成特定行为来代替游戏币。\n\n代替的游戏币不能超过拍卖使用的金币的一半，比如拍卖最终定价100金币，您最多可以代替50金币，超出的部分不作数，所以拍卖的时候记得看自己最多可以叠多少上去。\n\n汇率会根据活动进度实时调整，页面每10秒自动刷新，为您提供最新信息。',
   },
 };
 
@@ -717,7 +717,7 @@ export default function ExchangeRatePage() {
               <p className="text-sm text-blue-900/80 dark:text-blue-100/70 font-medium mb-1">
                 温馨提示
               </p>
-              <p className="text-xs text-blue-800/70 dark:text-blue-200/60">
+              <p className="text-xs text-blue-800/70 dark:text-blue-200/60 whitespace-pre-line">
                 {sceneConfig.tipText}
               </p>
             </div>
