@@ -189,7 +189,7 @@ export default function HomePage() {
                 欢迎参加我们的婚礼
               </CardTitle>
               <CardDescription className="text-lg">
-                我们将共度一个愉快的周六
+                我们将共度一个愉快的周末
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-6">
@@ -202,14 +202,14 @@ export default function HomePage() {
           </Card>
 
           {/* 婚礼场地卡片 */}
-          <Card className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto mt-80">
+          <Card className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
                 <MapPin className="h-6 w-6 text-primary" />
                 婚礼场地
               </CardTitle>
               <CardDescription className="text-lg font-medium">
-                花园里
+                InGarden 花园里
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

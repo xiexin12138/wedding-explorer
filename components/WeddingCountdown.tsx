@@ -34,17 +34,17 @@ export function WeddingCountdown() {
           } else {
             // 如果日期格式不正确，使用默认日期
             console.warn("字典中的 beginDate 格式不正确，使用默认日期");
-            setWeddingDate(new Date("2025-10-25 06:00"));
+            setWeddingDate(new Date("2025-10-25 00:00"));
           }
         } else {
           // 如果字典中没有配置，使用默认日期
           console.warn("字典中未配置 beginDate，使用默认日期");
-          setWeddingDate(new Date("2025-10-25 06:00"));
+          setWeddingDate(new Date("2025-10-25 00:00"));
         }
       } catch (error) {
         console.error("获取婚礼日期失败:", error);
         // 出错时使用默认日期
-        setWeddingDate(new Date("2025-10-25 06:00"));
+        setWeddingDate(new Date("2025-10-25 00:00"));
       } finally {
         setLoading(false);
       }
@@ -62,7 +62,7 @@ export function WeddingCountdown() {
       const difference = weddingDate.getTime() - now.getTime();
 
       if (difference <= 0) {
-        setTimeLeft("活动已经开始啦！🎉");
+        setTimeLeft("婚礼就在今天！🎉");
         return;
       }
 
@@ -88,7 +88,7 @@ export function WeddingCountdown() {
   return (
     <div className="text-center space-y-2">
       <div className="text-lg font-medium text-muted-foreground">
-        距离活动还有
+        距离婚礼当天还有
       </div>
       <div className="text-2xl font-bold text-primary">
         {loading ? "加载中..." : timeLeft}
