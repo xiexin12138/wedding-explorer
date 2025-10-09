@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
 import { useUser } from "@/components/UserProvider";
 
@@ -18,10 +18,12 @@ export function ConfettiEffect({
   origin = { x: 0.5, y: 0.6 },
 }: ConfettiEffectProps) {
   const { user, loading } = useUser();
+  const hasTriggered = useRef(false);
 
   useEffect(() => {
-    // 只有在用户已登录且不在加载状态时才显示confetti
-    if (trigger && !loading) {
+    // 只有在用户已登录且不在加载状态时才显示confetti，且只触发一次
+    if (trigger && !loading && !hasTriggered.current) {
+      hasTriggered.current = true;
       // 创建爱心形状
       const heart = confetti.shapeFromPath({
         path: "M167 72c19,-38 37,-56 75,-56 42,0 76,33 76,75 0,76 -76,151 -151,227 -76,-76 -151,-151 -151,-227 0,-42 33,-75 75,-75 38,0 57,18 76,56z",
