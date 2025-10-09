@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 import { Map, Coins, Heart, Calendar } from "lucide-react";
 import { NavigationButton } from "@/components/NavigationButton";
@@ -88,12 +87,13 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="relative z-10">
-            <Button 
+            <NavigationButton 
+              href={SPECIAL_ROUTES.EXCHANGE_RATE}
               variant="outline" 
               className="w-full border-amber-400/50 bg-amber-100/50 hover:bg-amber-200/70 text-amber-900 hover:text-amber-950 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-100 dark:border-amber-600/50"
             >
               查看当前游戏币汇率
-            </Button>
+            </NavigationButton>
           </CardContent>
         </Card>
         

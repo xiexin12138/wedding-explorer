@@ -22,6 +22,7 @@ export const PUBLIC_ROUTES = [
 export const PROTECTED_ROUTES = [
   '/home',  // 活动内容页
   '/map',   // 地图探索页
+  '/exchange-rate',  // 游戏币兑换汇率页
 ] as const
 
 // 管理员路由（需要管理员权限才能访问）
@@ -40,6 +41,7 @@ export const SPECIAL_ROUTES = {
   SETTING: '/settings', // 管理员设置页面
   MAP: '/map',         // 地图探索页面
   TIMELINE: '/timeline', // 时间线页面
+  EXCHANGE_RATE: '/exchange-rate', // 游戏币兑换汇率页面
 } as const
 
 // API 路由配置

@@ -7,6 +7,10 @@ import {
   deleteDictionaryItem,
 } from "@/lib/repositories/dictionary.repository";
 
+// 禁用 Next.js 默认缓存
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // 获取单个字典项
 export async function GET(
   request: NextRequest,
@@ -82,6 +86,7 @@ export async function PATCH(
 
     // 清除相关缓存
     cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
+    cache.delete("exchange_rate_items"); // 同时清除兑换项目缓存
 
     // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
     const transformedSetting = {
@@ -139,6 +144,7 @@ export async function DELETE(
 
     // 清除相关缓存
     cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
+    cache.delete("exchange_rate_items"); // 同时清除兑换项目缓存
 
     return NextResponse.json({ success: true });
   } catch (error) {
