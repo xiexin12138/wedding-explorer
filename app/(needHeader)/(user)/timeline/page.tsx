@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getDictionaryValueByKey } from "@/lib/services/dictionary";
+import { getDictionaryValueByKey } from "@/features/dictionary";
+import { cn } from "@/lib/utils";
 
 interface TimelineItem {
   title: string;
@@ -85,11 +86,11 @@ function Timeline() {
         setError(null);
 
         // 从数据字典获取timeline数据
-        const timelineJson = await getDictionaryValueByKey("timeline");
+        const timelineValue = await getDictionaryValueByKey("timeline");
 
-        if (timelineJson) {
+        if (timelineValue?.value) {
           // 解析JSON数据
-          const parsedData = JSON.parse(timelineJson) as TimelineItem[];
+          const parsedData = JSON.parse(timelineValue.value) as TimelineItem[];
           setTimelineData(parsedData);
         } else {
           // 如果没有数据，使用默认数据
@@ -203,36 +204,41 @@ function Timeline() {
               />
 
               <Card
-                className={`transition-all duration-200 hover:shadow-lg ${
+                className={cn(
+                  "transition-all duration-300 hover:shadow-lg border border-transparent",
                   isCurrent
-                    ? "ring-2 ring-green-500 ring-opacity-50 shadow-lg"
-                    : ""
-                }`}
+                    ? "bg-emerald-50/70 border-emerald-200 shadow-emerald-100/90 dark:bg-emerald-900/20 dark:border-emerald-700"
+                    : "hover:border-muted shadow-sm"
+                )}
               >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle
-                      className={`text-lg ${
-                        isCurrent ? "text-green-600 dark:text-green-400" : ""
-                      }`}
+                      className={cn(
+                        "text-lg transition-colors",
+                        isCurrent && "text-emerald-700 dark:text-emerald-300"
+                      )}
                     >
                       {item.title}
                     </CardTitle>
                     <time
-                      className={`text-sm font-medium ${
+                      className={cn(
+                        "text-sm font-medium transition-colors",
                         isCurrent
-                          ? "text-green-600 dark:text-green-400"
+                          ? "text-emerald-700 dark:text-emerald-300"
                           : "text-muted-foreground"
-                      }`}
+                      )}
                     >
                       {item.date}
                     </time>
                   </div>
                   <Badge
-                    variant={isCurrent ? "default" : item.variant || null}
-                    className={`w-fit ${
-                      isCurrent ? "bg-green-500 hover:bg-green-600" : ""
-                    }`}
+                    variant={isCurrent ? "secondary" : item.variant || undefined}
+                    className={cn(
+                      "w-fit transition-colors",
+                      isCurrent &&
+                        "bg-emerald-500/90 text-white hover:bg-emerald-600 dark:bg-emerald-500"
+                    )}
                   >
                     {item.tag}
                   </Badge>
@@ -257,7 +263,7 @@ export default function TimelinePage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">活动时间安排</h1>
         <p className="text-muted-foreground break-words overflow-wrap-anywhere">
-          记录我们婚礼探索项目的重要里程碑和发展历程
+          下面展示婚礼活动的时间安排，当前正在进行的活动将会高亮展示
         </p>
       </div>
       <Timeline />

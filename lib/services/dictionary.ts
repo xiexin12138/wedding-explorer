@@ -100,6 +100,7 @@ export async function updateDictionaryItem(
     displayName: string;
     value: string;
     description: string;
+    valueType: string;
     isEnabled: boolean;
     sortOrder: number;
   }>

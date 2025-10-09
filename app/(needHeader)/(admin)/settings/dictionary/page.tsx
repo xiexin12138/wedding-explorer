@@ -6,13 +6,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -25,16 +23,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { SystemSetting, SettingValueType } from "@/app/generated/prisma";
-import { useToast } from "@/components/ui/use-toast";
 import {
-  getAllDictionaryItems,
-  createDictionaryItem,
-  updateDictionaryItem,
-  deleteDictionaryItem,
-} from "@/lib/services/dictionary";
-
-type DictionaryItem = SystemSetting;
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { SettingValueType } from "@/app/generated/prisma";
+import { useToast } from "@/components/ui/use-toast";
+import type { DictionaryItem } from "@/features/dictionary";
+import {
+  createDictionaryItemClient,
+  deleteDictionaryItemClient,
+  fetchDictionaryItems,
+  updateDictionaryItemClient,
+} from "@/features/dictionary";
 
 type FormData = {
   key: string;
@@ -48,13 +53,15 @@ export default function DictionaryConfigPage() {
   const [dictionaryItems, setDictionaryItems] = useState<DictionaryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<DictionaryItem | null>(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [jsonError, setJsonError] = useState<string>("");
+  const { toast } = useToast();
 
   // 设置页面标题
   useEffect(() => {
     document.title = "数据字典管理 - Xie & Feng Wedding";
   }, []);
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const { toast } = useToast();
   
   const [formData, setFormData] = useState<FormData>({
     key: "",
@@ -66,10 +73,10 @@ export default function DictionaryConfigPage() {
 
   // 加载字典项
   useEffect(() => {
-    const fetchDictionaryItems = async () => {
+    const loadDictionaryItems = async () => {
       try {
         setLoading(true);
-        const data = await getAllDictionaryItems();
+        const data = await fetchDictionaryItems();
         setDictionaryItems(data);
       } catch (error) {
         console.error("获取字典项失败:", error);
@@ -83,12 +90,13 @@ export default function DictionaryConfigPage() {
       }
     };
 
-    fetchDictionaryItems();
+    loadDictionaryItems();
   }, [toast]);
 
   const handleAdd = () => {
     setIsAddingNew(true);
     setEditingItem(null);
+    setJsonError("");
     setFormData({
       key: "",
       displayName: "",
@@ -96,50 +104,139 @@ export default function DictionaryConfigPage() {
       description: "",
       valueType: SettingValueType.STRING,
     });
+    setIsDialogOpen(true);
   };
 
   const handleEdit = (item: DictionaryItem) => {
     setEditingItem(item);
     setIsAddingNew(false);
+    setJsonError("");
+    // 如果是 JSON 或 ARRAY 类型，格式化显示
+    let displayValue = item.value || "";
+    if ((item.valueType === SettingValueType.JSON || item.valueType === SettingValueType.ARRAY) && displayValue) {
+      try {
+        const parsed = JSON.parse(displayValue);
+        displayValue = JSON.stringify(parsed, null, 2);
+      } catch {
+        // 如果解析失败，保持原值
+      }
+    }
     setFormData({
       key: item.key,
       displayName: item.displayName,
-      value: item.value || "",
+      value: displayValue,
       description: item.description || "",
       valueType: item.valueType,
     });
+    setIsDialogOpen(true);
+  };
+
+  // 验证 JSON 格式
+  const validateJson = (value: string): boolean => {
+    if (!value.trim()) {
+      setJsonError("");
+      return true;
+    }
+    try {
+      JSON.parse(value);
+      setJsonError("");
+      return true;
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : "JSON 格式错误");
+      return false;
+    }
+  };
+
+  // 格式化 JSON
+  const handleFormatJson = () => {
+    if (!formData.value.trim()) return;
+    try {
+      const parsed = JSON.parse(formData.value);
+      const formatted = JSON.stringify(parsed, null, 2);
+      setFormData({ ...formData, value: formatted });
+      setJsonError("");
+      toast({
+        title: "格式化成功",
+        description: "JSON 已格式化",
+      });
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : "JSON 格式错误");
+      toast({
+        title: "格式化失败",
+        description: "请检查 JSON 格式是否正确",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 处理值变化
+  const handleValueChange = (value: string) => {
+    setFormData({ ...formData, value });
+    // 如果是 JSON 或 ARRAY 类型，实时验证
+    if (formData.valueType === SettingValueType.JSON || formData.valueType === SettingValueType.ARRAY) {
+      validateJson(value);
+    }
+  };
+
+  // 处理类型变化
+  const handleTypeChange = (valueType: SettingValueType) => {
+    setFormData({ ...formData, valueType });
+    setJsonError("");
+    // 如果切换到 JSON 或 ARRAY 类型，验证当前值
+    if ((valueType === SettingValueType.JSON || valueType === SettingValueType.ARRAY) && formData.value) {
+      validateJson(formData.value);
+    }
   };
 
   const handleSave = async () => {
+    // 如果是 JSON 或 ARRAY 类型，先验证格式
+    if ((formData.valueType === SettingValueType.JSON || formData.valueType === SettingValueType.ARRAY) && formData.value) {
+      if (!validateJson(formData.value)) {
+        toast({
+          title: "保存失败",
+          description: "请修正 JSON 格式错误",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       if (isAddingNew) {
         // 创建新字典项
-        const newItem = await createDictionaryItem({
+        const newItem = await createDictionaryItemClient({
           key: formData.key,
           displayName: formData.displayName,
-          value: formData.value,
-          description: formData.description,
+          value: formData.value || undefined,
+          description: formData.description || undefined,
           valueType: formData.valueType,
         });
         
-        setDictionaryItems([...dictionaryItems, newItem]);
+        setDictionaryItems((prev) =>
+          [...prev, newItem].sort(
+            (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+          )
+        );
         toast({
           title: "创建成功",
           description: `字典项 "${formData.displayName}" 已创建`,
         });
       } else if (editingItem) {
         // 更新字典项
-        const updatedItem = await updateDictionaryItem(editingItem.id, {
+        const updatedItem = await updateDictionaryItemClient(editingItem.id, {
           key: formData.key,
           displayName: formData.displayName,
-          value: formData.value,
-          description: formData.description,
+          value: formData.value || undefined,
+          description: formData.description || undefined,
+          valueType: formData.valueType,
         });
         
-        setDictionaryItems(
-          dictionaryItems.map((item) =>
-            item.id === editingItem.id ? updatedItem : item
-          )
+        setDictionaryItems((prev) =>
+          prev
+            .map((item) => (item.id === editingItem.id ? updatedItem : item))
+            .sort(
+              (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+            )
         );
         toast({
           title: "更新成功",
@@ -156,6 +253,7 @@ export default function DictionaryConfigPage() {
       return;
     }
     
+    setIsDialogOpen(false);
     setIsAddingNew(false);
     setEditingItem(null);
     setFormData({
@@ -169,8 +267,8 @@ export default function DictionaryConfigPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDictionaryItem(id);
-      setDictionaryItems(dictionaryItems.filter((item) => item.id !== id));
+      await deleteDictionaryItemClient(id);
+      setDictionaryItems((prev) => prev.filter((item) => item.id !== id));
       toast({
         title: "删除成功",
         description: "字典项已删除",
@@ -186,8 +284,10 @@ export default function DictionaryConfigPage() {
   };
 
   const handleCancel = () => {
+    setIsDialogOpen(false);
     setIsAddingNew(false);
     setEditingItem(null);
+    setJsonError("");
     setFormData({
       key: "",
       displayName: "",
@@ -204,16 +304,16 @@ export default function DictionaryConfigPage() {
         <Button onClick={handleAdd}>添加系统设置</Button>
       </div>
 
-      {/* 添加/编辑表单 */}
-      {(isAddingNew || editingItem) && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>{isAddingNew ? "添加系统设置" : "编辑系统设置"}</CardTitle>
-            <CardDescription>
+      {/* 添加/编辑模态框 */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isAddingNew ? "添加系统设置" : "编辑系统设置"}</DialogTitle>
+            <DialogDescription>
               {isAddingNew ? "添加新的系统设置项" : "编辑现有的系统设置项"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="key">键名</Label>
@@ -239,35 +339,75 @@ export default function DictionaryConfigPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="value">键值</Label>
+            <div className="space-y-2">
+              <Label htmlFor="valueType">值类型</Label>
+              <select
+                id="valueType"
+                value={formData.valueType}
+                onChange={(e) =>
+                  handleTypeChange(e.target.value as SettingValueType)
+                }
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value={SettingValueType.STRING}>字符串 (STRING)</option>
+                <option value={SettingValueType.NUMBER}>数字 (NUMBER)</option>
+                <option value={SettingValueType.BOOLEAN}>布尔值 (BOOLEAN)</option>
+                <option value={SettingValueType.JSON}>JSON对象 (JSON)</option>
+                <option value={SettingValueType.ARRAY}>数组 (ARRAY)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="value">
+                  键值
+                  {(formData.valueType === SettingValueType.JSON || formData.valueType === SettingValueType.ARRAY) && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (需要有效的 JSON 格式)
+                    </span>
+                  )}
+                </Label>
+                {(formData.valueType === SettingValueType.JSON || formData.valueType === SettingValueType.ARRAY) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleFormatJson}
+                    className="h-7 text-xs"
+                  >
+                    格式化
+                  </Button>
+                )}
+              </div>
+              {formData.valueType === SettingValueType.JSON || formData.valueType === SettingValueType.ARRAY ? (
+                <Textarea
+                  id="value"
+                  value={formData.value}
+                  onChange={(e) => handleValueChange(e.target.value)}
+                  placeholder={
+                    formData.valueType === SettingValueType.JSON
+                      ? '请输入 JSON 对象，例如: {"key": "value"}'
+                      : '请输入 JSON 数组，例如: ["item1", "item2"]'
+                  }
+                  className={`min-h-[120px] font-mono text-xs ${jsonError ? "border-red-500" : ""}`}
+                />
+              ) : (
                 <Input
                   id="value"
                   value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
+                  onChange={(e) => handleValueChange(e.target.value)}
+                  placeholder={
+                    formData.valueType === SettingValueType.NUMBER
+                      ? "请输入数字"
+                      : formData.valueType === SettingValueType.BOOLEAN
+                      ? "true 或 false"
+                      : "请输入键值"
                   }
-                  placeholder="请输入键值"
+                  type={formData.valueType === SettingValueType.NUMBER ? "number" : "text"}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="valueType">值类型</Label>
-                <select
-                  id="valueType"
-                  value={formData.valueType}
-                  onChange={(e) =>
-                    setFormData({ ...formData, valueType: e.target.value as SettingValueType })
-                  }
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value={SettingValueType.STRING}>字符串 (STRING)</option>
-                  <option value={SettingValueType.NUMBER}>数字 (NUMBER)</option>
-                  <option value={SettingValueType.BOOLEAN}>布尔值 (BOOLEAN)</option>
-                  <option value={SettingValueType.JSON}>JSON对象 (JSON)</option>
-                  <option value={SettingValueType.ARRAY}>数组 (ARRAY)</option>
-                </select>
-              </div>
+              )}
+              {jsonError && (
+                <p className="text-xs text-red-500 mt-1">{jsonError}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">描述</Label>
@@ -280,21 +420,17 @@ export default function DictionaryConfigPage() {
                 placeholder="请输入描述"
               />
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 justify-end">
-              <Button onClick={handleSave} className="flex-1 sm:flex-none">
-                保存
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                className="flex-1 sm:flex-none"
-              >
-                取消
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancel}>
+              取消
+            </Button>
+            <Button onClick={handleSave}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 字典项列表 */}
       {loading ? (

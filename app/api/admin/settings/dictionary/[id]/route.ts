@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { cache, CACHE_KEYS } from "@/lib/cache";
+import {
+  getDictionaryItemById,
+  updateDictionaryItem,
+  deleteDictionaryItem,
+} from "@/lib/repositories/dictionary.repository";
 
 // 获取单个字典项
 export async function GET(
@@ -17,9 +22,8 @@ export async function GET(
 
     const { id } = await params;
 
-    const setting = await db.systemSetting.findUnique({
-      where: { id },
-    });
+    // 使用 CloudBase 仓储层获取数据
+    const setting = await getDictionaryItemById(id);
 
     if (!setting) {
       return NextResponse.json(
@@ -55,42 +59,44 @@ export async function PATCH(
     const data = await request.json();
     const { displayName, value, description, isEnabled, sortOrder } = data;
 
-    // 检查字典项是否存在
-    const setting = await db.systemSetting.findUnique({
-      where: { id },
-    });
+    // 构建更新数据对象
+    const updateData: any = {
+      updatedBy: user.sub,
+    };
 
-    if (!setting) {
-      return NextResponse.json(
-        { error: "字典项不存在" },
-        { status: 404 }
-      );
-    }
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (value !== undefined) updateData.value = value;
+    if (description !== undefined) updateData.description = description;
+    if (isEnabled !== undefined) updateData.isEnabled = isEnabled;
+    if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
+    if (data.key !== undefined) updateData.key = data.key;
 
-    // 系统内置设置不允许修改键名
-    if (setting.isSystem && data.key && data.key !== setting.key) {
-      return NextResponse.json(
-        { error: "系统内置设置不允许修改键名" },
-        { status: 400 }
-      );
-    }
+    // 使用 CloudBase 仓储层更新数据
+    const updatedSetting = await updateDictionaryItem(id, updateData);
 
-    const updatedSetting = await db.systemSetting.update({
-      where: { id },
-      data: {
-        ...(displayName !== undefined && { displayName }),
-        ...(value !== undefined && { value }),
-        ...(description !== undefined && { description }),
-        ...(isEnabled !== undefined && { isEnabled }),
-        ...(sortOrder !== undefined && { sortOrder }),
-        ...(data.key !== undefined && { key: data.key }),
-        updatedBy: user.sub,
-      },
-    });
+    // 清除相关缓存
+    cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
 
     return NextResponse.json(updatedSetting);
   } catch (error) {
     console.error("更新字典项失败:", error);
+    
+    // 处理特定错误
+    if (error instanceof Error) {
+      if (error.message === "字典项不存在") {
+        return NextResponse.json(
+          { error: "字典项不存在" },
+          { status: 404 }
+        );
+      }
+      if (error.message === "系统内置设置不允许修改键名") {
+        return NextResponse.json(
+          { error: "系统内置设置不允许修改键名" },
+          { status: 400 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       { error: "更新字典项失败" },
       { status: 500 }
@@ -116,33 +122,32 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // 检查字典项是否存在
-    const setting = await db.systemSetting.findUnique({
-      where: { id },
-    });
+    // 使用 CloudBase 仓储层删除数据
+    await deleteDictionaryItem(id);
 
-    if (!setting) {
-      return NextResponse.json(
-        { error: "字典项不存在" },
-        { status: 404 }
-      );
-    }
-
-    // 系统内置设置不允许删除
-    if (setting.isSystem) {
-      return NextResponse.json(
-        { error: "系统内置设置不允许删除" },
-        { status: 400 }
-      );
-    }
-
-    await db.systemSetting.delete({
-      where: { id },
-    });
+    // 清除相关缓存
+    cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("删除字典项失败:", error);
+    
+    // 处理特定错误
+    if (error instanceof Error) {
+      if (error.message === "字典项不存在") {
+        return NextResponse.json(
+          { error: "字典项不存在" },
+          { status: 404 }
+        );
+      }
+      if (error.message === "系统内置设置不允许删除") {
+        return NextResponse.json(
+          { error: "系统内置设置不允许删除" },
+          { status: 400 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       { error: "删除字典项失败" },
       { status: 500 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getDictionaryItemByKey } from "@/lib/repositories/dictionary.repository";
 
 // 通过key获取字典项的值
 export async function GET(
@@ -9,14 +9,10 @@ export async function GET(
   try {
     const { key } = await params;
 
-    const setting = await db.systemSetting.findUnique({
-      where: { 
-        key,
-        isEnabled: true // 只返回启用的设置项
-      },
-    });
+    // 使用 CloudBase 仓储层获取数据
+    const setting = await getDictionaryItemByKey(key);
 
-    if (!setting) {
+    if (!setting || !setting.isEnabled) {
       return NextResponse.json(
         { error: "字典项不存在或已禁用" },
         { status: 404 }

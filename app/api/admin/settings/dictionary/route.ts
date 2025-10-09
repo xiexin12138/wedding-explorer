@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
-import { SettingCategory, SettingValueType } from "@/app/generated/prisma";
 import { cache, CACHE_KEYS } from "@/lib/cache";
+import {
+  getAllDictionaryItems,
+  createDictionaryItem,
+  SettingCategory,
+  SettingValueType,
+} from "@/lib/repositories/dictionary.repository";
 
 // 获取所有字典项
 export async function GET(request: NextRequest) {
@@ -20,15 +24,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached);
     }
 
-    const settings = await db.systemSetting.findMany({
-      where: {
-        category: SettingCategory.SYSTEM,
-        isEnabled: true,
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-    });
+    // 使用 CloudBase 仓储层获取数据
+    const settings = await getAllDictionaryItems(SettingCategory.SYSTEM, true);
 
     // 缓存结果（缓存10分钟）
     cache.set(CACHE_KEYS.DICTIONARY_ITEMS, settings, 10 * 60 * 1000);
@@ -64,29 +61,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查键名是否已存在
-    const existing = await db.systemSetting.findUnique({
-      where: { key },
-    });
-
-    if (existing) {
-      return NextResponse.json(
-        { error: "键名已存在" },
-        { status: 400 }
-      );
-    }
-
-    const newSetting = await db.systemSetting.create({
-      data: {
-        key,
-        displayName,
-        value,
-        description,
-        valueType,
-        category: SettingCategory.SYSTEM,
-        isSystem: false,
-        createdBy: user.sub,
-      },
+    // 使用 CloudBase 仓储层创建数据
+    const newSetting = await createDictionaryItem({
+      key,
+      displayName,
+      value,
+      description,
+      valueType,
+      category: SettingCategory.SYSTEM,
+      isSystem: false,
+      isEnabled: true,
+      sortOrder: 0,
+      createdBy: user.sub,
     });
 
     // 清除相关缓存
@@ -95,6 +81,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newSetting, { status: 201 });
   } catch (error) {
     console.error("创建字典项失败:", error);
+    
+    // 处理特定错误
+    if (error instanceof Error && error.message === "键名已存在") {
+      return NextResponse.json(
+        { error: "键名已存在" },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { error: "创建字典项失败" },
       { status: 500 }
