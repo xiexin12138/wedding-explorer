@@ -10,11 +10,19 @@ import type { ExchangeStatus } from '@/app/generated/prisma';
 export async function GET(request: NextRequest) {
   try {
     // TODO: 从 session 或 token 中获取当前用户 ID
-    const userId = request.nextUrl.searchParams.get('userId');
+    const userIdParam = request.nextUrl.searchParams.get('userId');
 
-    if (!userId) {
+    if (!userIdParam) {
       return NextResponse.json(
         { error: '缺少用户ID' },
+        { status: 400 }
+      );
+    }
+
+    const userId = Number(userIdParam);
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: '无效的用户ID' },
         { status: 400 }
       );
     }

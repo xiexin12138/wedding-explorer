@@ -54,24 +54,34 @@ export async function loginOrRegister(params: {
         ...(isAdmin !== undefined && { role: isAdmin ? 'ADMIN' : user.role }),
       });
 
-      // 如果提供了新的认证信息，创建关联
-      if (authingId && !user.authingUser) {
-        await db.authingUser.create({
-          data: {
-            userId: user.id,
-            authingId,
-          },
+      // 如果提供了新的认证信息，检查是否已存在关联
+      if (authingId) {
+        const existingAuthingUser = await db.authingUser.findFirst({
+          where: { userId: user.id },
         });
+        if (!existingAuthingUser) {
+          await db.authingUser.create({
+            data: {
+              userId: user.id,
+              authingId,
+            },
+          });
+        }
       }
 
-      if ((openId || unionId) && !user.wechatUser) {
-        await db.wechatUser.create({
-          data: {
-            userId: user.id,
-            openId: openId!,
-            unionId: unionId,
-          },
+      if (openId || unionId) {
+        const existingWechatUser = await db.wechatUser.findFirst({
+          where: { userId: user.id },
         });
+        if (!existingWechatUser) {
+          await db.wechatUser.create({
+            data: {
+              userId: user.id,
+              openId: openId!,
+              unionId: unionId,
+            },
+          });
+        }
       }
 
       // 重新获取用户数据（包含新创建的关联）

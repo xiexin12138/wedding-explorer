@@ -11,7 +11,7 @@ import { db } from '@/lib/db';
  * 兑换奖品参数
  */
 export interface ExchangePrizeParams {
-  userId: string;
+  userId: number;
   prizeName: string;
   prizeDesc?: string;
   coinsRequired: number;
@@ -362,7 +362,7 @@ export async function updateExchangeStatus(params: {
  * 获取用户的兑奖记录
  */
 export async function getUserExchanges(params: {
-  userId: string;
+  userId: number;
   page?: number;
   pageSize?: number;
   status?: ExchangeStatus;
@@ -386,7 +386,7 @@ export async function getExchangeList(params: {
   page?: number;
   pageSize?: number;
   status?: ExchangeStatus;
-  userId?: string;
+  userId?: number;
   startDate?: Date;
   endDate?: Date;
 }) {

@@ -60,7 +60,7 @@ export async function getCoinTransactionById(
  * 获取用户的流水记录列表
  */
 export async function getUserCoinTransactions(
-  userId: string,
+  userId: number,
   params?: {
     page?: number;
     pageSize?: number;
@@ -114,7 +114,7 @@ export async function getCoinTransactionList(params: {
   page?: number;
   pageSize?: number;
   type?: TransactionType;
-  userId?: string;
+  userId?: number;
   businessType?: string;
   startDate?: Date;
   endDate?: Date;
@@ -184,7 +184,7 @@ export async function getCoinTransactionList(params: {
  * 获取流水统计信息
  */
 export async function getCoinTransactionStats(params?: {
-  userId?: string;
+  userId?: number;
   startDate?: Date;
   endDate?: Date;
 }): Promise<{
@@ -260,7 +260,7 @@ export async function getCoinTransactionStats(params?: {
  * 获取用户某个业务类型的流水记录
  */
 export async function getUserBusinessTransactions(
-  userId: string,
+  userId: number,
   businessType: string,
   relatedBusinessId?: string
 ): Promise<CoinTransaction[]> {
