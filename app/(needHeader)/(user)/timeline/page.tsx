@@ -88,9 +88,9 @@ function Timeline() {
         // 从数据字典获取timeline数据
         const timelineValue = await getDictionaryValueByKey("timeline");
 
-        if (timelineValue?.value) {
-          // 解析JSON数据
-          const parsedData = JSON.parse(timelineValue.value) as TimelineItem[];
+        if (timelineValue) {
+          // 解析JSON数据（getDictionaryValueByKey 已经返回了 value 字符串）
+          const parsedData = JSON.parse(timelineValue) as TimelineItem[];
           setTimelineData(parsedData);
         } else {
           // 如果没有数据，使用默认数据
