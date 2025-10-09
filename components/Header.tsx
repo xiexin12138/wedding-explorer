@@ -12,6 +12,8 @@ import {
   Home,
   Heart,
   Map,
+  Coins,
+  QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -33,18 +35,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 import { useUser } from "@/components/UserProvider";
 import { useLogout } from "@/hooks/useLogout";
+import { QRCodeSVG } from "qrcode.react";
 
 export function Header() {
   const router = useRouter();
   const { user, loading } = useUser();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showCoinDialog, setShowCoinDialog] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [isNavigatingHome, setIsNavigatingHome] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { logout } = useLogout();
+  const [userCoins, setUserCoins] = useState<number | null>(null);
+  const [userRank, setUserRank] = useState<number | null>(null);
+  const [coinsLoading, setCoinsLoading] = useState(false);
 
   // 监听用户状态变化，重置登录按钮状态
   useEffect(() => {
@@ -132,6 +146,45 @@ export function Header() {
     }, 1000);
   };
 
+  // 获取用户游戏币信息
+  const fetchUserCoins = async () => {
+    if (!user) {
+      console.error("用户未登录");
+      return;
+    }
+    
+    setCoinsLoading(true);
+    try {
+      console.log("🪙 正在获取用户游戏币信息...");
+      // 不传 userId，让 API 从认证信息自动获取并同步用户
+      const response = await fetch('/api/user/profile');
+      const data = await response.json();
+      
+      console.log("📊 用户资料响应:", data);
+      
+      if (data.success) {
+        setUserCoins(data.data.user.coins);
+        setUserRank(data.data.rank);
+        console.log("✅ 游戏币信息获取成功:", {
+          coins: data.data.user.coins,
+          rank: data.data.rank
+        });
+      } else {
+        console.error("❌ 获取用户资料失败:", data.error);
+      }
+    } catch (error) {
+      console.error("❌ 获取用户游戏币信息失败:", error);
+    } finally {
+      setCoinsLoading(false);
+    }
+  };
+
+  // 打开游戏币弹窗时获取最新游戏币信息
+  const handleCoinDialogOpen = () => {
+    setShowCoinDialog(true);
+    fetchUserCoins();
+  };
+
   return (
     <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -157,6 +210,18 @@ export function Header() {
 
           {/* 主题切换 */}
           <ModeToggle />
+
+          {/* 游戏币按钮 - 只在用户登录时显示 */}
+          {!loading && user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCoinDialogOpen}
+              className="flex items-center space-x-2 h-9 px-3 transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-md hover:bg-gray-50 dark:hover:bg-gray-900"
+            >
+              <QrCode className="h-4 w-4 text-gray-800 dark:text-gray-200 transition-transform duration-200" />
+            </Button>
+          )}
 
           {/* 用户菜单 */}
           {loading ? (
@@ -288,6 +353,85 @@ export function Header() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 游戏币和二维码弹窗 */}
+      <Dialog open={showCoinDialog} onOpenChange={setShowCoinDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-emerald-500" />
+              我的游戏币
+            </DialogTitle>
+            <DialogDescription>
+              查看您的游戏币余额和个人二维码（管理员可扫码进行操作）
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center space-y-6 py-4">
+            {/* 二维码 */}
+            <div className="relative">
+              <div className="p-4 bg-white rounded-lg shadow-lg">
+                <QRCodeSVG
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/admin-panel?userId=${user?.data?.dbId || user?.id || ""}`}
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+              <div className="absolute -top-2 -right-2 bg-emerald-500 text-white rounded-full p-2 shadow-lg">
+                <Coins className="h-4 w-4" />
+              </div>
+            </div>
+
+            {/* 用户信息 */}
+            <div className="w-full space-y-3">
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <User className="h-4 w-4" />
+                <span>{user?.name || user?.username || "用户"}</span>
+              </div>
+
+              {/* 游戏币信息 */}
+              {coinsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+                  <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* 游戏币余额 */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                    <div className="flex items-center gap-2">
+                      <Coins className="h-5 w-5 text-emerald-500" />
+                      <span className="text-sm font-medium">游戏币数量</span>
+                    </div>
+                    <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {userCoins !== null ? userCoins.toLocaleString() : '--'}
+                    </span>
+                  </div>
+                  
+
+                  {/* 排名 */}
+                  {userRank !== null && (
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 rounded-lg border border-teal-200 dark:border-teal-800">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">我的排名</span>
+                      </div>
+                      <span className="text-lg font-bold text-teal-600 dark:text-teal-400">
+                        第 {userRank} 名
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* 提示文字 */}
+            {/* <p className="text-xs text-center text-muted-foreground">
+              扫描二维码可查看个人信息
+            </p> */}
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

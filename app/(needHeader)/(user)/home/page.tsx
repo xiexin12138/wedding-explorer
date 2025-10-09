@@ -71,7 +71,7 @@ export default function HomePage() {
         </Card>
 
         <Card className="relative overflow-hidden border-amber-300/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-amber-950/20">
-          {/* 金币背景装饰 */}
+          {/* 游戏币背景装饰 */}
           <div className="absolute inset-0 opacity-5 dark:opacity-10">
             <div className="absolute top-4 right-4 text-amber-400 text-8xl">💰</div>
             <div className="absolute bottom-6 left-6 text-amber-400 text-6xl">🪙</div>

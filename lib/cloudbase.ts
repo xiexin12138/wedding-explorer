@@ -35,6 +35,9 @@ export const cloudbaseDB = app.database();
 export const COLLECTIONS = {
   SYSTEM_SETTINGS: 'system_settings', // 系统设置（数据字典）
   ACTIVITY_TIMELINE: 'activity_timeline', // 活动时间线
+  USERS: 'users', // 用户信息
+  PRIZE_EXCHANGE_RECORDS: 'prize_exchange_records', // 兑奖记录
+  COIN_TRANSACTIONS: 'coin_transactions', // 游戏币流水
 } as const;
 
 // CloudBase 数据库操作辅助类型

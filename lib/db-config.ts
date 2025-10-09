@@ -56,18 +56,25 @@ export function getOptimizedDatabaseUrl(): string {
     throw new Error('DATABASE_URL is not defined');
   }
 
-  // MySQL 连接池参数配置
-  const url = new URL(baseUrl);
-  
-  // 连接池配置
-  url.searchParams.set('connection_limit', dbConfig.connectionPool.maxConnections.toString());
-  url.searchParams.set('pool_timeout', Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString());
-  url.searchParams.set('connect_timeout', '10');
-  
-  // MySQL 特定优化参数
-  url.searchParams.set('sslaccept', 'strict'); // SSL 连接
-  
-  return url.toString();
+  try {
+    // 如果 URL 已经包含参数，直接返回
+    if (baseUrl.includes('?')) {
+      return baseUrl;
+    }
+
+    // 否则添加基本的连接参数
+    const params = new URLSearchParams({
+      connection_limit: dbConfig.connectionPool.maxConnections.toString(),
+      pool_timeout: Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString(),
+      connect_timeout: '10',
+    });
+
+    return `${baseUrl}?${params.toString()}`;
+  } catch (error) {
+    console.error('数据库 URL 解析失败，使用原始 URL:', error);
+    // 如果解析失败，直接返回原始 URL
+    return baseUrl;
+  }
 }
 
 // 生成直连 URL（用于迁移等操作）
@@ -77,8 +84,6 @@ export function getDirectDatabaseUrl(): string {
     throw new Error('DATABASE_URL is not defined');
   }
 
-  const url = new URL(baseUrl);
-  url.searchParams.set('connect_timeout', '10');
-  
-  return url.toString();
+  // 直接返回原始 URL
+  return baseUrl;
 }

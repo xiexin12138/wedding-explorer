@@ -28,6 +28,7 @@ export const PROTECTED_ROUTES = [
 // 管理员路由（需要管理员权限才能访问）
 export const ADMIN_ROUTES = [
   '/settings',
+  '/admin-panel',
 ] as const
 
 // 特殊路由配置
@@ -39,6 +40,7 @@ export const SPECIAL_ROUTES = {
   // 首页（登录前）
   DEFAULT_HOME: '/',
   SETTING: '/settings', // 管理员设置页面
+  ADMIN_PANEL: '/admin-panel', // 管理员操作面板
   MAP: '/map',         // 地图探索页面
   TIMELINE: '/timeline', // 时间线页面
   EXCHANGE_RATE: '/exchange-rate', // 游戏币兑换汇率页面
