@@ -2,9 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getDictionaryValueByKey } from "@/features/dictionary";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
 
 interface TimelineItem {
   title: string;
@@ -12,6 +14,8 @@ interface TimelineItem {
   description: string;
   tag: string;
   variant?: "default" | "secondary" | "destructive" | null | undefined;
+  url?: string; // 可选的跳转链接
+  buttonText?: string; // 可选的按钮文案，未配置则使用默认文案
 }
 
 // 默认的兜底数据（空数组，用于显示空状态）
@@ -247,6 +251,24 @@ function Timeline() {
                   <p className="text-muted-foreground leading-relaxed">
                     {item.description}
                   </p>
+                  {/* 如果配置了 url，显示跳转按钮 */}
+                  {item.url && (
+                    <div className="mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "gap-2 transition-all",
+                          isCurrent &&
+                            "border-emerald-500/50 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                        )}
+                        onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}
+                      >
+                        {item.buttonText || "查看详情"}
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

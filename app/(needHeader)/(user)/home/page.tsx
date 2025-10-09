@@ -53,10 +53,10 @@ export default function HomePage() {
           <CardHeader className="relative z-10">
             <CardTitle className="text-lg font-semibold flex items-center gap-2 text-purple-900 dark:text-purple-100">
               <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              活动安排
+              活动时间表
             </CardTitle>
             <CardDescription className="text-purple-800/80 dark:text-purple-200/70">
-              查看婚礼的活动时间表
+              查看婚礼的活动安排以及关键的时间点
             </CardDescription>
           </CardHeader>
           <CardContent className="relative z-10">
@@ -65,7 +65,7 @@ export default function HomePage() {
               variant="outline" 
               className="w-full border-purple-400/50 bg-purple-100/50 hover:bg-purple-200/70 text-purple-900 hover:text-purple-950 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-100 dark:border-purple-600/50"
             >
-              查看安排
+              查看时间表
             </NavigationButton>
           </CardContent>
         </Card>
