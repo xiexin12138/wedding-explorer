@@ -4,7 +4,6 @@
  */
 
 import * as prizeExchangeRepo from '@/lib/repositories/prize-exchange.repository';
-import * as userService from '@/lib/services/user.service';
 import type { PrizeExchangeRecord, ExchangeStatus } from '@/app/generated/prisma';
 import { db } from '@/lib/db';
 

@@ -5,7 +5,7 @@
 
 import * as userRepo from '@/lib/repositories/user.repository';
 import * as coinTransactionRepo from '@/lib/repositories/coin-transaction.repository';
-import type { User, TransactionType } from '@/app/generated/prisma';
+import type { User, TransactionType, CoinTransaction } from '@/app/generated/prisma';
 import { db } from '@/lib/db';
 
 /**
@@ -165,7 +165,7 @@ export async function addCoins(params: {
   operatorId?: string;
 }): Promise<{
   user: User;
-  transaction: any;
+  transaction: CoinTransaction;
 }> {
   try {
     const {
@@ -248,7 +248,7 @@ export async function deductCoins(params: {
   operatorId?: string;
 }): Promise<{
   user: User;
-  transaction: any;
+  transaction: CoinTransaction;
 }> {
   try {
     const {
@@ -335,7 +335,7 @@ export async function adminAdjustCoins(params: {
   operatorId: string;
 }): Promise<{
   user: User;
-  transaction: any;
+  transaction: CoinTransaction;
 }> {
   try {
     const { userId, amount, description, operatorId } = params;

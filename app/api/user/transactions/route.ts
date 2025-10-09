@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as userService from '@/lib/services/user.service';
+import type { TransactionType } from '@/app/generated/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const page = Number(request.nextUrl.searchParams.get('page') || '1');
     const pageSize = Number(request.nextUrl.searchParams.get('pageSize') || '20');
-    const type = request.nextUrl.searchParams.get('type') as any;
+    const type = request.nextUrl.searchParams.get('type') as TransactionType | null;
 
     const result = await userService.getUserTransactions({
       userId,

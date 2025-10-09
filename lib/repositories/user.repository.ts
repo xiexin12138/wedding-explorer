@@ -4,7 +4,7 @@
  */
 
 import { db } from '@/lib/db';
-import type { User, Prisma } from '@/app/generated/prisma';
+import type { User, Prisma, UserRole } from '@/app/generated/prisma';
 
 /**
  * 创建用户
@@ -322,7 +322,7 @@ export async function getGlobalCoinStats(): Promise<{
 export async function getUserList(params: {
   page?: number;
   pageSize?: number;
-  role?: string;
+  role?: UserRole;
   isActive?: boolean;
   searchKeyword?: string;
 }): Promise<{ users: User[]; total: number }> {
@@ -338,7 +338,7 @@ export async function getUserList(params: {
     const where: Prisma.UserWhereInput = {};
 
     if (role) {
-      where.role = role as any;
+      where.role = role;
     }
 
     if (isActive !== undefined) {
@@ -373,7 +373,7 @@ export async function getUserList(params: {
 /**
  * 删除用户（软删除，设置为不活跃）
  */
-export async function softDeleteUser(id: string): Promise<User> {
+export async function softDeleteUser(id: number): Promise<User> {
   try {
     return await db.user.update({
       where: { id },
