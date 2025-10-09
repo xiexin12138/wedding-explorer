@@ -654,7 +654,7 @@ export default function ExchangeRatePage() {
               
               <CardContent className="relative z-10 pt-0 pb-0 px-4">
                 {item.description && (
-                  <p className="text-xs text-amber-800/70 dark:text-amber-200/60 line-clamp-2 leading-snug mt-2">
+                  <p className="text-xs text-amber-800/70 dark:text-amber-200/60 leading-snug mt-2 whitespace-pre-line">
                     {item.description}
                   </p>
                 )}
