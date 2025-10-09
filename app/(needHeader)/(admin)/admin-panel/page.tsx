@@ -207,7 +207,7 @@ export default function AdminPanelPage() {
                   </div>
 
                   {/* 游戏币信息 */}
-                  <div className="pt-4 border-t">
+                  {/* <div className="pt-4 border-t">
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 rounded-lg border border-emerald-200 dark:border-emerald-800">
                       <div className="flex items-center gap-2">
                         <Coins className="h-5 w-5 text-emerald-500" />
@@ -217,7 +217,7 @@ export default function AdminPanelPage() {
                         {targetUser.coins.toLocaleString()}
                       </span>
                     </div>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
 
