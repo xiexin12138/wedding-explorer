@@ -6,6 +6,7 @@ import {
   createDictionaryItem,
   SettingCategory,
   SettingValueType,
+  type DictionaryItem,
 } from "@/lib/repositories/dictionary.repository";
 
 // 获取所有字典项
@@ -24,13 +25,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached);
     }
 
-    // 使用 CloudBase 仓储层获取数据
-    const settings = await getAllDictionaryItems(SettingCategory.SYSTEM, true);
+    // 使用 CloudBase 仓储层获取数据（获取所有字典项，不限制分类）
+    const settings = await getAllDictionaryItems();
+
+    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
+    const transformedSettings = settings.map((item: DictionaryItem) => ({
+      ...item,
+      id: item._id,
+    }));
 
     // 缓存结果（缓存10分钟）
-    cache.set(CACHE_KEYS.DICTIONARY_ITEMS, settings, 10 * 60 * 1000);
+    cache.set(CACHE_KEYS.DICTIONARY_ITEMS, transformedSettings, 10 * 60 * 1000);
 
-    return NextResponse.json(settings);
+    return NextResponse.json(transformedSettings);
   } catch (error) {
     console.error("获取字典项失败:", error);
     return NextResponse.json(
@@ -78,7 +85,13 @@ export async function POST(request: NextRequest) {
     // 清除相关缓存
     cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
 
-    return NextResponse.json(newSetting, { status: 201 });
+    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
+    const transformedSetting = {
+      ...newSetting,
+      id: newSetting._id,
+    };
+
+    return NextResponse.json(transformedSetting, { status: 201 });
   } catch (error) {
     console.error("创建字典项失败:", error);
     

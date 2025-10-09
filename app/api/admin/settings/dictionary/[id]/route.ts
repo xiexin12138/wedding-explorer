@@ -32,7 +32,13 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(setting);
+    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
+    const transformedSetting = {
+      ...setting,
+      id: setting._id,
+    };
+
+    return NextResponse.json(transformedSetting);
   } catch (error) {
     console.error("获取字典项失败:", error);
     return NextResponse.json(
@@ -77,7 +83,13 @@ export async function PATCH(
     // 清除相关缓存
     cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
 
-    return NextResponse.json(updatedSetting);
+    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
+    const transformedSetting = {
+      ...updatedSetting,
+      id: updatedSetting._id,
+    };
+
+    return NextResponse.json(transformedSetting);
   } catch (error) {
     console.error("更新字典项失败:", error);
     
