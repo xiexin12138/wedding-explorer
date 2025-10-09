@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
 
     const page = Number(request.nextUrl.searchParams.get('page') || '1');
     const pageSize = Number(request.nextUrl.searchParams.get('pageSize') || '20');
-    const type = request.nextUrl.searchParams.get('type') as TransactionType | null;
+    const typeParam = request.nextUrl.searchParams.get('type');
+    const type = typeParam as TransactionType | undefined;
 
     const result = await userService.getUserTransactions({
       userId,

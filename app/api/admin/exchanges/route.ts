@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
 
     const page = Number(request.nextUrl.searchParams.get('page') || '1');
     const pageSize = Number(request.nextUrl.searchParams.get('pageSize') || '20');
-    const status = request.nextUrl.searchParams.get('status') as ExchangeStatus | null;
+    const statusParam = request.nextUrl.searchParams.get('status');
+    const status = statusParam as ExchangeStatus | undefined;
     const userId = request.nextUrl.searchParams.get('userId') || undefined;
 
     const result = await prizeService.getExchangeList({
