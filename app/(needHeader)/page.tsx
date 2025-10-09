@@ -181,7 +181,7 @@ export default function HomePage() {
         ref={scrollContainerRef}
         className="relative z-10 min-h-full overflow-y-auto p-4"
       >
-        <div className="content-container w-full space-y-8">
+        <div className="content-container w-full space-y-8 flex gap-80 flex-col mb-12">
           {/* 欢迎卡片 */}
           <Card className="w-full pt-4 max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto">
             <CardHeader className="text-center">
@@ -286,35 +286,37 @@ export default function HomePage() {
                     <span>自驾路线指引</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+                  <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                       <Car className="h-5 w-5" />
                       自驾路线指引
                     </DialogTitle>
                   </DialogHeader>
-                  <div className="relative w-full min-h-[200px]">
-                    {/* 加载状态 */}
-                    {isImageLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg">
-                        <div className="flex flex-col items-center gap-3">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-sm text-muted-foreground">
-                            加载中...
-                          </p>
+                  <div className="relative flex-1 overflow-y-auto px-6 pb-6">
+                    <div className="relative w-full min-h-[200px]">
+                      {/* 加载状态 */}
+                      {isImageLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg">
+                          <div className="flex flex-col items-center gap-3">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <p className="text-sm text-muted-foreground">
+                              加载中...
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {/* 路线图片 */}
-                    <Image
-                      src="/images/guide.jpg"
-                      alt="自驾路线指引图"
-                      width={800}
-                      height={2000}
-                      className="w-full h-auto rounded-lg"
-                      onLoad={() => setIsImageLoading(false)}
-                      priority={isGuideOpen}
-                    />
+                      )}
+                      {/* 路线图片 */}
+                      <Image
+                        src="/images/guide.jpg"
+                        alt="自驾路线指引图"
+                        width={800}
+                        height={2000}
+                        className="w-full h-auto rounded-lg"
+                        onLoad={() => setIsImageLoading(false)}
+                        priority={isGuideOpen}
+                      />
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -327,31 +329,6 @@ export default function HomePage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* 测试用的额外卡片 */}
-          {/* {Array.from({ length: 5 }).map((_, index) => (
-            <Card
-              key={index}
-              className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto mt-110"
-            >
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold">
-                  测试卡片 {index + 1}
-                </CardTitle>
-                <CardDescription>
-                  这是一个用于测试滚动效果的卡片
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center space-y-4">
-                <p className="text-muted-foreground">
-                  这是测试卡片的内容区域，用于填充页面以便测试滚动效果。
-                </p>
-                <div className="h-32 bg-muted rounded-lg flex items-center justify-center">
-                  占位区块 {index + 1}
-                </div>
-              </CardContent>
-            </Card>
-          ))} */}
         </div>
       </div>
     </div>

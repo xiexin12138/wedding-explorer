@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 // import Link from "next/link";
 import {
@@ -42,6 +42,8 @@ export function Header() {
   const { user, loading } = useUser();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isNavigatingHome, setIsNavigatingHome] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const { logout } = useLogout();
 
   // 监听用户状态变化，重置登录按钮状态
@@ -106,20 +108,48 @@ export function Header() {
     }
   };
 
+  const handleHomeClick = () => {
+    // 防止重复点击
+    if (isNavigatingHome || isPending) {
+      console.log("⚠️ Header: 正在导航中，忽略点击");
+      return;
+    }
+
+    console.log("🏠 Header: 点击首页按钮");
+    
+    // 立即设置导航状态，提供即时视觉反馈
+    setIsNavigatingHome(true);
+
+    // 使用 startTransition 来标记这是一个非紧急的状态更新
+    startTransition(() => {
+      // 跳转到首页
+      router.push(SPECIAL_ROUTES.DEFAULT_HOME);
+    });
+
+    // 导航完成后重置状态（设置较短的超时时间以优化体验）
+    setTimeout(() => {
+      setIsNavigatingHome(false);
+    }, 1000);
+  };
+
   return (
     <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <div
-          className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 hover:text-primary"
-          onClick={() => {
-            // 使用 router.push 进行客户端路由跳转，并强制刷新
-            router.push(SPECIAL_ROUTES.DEFAULT_HOME);
-            // 强制刷新路由缓存
-            router.refresh();
-          }}
+          className={`flex items-center space-x-2 cursor-pointer transition-all duration-300 ${
+            isNavigatingHome || isPending
+              ? "scale-95 opacity-60 cursor-wait"
+              : "hover:scale-105 active:scale-95 hover:text-primary"
+          }`}
+          onClick={handleHomeClick}
+          title={isNavigatingHome || isPending ? "跳转中..." : "返回首页"}
         >
-          <Home className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
+          {isNavigatingHome || isPending ? (
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          ) : (
+            <Home className="h-5 w-5 transition-transform duration-300 hover:rotate-12" />
+          )}
         </div>
 
         {/* 右侧控制按钮 */}
