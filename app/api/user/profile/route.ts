@@ -51,10 +51,24 @@ export async function GET(request: NextRequest) {
         const adminIds = getAdminIds();
         const isAdmin = adminIds.includes(authUser.sub);
         
+        // 构建用户显示名称（使用多个字段作为后备）
+        const displayName = authUser.name 
+          || authUser.nickname 
+          || authUser.username 
+          || (authUser.email ? authUser.email.split('@')[0] : undefined)
+          || (typeof authUser.phone === 'string' ? authUser.phone : undefined)
+          || (typeof authUser.phoneNumber === 'string' ? authUser.phoneNumber : undefined)
+          || `用户${authUser.sub.substring(0, 8)}`;
+
+        const nickname = authUser.nickname 
+          || authUser.name 
+          || authUser.username 
+          || (authUser.email ? authUser.email.split('@')[0] : undefined);
+        
         user = await userService.loginOrRegister({
           authingId: authUser.sub,
-          name: authUser.name || authUser.nickname,
-          nickname: authUser.nickname,
+          name: displayName,
+          nickname: nickname,
           email: authUser.email,
           avatar: typeof authUser.picture === 'string' ? authUser.picture : undefined,
           isAdmin,

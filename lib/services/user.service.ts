@@ -89,7 +89,10 @@ export async function loginOrRegister(params: {
     } else {
       // 用户不存在，创建新用户和关联
       user = await db.$transaction(async (tx) => {
-        // 创建用户
+        // 初始游戏币数量
+        const INITIAL_COINS = 10;
+
+        // 创建用户（初始化游戏币）
         const newUser = await tx.user.create({
           data: {
             nickname,
@@ -98,6 +101,8 @@ export async function loginOrRegister(params: {
             email,
             role: isAdmin ? 'ADMIN' : 'GUEST',
             lastLoginAt: new Date(),
+            coins: INITIAL_COINS,
+            totalCoinsEarned: INITIAL_COINS,
           },
         });
 
@@ -121,6 +126,19 @@ export async function loginOrRegister(params: {
             },
           });
         }
+
+        // 创建初始游戏币流水记录
+        await tx.coinTransaction.create({
+          data: {
+            userId: newUser.id,
+            type: 'SYSTEM',
+            amount: INITIAL_COINS,
+            balanceBefore: 0,
+            balanceAfter: INITIAL_COINS,
+            description: '新用户注册奖励',
+            businessType: 'REGISTER',
+          },
+        });
 
         // 返回完整的用户数据
         return await tx.user.findUnique({

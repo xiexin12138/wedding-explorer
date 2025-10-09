@@ -42,13 +42,36 @@ export async function GET(request: NextRequest) {
     
     console.log('✅ 用户认证检查通过:', user.sub, isAdmin ? '(管理员)' : '(普通用户)')
 
+    // 构建用户显示名称（使用多个字段作为后备）
+    const displayName = user.name 
+      || user.nickname 
+      || user.username 
+      || (user.email ? user.email.split('@')[0] : undefined)
+      || (typeof user.phone === 'string' ? user.phone : undefined)
+      || (typeof user.phoneNumber === 'string' ? user.phoneNumber : undefined)
+      || `用户${user.sub.substring(0, 8)}`;
+
+    const nickname = user.nickname 
+      || user.name 
+      || user.username 
+      || (user.email ? user.email.split('@')[0] : undefined);
+
+    console.log('📝 构建用户名称:', { 
+      displayName, 
+      nickname,
+      hasName: !!user.name,
+      hasNickname: !!user.nickname,
+      hasUsername: !!user.username,
+      hasEmail: !!user.email
+    });
+
     // 同步用户到数据库
     let dbUser;
     try {
       dbUser = await userService.loginOrRegister({
         authingId: user.sub,
-        name: user.name || user.nickname,
-        nickname: user.nickname,
+        name: displayName,
+        nickname: nickname,
         email: user.email,
         avatar: typeof user.picture === 'string' ? user.picture : (typeof user.photo === 'string' ? user.photo : undefined),
         isAdmin,
@@ -64,13 +87,13 @@ export async function GET(request: NextRequest) {
       user: {
         id: user.sub,
         dbId: dbUser?.id, // 添加数据库 ID
-        name: user.name || user.nickname,
+        name: displayName,
         email: user.email,
         username: user.username,
         isAdmin,
         data: {
           phone: user.phone || user.phoneNumber,
-          nickname: user.nickname,
+          nickname: nickname,
           username: user.username,
           email: user.email,
           isAdmin,

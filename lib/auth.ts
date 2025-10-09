@@ -17,7 +17,11 @@ export interface AuthingUser {
   email?: string
   name?: string
   nickname?: string
+  username?: string
   picture?: string
+  photo?: string
+  phone?: string
+  phoneNumber?: string
   isAdmin?: boolean
   data?: {
     phone?: string
