@@ -25,7 +25,7 @@ export async function createUser(
 /**
  * 根据 ID 获取用户
  */
-export async function getUserById(id: number): Promise<User | null> {
+export async function getUserById(id: string): Promise<User | null> {
   try {
     return await db.user.findUnique({
       where: { id },
@@ -113,7 +113,7 @@ export async function getUserByAuthingId(authingId: string): Promise<User | null
  * 更新用户信息
  */
 export async function updateUser(
-  id: number,
+  id: string,
   data: Prisma.UserUpdateInput
 ): Promise<User> {
   try {
@@ -134,7 +134,7 @@ export async function updateUser(
 /**
  * 更新用户最后登录时间
  */
-export async function updateLastLogin(id: number): Promise<User> {
+export async function updateLastLogin(id: string): Promise<User> {
   try {
     return await db.user.update({
       where: { id },
@@ -155,7 +155,7 @@ export async function updateLastLogin(id: number): Promise<User> {
 /**
  * 获取用户游戏币余额
  */
-export async function getUserCoins(userId: number): Promise<number> {
+export async function getUserCoins(userId: string): Promise<number> {
   try {
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -172,7 +172,7 @@ export async function getUserCoins(userId: number): Promise<number> {
  * 增加用户游戏币（原子操作）
  */
 export async function addUserCoins(
-  userId: number,
+  userId: string,
   amount: number
 ): Promise<User> {
   try {
@@ -193,7 +193,7 @@ export async function addUserCoins(
  * 扣除用户游戏币（原子操作，会检查余额）
  */
 export async function deductUserCoins(
-  userId: number,
+  userId: string,
   amount: number
 ): Promise<User> {
   try {
@@ -248,7 +248,7 @@ export async function getCoinLeaderboard(
 /**
  * 获取某个用户在排行榜中的排名
  */
-export async function getUserRank(userId: number): Promise<number> {
+export async function getUserRank(userId: string): Promise<number> {
   try {
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -373,7 +373,7 @@ export async function getUserList(params: {
 /**
  * 删除用户（软删除，设置为不活跃）
  */
-export async function softDeleteUser(id: number): Promise<User> {
+export async function softDeleteUser(id: string): Promise<User> {
   try {
     return await db.user.update({
       where: { id },

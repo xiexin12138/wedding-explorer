@@ -17,12 +17,9 @@ export async function GET(request: NextRequest) {
     let user = null;
 
     if (userIdParam) {
-      // 如果提供了 userId 参数，先尝试作为数字 ID 查询
-      const numericId = parseInt(userIdParam, 10);
-      if (!isNaN(numericId)) {
-        console.log('🔍 通过数字 ID 查询用户:', numericId);
-        user = await userRepo.getUserById(numericId);
-      }
+      // 如果提供了 userId 参数，先尝试作为用户 ID 查询
+      console.log('🔍 通过用户 ID 查询用户:', userIdParam);
+      user = await userRepo.getUserById(userIdParam);
       
       // 如果没找到，尝试作为 authingId 查询
       if (!user) {

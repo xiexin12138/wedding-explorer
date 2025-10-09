@@ -19,13 +19,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = Number(userIdParam);
-    if (isNaN(userId)) {
-      return NextResponse.json(
-        { error: '无效的用户ID' },
-        { status: 400 }
-      );
-    }
+    const userId = userIdParam;
 
     const page = Number(request.nextUrl.searchParams.get('page') || '1');
     const pageSize = Number(request.nextUrl.searchParams.get('pageSize') || '20');

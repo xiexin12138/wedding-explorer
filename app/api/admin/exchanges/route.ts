@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const statusParam = request.nextUrl.searchParams.get('status');
     const status = statusParam as ExchangeStatus | undefined;
     const userIdParam = request.nextUrl.searchParams.get('userId');
-    const userId = userIdParam ? Number(userIdParam) : undefined;
+    const userId = userIdParam || undefined;
 
     const result = await prizeService.getExchangeList({
       page,

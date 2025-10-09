@@ -61,7 +61,7 @@ export async function getPrizeExchangeById(
  * 获取用户的兑奖记录列表
  */
 export async function getUserPrizeExchanges(
-  userId: number,
+  userId: string,
   params?: {
     page?: number;
     pageSize?: number;
@@ -103,7 +103,7 @@ export async function getPrizeExchangeList(params: {
   page?: number;
   pageSize?: number;
   status?: ExchangeStatus;
-  userId?: number;
+  userId?: string;
   startDate?: Date;
   endDate?: Date;
 }): Promise<{ records: PrizeExchangeRecord[]; total: number }> {

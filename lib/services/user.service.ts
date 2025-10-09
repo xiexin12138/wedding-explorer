@@ -143,7 +143,7 @@ export async function loginOrRegister(params: {
 /**
  * 获取用户信息（包含排名）
  */
-export async function getUserProfile(userId: number): Promise<{
+export async function getUserProfile(userId: string): Promise<{
   user: User;
   rank: number;
 }> {
@@ -166,7 +166,7 @@ export async function getUserProfile(userId: number): Promise<{
  * 增加用户游戏币（事务操作，包含流水记录）
  */
 export async function addCoins(params: {
-  userId: number;
+  userId: string;
   amount: number;
   description: string;
   type?: TransactionType;
@@ -248,7 +248,7 @@ export async function addCoins(params: {
  * 扣除用户游戏币（事务操作，包含流水记录）
  */
 export async function deductCoins(params: {
-  userId: number;
+  userId: string;
   amount: number;
   description: string;
   type?: TransactionType;
@@ -339,7 +339,7 @@ export async function deductCoins(params: {
  * 管理员调整用户游戏币
  */
 export async function adminAdjustCoins(params: {
-  userId: number;
+  userId: string;
   amount: number;
   description: string;
   operatorId: string;
@@ -429,7 +429,7 @@ export async function getGlobalStats() {
  * 获取用户的游戏币流水
  */
 export async function getUserTransactions(params: {
-  userId: number;
+  userId: string;
   page?: number;
   pageSize?: number;
   type?: TransactionType;

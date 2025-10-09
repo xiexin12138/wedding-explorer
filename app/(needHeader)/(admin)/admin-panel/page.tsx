@@ -195,24 +195,6 @@ export default function AdminPanelPage() {
                       <p className="font-medium">{targetUser.name || "未设置"}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">用户名</p>
-                      <p className="font-medium">{targetUser.username || "未设置"}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">邮箱</p>
-                      <p className="font-medium">{targetUser.email || "未设置"}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">用户ID</p>
-                      <p className="font-medium font-mono text-sm">{targetUser.id}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">OpenID</p>
-                      <p className="font-medium font-mono text-sm truncate" title={targetUser.openid}>
-                        {targetUser.openid}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">角色</p>
                       <p className="font-medium">
                         {targetUser.isAdmin ? (

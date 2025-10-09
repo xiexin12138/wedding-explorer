@@ -209,7 +209,7 @@ export default function HomePage() {
                 婚礼场地
               </CardTitle>
               <CardDescription className="text-lg font-medium">
-                InGarden 花园里
+                广东 · 潮州 · InGarden 花园里
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
