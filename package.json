@@ -7,8 +7,8 @@
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
     "postinstall": "prisma generate",
-    "build": "prisma migrate deploy && next build",
-    "build:turbo": "prisma migrate deploy && next build --turbo",
+    "build": "next build",
+    "build:turbo": "next build --turbo",
     "start": "next start",
     "lint": "next lint"
   },
