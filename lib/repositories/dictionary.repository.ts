@@ -60,7 +60,7 @@ export async function getAllDictionaryItems(
     let query = collection.where({});
 
     // 添加条件过滤
-    const conditions: any = {};
+    const conditions: Record<string, string | boolean> = {};
     if (category) {
       conditions.category = category;
     }

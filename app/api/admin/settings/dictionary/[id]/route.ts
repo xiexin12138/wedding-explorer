@@ -60,7 +60,7 @@ export async function PATCH(
     const { displayName, value, description, isEnabled, sortOrder } = data;
 
     // 构建更新数据对象
-    const updateData: any = {
+    const updateData: Record<string, string | number | boolean | undefined> = {
       updatedBy: user.sub,
     };
 
