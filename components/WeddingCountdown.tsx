@@ -85,10 +85,25 @@ export function WeddingCountdown() {
     return () => clearInterval(timer);
   }, [weddingDate]);
 
+  // 格式化婚礼日期为中文格式
+  const formatWeddingDate = (date: Date | null) => {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${year}年${month}月${day}日`;
+  };
+
   return (
     <div className="text-center space-y-2">
       <div className="text-lg font-medium text-muted-foreground">
-        距离婚礼当天还有
+        距离婚礼
+        {weddingDate && (
+          <span className="mx-1 text-primary font-semibold">
+            {formatWeddingDate(weddingDate)}
+          </span>
+        )}
+        还有
       </div>
       <div className="text-2xl font-bold text-primary">
         {loading ? "加载中..." : timeLeft}
