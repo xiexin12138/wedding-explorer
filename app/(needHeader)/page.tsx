@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Card,
   CardContent,
@@ -5,12 +7,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { HomeButton } from "@/components/HomeButton";
 import { WeddingCountdown } from "@/components/WeddingCountdown";
 import { ConfettiEffect } from "@/components/ConfettiEffect"; // 方案二
+import { MapPin, Navigation, Car } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 
 export default function HomePage() {
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   return (
     <div className="flex-1 relative">
       {/* 彩色碎纸动效 */}
@@ -63,6 +76,111 @@ export default function HomePage() {
               <HomeButton />
             </CardContent>
           </Card>
+
+          {/* 婚礼场地卡片 */}
+          <Card className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto mt-80">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+                <MapPin className="h-6 w-6 text-primary" />
+                婚礼场地
+              </CardTitle>
+              <CardDescription className="text-lg font-medium">
+                花园里
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 场地门头图片 */}
+              <div className="relative w-full rounded-lg overflow-hidden">
+                <Image
+                  src="/images/doorheard.jpg"
+                  alt="花园里婚礼场地门头"
+                  width={1200}
+                  height={900}
+                  className="w-full h-auto"
+                  priority
+                />
+              </div>
+
+              {/* 地址信息 */}
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  为方便您的出行，我们为您提供地图导航和自驾路线指引
+                </p>
+              </div>
+
+              {/* 导航按钮 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full bg-[#00A870]/10 hover:bg-[#00A870]/20 border-[#00A870]/30"
+                >
+                  <a
+                    href="https://surl.amap.com/cV47A7zFaZZ"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    <span>高德地图</span>
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full bg-[#3385FF]/10 hover:bg-[#3385FF]/20 border-[#3385FF]/30"
+                >
+                  <a
+                    href="https://j.map.baidu.com/31/_GFk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    <span>百度地图</span>
+                  </a>
+                </Button>
+              </div>
+
+              {/* 自驾路线指引按钮 */}
+              <Dialog open={isGuideOpen} onOpenChange={setIsGuideOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30"
+                  >
+                    <Car className="h-4 w-4 mr-2" />
+                    <span>自驾路线指引</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Car className="h-5 w-5" />
+                      自驾路线指引
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="relative w-full">
+                    <Image
+                      src="/images/guide.jpg"
+                      alt="自驾路线指引图"
+                      width={800}
+                      height={2000}
+                      className="w-full h-auto rounded-lg"
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* 提示信息 */}
+              <div className="text-center pt-2">
+                <p className="text-xs text-muted-foreground">
+                  点击上方按钮即可查看导航和自驾路线
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* 测试用的额外卡片 */}
           {/* {Array.from({ length: 5 }).map((_, index) => (
             <Card
