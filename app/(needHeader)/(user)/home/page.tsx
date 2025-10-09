@@ -7,9 +7,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 import { Map } from "lucide-react";
+import { NavigationButton } from "@/components/NavigationButton";
 
 export const metadata: Metadata = {
   title: "首页 - Xie & Feng Wedding",
@@ -40,9 +40,13 @@ export default function HomePage() {
             <CardDescription>查看即将到来的活动</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">
-              <Link href={SPECIAL_ROUTES.TIMELINE}>查看安排</Link>
-            </Button>
+            <NavigationButton 
+              href={SPECIAL_ROUTES.TIMELINE}
+              variant="outline" 
+              className="w-full"
+            >
+              查看安排
+            </NavigationButton>
           </CardContent>
         </Card>
 
@@ -69,11 +73,13 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="default" className="w-full">
-              <Link href={SPECIAL_ROUTES.MAP}>
-                开始探索
-              </Link>
-            </Button>
+            <NavigationButton 
+              href={SPECIAL_ROUTES.MAP}
+              variant="default" 
+              className="w-full"
+            >
+              开始探索
+            </NavigationButton>
           </CardContent>
         </Card>
       </div>
