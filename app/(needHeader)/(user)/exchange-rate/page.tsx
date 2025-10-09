@@ -31,9 +31,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/components/UserProvider";
-import { Coins, Gift, Plus, Pencil, Trash2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Clock, RefreshCw } from "lucide-react";
+import { Coins, Gift, Plus, Pencil, Trash2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Clock, RefreshCw, Gavel } from "lucide-react";
 import type { DictionaryItem } from "@/features/dictionary";
 import {
   createDictionaryItemClient,
@@ -41,6 +42,47 @@ import {
   updateDictionaryItemClient,
 } from "@/features/dictionary";
 import { SettingValueType } from "@/app/generated/prisma";
+
+// 场景类型
+type SceneType = 'gift-exchange' | 'auction';
+
+// 场景配置
+interface SceneConfig {
+  key: string;
+  keyPrefix: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  itemLabel: string;        // 项目标签（礼物/行为）
+  itemPlaceholder: string;  // 项目输入提示
+  defaultEmoji: string;     // 默认表情
+  tipText: string;          // 提示文本
+}
+
+const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
+  'gift-exchange': {
+    key: 'gift-exchange',
+    keyPrefix: 'game_coin_item_',
+    title: '礼物兑换',
+    description: '游园会过程中赢取的游戏币可以兑换礼品',
+    icon: <Gift className="h-5 w-5" />,
+    itemLabel: '礼物名称',
+    itemPlaceholder: '请输入礼物名称',
+    defaultEmoji: '🎁',
+    tipText: '游戏币可以在游园会各个游戏环节中赢取，赢取的游戏币可以兑换对应的礼品。汇率会根据活动进度实时调整，页面每10秒自动刷新，为您提供最新信息。',
+  },
+  'auction': {
+    key: 'auction',
+    keyPrefix: 'game_coin_auction_',
+    title: '礼物拍卖',
+    description: '在礼物拍卖环节，可以通过各种行为代替游戏币',
+    icon: <Gavel className="h-5 w-5" />,
+    itemLabel: '行为名称',
+    itemPlaceholder: '请输入行为名称（如：喝酒、俯卧撑等）',
+    defaultEmoji: '🍺',
+    tipText: '在礼物拍卖环节，除了使用游戏币，您还可以通过完成特定行为来代替游戏币。汇率会根据活动进度实时调整，页面每10秒自动刷新，为您提供最新信息。',
+  },
+};
 
 // 兑换项目数据结构
 interface ExchangeItem {
@@ -61,6 +103,7 @@ interface FormData {
 }
 
 export default function ExchangeRatePage() {
+  const [currentScene, setCurrentScene] = useState<SceneType>('gift-exchange');
   const [exchangeItems, setExchangeItems] = useState<ExchangeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<ExchangeItem | null>(null);
@@ -72,11 +115,13 @@ export default function ExchangeRatePage() {
   const { toast } = useToast();
   const { user } = useUser();
 
+  const sceneConfig = SCENE_CONFIGS[currentScene];
+
   const [formData, setFormData] = useState<FormData>({
     giftName: "",
     coinAmount: "",
     description: "",
-    emoji: "🎁",
+    emoji: sceneConfig.defaultEmoji,
   });
 
   // 设置页面标题
@@ -85,7 +130,7 @@ export default function ExchangeRatePage() {
   }, []);
 
   // 加载兑换项目
-  const loadExchangeItems = async (isAutoRefresh = false) => {
+  const loadExchangeItems = async (scene: SceneType, isAutoRefresh = false) => {
     try {
       if (isAutoRefresh) {
         setIsRefreshing(true);
@@ -94,7 +139,7 @@ export default function ExchangeRatePage() {
       }
       
       // 使用公开的兑换项目 API（所有登录用户都可以访问）
-      const response = await fetch("/api/exchange-rate", {
+      const response = await fetch(`/api/exchange-rate?scene=${scene}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -152,20 +197,20 @@ export default function ExchangeRatePage() {
 
   // 初始加载
   useEffect(() => {
-    loadExchangeItems();
+    loadExchangeItems(currentScene);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentScene]);
 
   // 自动刷新：每10秒更新一次
   useEffect(() => {
     const intervalId = setInterval(() => {
-      loadExchangeItems(true);
+      loadExchangeItems(currentScene, true);
     }, 10000); // 10秒
 
     // 清理定时器
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentScene]);
 
   // 强制更新显示的时间（每秒更新一次）
   const [, setTick] = useState(0);
@@ -184,7 +229,7 @@ export default function ExchangeRatePage() {
       giftName: "",
       coinAmount: "",
       description: "",
-      emoji: "🎁",
+      emoji: sceneConfig.defaultEmoji,
     });
     setIsDialogOpen(true);
   };
@@ -232,8 +277,8 @@ export default function ExchangeRatePage() {
       });
 
       if (isAddingNew) {
-        // 创建新兑换项目
-        const key = `game_coin_item_${Date.now()}`;
+        // 创建新兑换项目（根据当前场景使用不同的 key 前缀）
+        const key = `${sceneConfig.keyPrefix}${Date.now()}`;
         await createDictionaryItemClient({
           key,
           displayName: formData.giftName,
@@ -244,7 +289,7 @@ export default function ExchangeRatePage() {
         
         toast({
           title: "创建成功",
-          description: `兑换项目 "${formData.giftName}" 已创建`,
+          description: `${sceneConfig.itemLabel} "${formData.giftName}" 已创建`,
         });
       } else if (editingItem) {
         // 更新兑换项目
@@ -257,12 +302,12 @@ export default function ExchangeRatePage() {
         
         toast({
           title: "更新成功",
-          description: `兑换项目 "${formData.giftName}" 已更新`,
+          description: `${sceneConfig.itemLabel} "${formData.giftName}" 已更新`,
         });
       }
       
       // 重新加载数据以获取最新状态
-      await loadExchangeItems();
+      await loadExchangeItems(currentScene);
     } catch (error) {
       console.error("保存兑换项目失败:", error);
       toast({
@@ -289,10 +334,10 @@ export default function ExchangeRatePage() {
       await deleteDictionaryItemClient(id);
       toast({
         title: "删除成功",
-        description: "兑换项目已删除",
+        description: `${sceneConfig.itemLabel}已删除`,
       });
       // 重新加载数据以获取最新状态
-      await loadExchangeItems();
+      await loadExchangeItems(currentScene);
     } catch (error) {
       console.error("删除兑换项目失败:", error);
       toast({
@@ -311,8 +356,15 @@ export default function ExchangeRatePage() {
       giftName: "",
       coinAmount: "",
       description: "",
-      emoji: "🎁",
+      emoji: sceneConfig.defaultEmoji,
     });
+  };
+
+  // 切换场景时重置表单
+  const handleSceneChange = (scene: SceneType) => {
+    setCurrentScene(scene);
+    // 重置排序
+    setSortOrder('default');
   };
 
   const isAdmin = user?.isAdmin || false;
@@ -327,7 +379,7 @@ export default function ExchangeRatePage() {
 
   // 手动刷新
   const handleManualRefresh = () => {
-    loadExchangeItems(true);
+    loadExchangeItems(currentScene, true);
   };
 
   // 切换排序
@@ -362,7 +414,7 @@ export default function ExchangeRatePage() {
   return (
     <div className="container mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
       {/* 页面标题卡片 */}
-      <Card className="mb-6 relative overflow-hidden border-amber-300/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-amber-950/20">
+      <Card className="mb-4 relative overflow-hidden border-amber-300/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 dark:from-amber-950/20 dark:via-yellow-950/20 dark:to-amber-950/20">
         {/* 背景装饰 */}
         <div className="absolute inset-0 opacity-5 dark:opacity-10">
           <div className="absolute top-4 right-4 text-amber-400 text-8xl">💰</div>
@@ -370,66 +422,98 @@ export default function ExchangeRatePage() {
           <div className="absolute top-1/2 left-1/4 text-amber-400 text-5xl">🎁</div>
           <div className="absolute bottom-1/4 right-1/4 text-yellow-400 text-6xl">✨</div>
         </div>
-        <CardHeader className="relative z-10">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
-              <div className="flex-1">
-                <CardTitle className="text-2xl font-bold flex items-center gap-2 text-amber-900 dark:text-amber-100">
-                  <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                  游戏币兑换汇率
-                </CardTitle>
-                <CardDescription className="text-amber-800/80 dark:text-amber-200/70 mt-2">
-                  游园会过程中赢取的游戏币可以兑换礼品，也可以用于最后的礼品拍卖
-                </CardDescription>
-              </div>
-              {isAdmin && (
-                <Button
-                  onClick={handleAdd}
-                  className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800 text-white sm:flex-shrink-0 w-full sm:w-auto"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  添加兑换项目
-                </Button>
-              )}
-            </div>
-            {/* 排序和更新时间 */}
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleSort}
-                  className="rounded-full border-2 border-amber-500/30 bg-amber-50/80 hover:bg-amber-100 hover:border-amber-500/50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-600/30 dark:hover:bg-amber-900/40 dark:hover:border-amber-600/50 dark:text-amber-200 transition-all shadow-sm"
-                >
-                  {getSortIcon()}
-                  <span className="ml-1.5 font-medium">
-                    {sortOrder === 'asc' && '游戏币：少到多'}
-                    {sortOrder === 'desc' && '游戏币：多到少'}
-                    {sortOrder === 'default' && '默认排序'}
-                  </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleManualRefresh}
-                  disabled={isRefreshing}
-                  className="rounded-full border-2 border-amber-500/30 bg-amber-50/80 hover:bg-amber-100 hover:border-amber-500/50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-600/30 dark:hover:bg-amber-900/40 dark:hover:border-amber-600/50 dark:text-amber-200 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="手动刷新"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  <span className="ml-1.5 font-medium">刷新</span>
-                </Button>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100/50 dark:bg-amber-900/20 border border-amber-300/30 dark:border-amber-700/30 w-fit">
-                <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
-                  {formatUpdateTime(lastUpdateTime)}
-                  {isRefreshing && <span className="ml-1.5 text-amber-600 dark:text-amber-400 animate-pulse">更新中</span>}
-                </span>
-              </div>
-            </div>
-          </div>
+        <CardHeader className="relative z-10 pb-4">
+          <CardTitle className="text-2xl font-bold flex items-center gap-2 text-amber-900 dark:text-amber-100">
+            <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            游戏币兑换汇率
+          </CardTitle>
+          <CardDescription className="text-amber-800/80 dark:text-amber-200/70">
+            游园会过程中赢取的游戏币可以兑换礼品，也可以用于最后的礼品拍卖
+          </CardDescription>
         </CardHeader>
+      </Card>
+
+      {/* 操作控制卡片 */}
+      <Card className="mb-6 border-amber-200/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm py-1">
+        <CardContent className="p-4">
+          <Tabs value={currentScene} onValueChange={(value) => handleSceneChange(value as SceneType)} className="w-full">
+            <div className="flex flex-col gap-4">
+              {/* Tab 切换和管理按钮 */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <TabsList className="bg-amber-100/80 dark:bg-amber-900/30 border border-amber-300/50 dark:border-amber-700/50 w-full sm:w-auto">
+                  <TabsTrigger 
+                    value="gift-exchange" 
+                    className="flex items-center gap-1.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  >
+                    <Gift className="h-4 w-4" />
+                    <span className="font-medium">礼物兑换</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="auction"
+                    className="flex items-center gap-1.5 data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  >
+                    <Gavel className="h-4 w-4" />
+                    <span className="font-medium">礼物拍卖</span>
+                  </TabsTrigger>
+                </TabsList>
+                
+                {isAdmin && (
+                  <Button
+                    onClick={handleAdd}
+                    className="bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-800 text-white w-full sm:w-auto shadow-sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    添加{sceneConfig.itemLabel}
+                  </Button>
+                )}
+              </div>
+              
+              {/* 场景描述 */}
+              <div className="px-4 py-2.5 rounded-lg bg-amber-50/80 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-700/30">
+                <p className="text-sm text-amber-900 dark:text-amber-100 font-medium">
+                  {sceneConfig.description}
+                </p>
+              </div>
+              
+              {/* 排序、刷新按钮和更新时间 */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSort}
+                    className="rounded-full border-2 border-amber-500/30 bg-amber-50/80 hover:bg-amber-100 hover:border-amber-500/50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-600/30 dark:hover:bg-amber-900/40 dark:hover:border-amber-600/50 dark:text-amber-200 transition-all shadow-sm"
+                  >
+                    {getSortIcon()}
+                    <span className="ml-1.5 font-medium">
+                      {sortOrder === 'asc' && '游戏币：少到多'}
+                      {sortOrder === 'desc' && '游戏币：多到少'}
+                      {sortOrder === 'default' && '默认排序'}
+                    </span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleManualRefresh}
+                    disabled={isRefreshing}
+                    className="rounded-full border-2 border-amber-500/30 bg-amber-50/80 hover:bg-amber-100 hover:border-amber-500/50 text-amber-800 dark:bg-amber-900/20 dark:border-amber-600/30 dark:hover:bg-amber-900/40 dark:hover:border-amber-600/50 dark:text-amber-200 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="手动刷新"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span className="ml-1.5 font-medium">刷新</span>
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100/50 dark:bg-amber-900/20 border border-amber-300/30 dark:border-amber-700/30 w-fit">
+                  <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                    {formatUpdateTime(lastUpdateTime)}
+                    {isRefreshing && <span className="ml-1.5 text-amber-600 dark:text-amber-400 animate-pulse">更新中</span>}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Tabs>
+        </CardContent>
       </Card>
 
       {/* 添加/编辑模态框 */}
@@ -438,25 +522,25 @@ export default function ExchangeRatePage() {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {isAddingNew ? "添加兑换项目" : "编辑兑换项目"}
+                {isAddingNew ? `添加${sceneConfig.itemLabel}` : `编辑${sceneConfig.itemLabel}`}
               </DialogTitle>
               <DialogDescription>
                 {isAddingNew
-                  ? "添加新的游戏币兑换项目"
-                  : "编辑现有的游戏币兑换项目"}
+                  ? `添加新的${sceneConfig.title}项目`
+                  : `编辑现有的${sceneConfig.title}项目`}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="giftName">礼物名称</Label>
+                  <Label htmlFor="giftName">{sceneConfig.itemLabel}</Label>
                   <Input
                     id="giftName"
                     value={formData.giftName}
                     onChange={(e) =>
                       setFormData({ ...formData, giftName: e.target.value })
                     }
-                    placeholder="请输入礼物名称"
+                    placeholder={sceneConfig.itemPlaceholder}
                   />
                 </div>
                 <div className="space-y-2">
@@ -517,9 +601,13 @@ export default function ExchangeRatePage() {
       ) : exchangeItems.length === 0 ? (
         <Card className="border-dashed border-2">
           <CardContent className="p-8 text-center">
-            <Gift className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            {currentScene === 'gift-exchange' ? (
+              <Gift className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            ) : (
+              <Gavel className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            )}
             <p className="text-gray-500">
-              暂无兑换项目
+              暂无{sceneConfig.title}项目
               {isAdmin && "，点击上方按钮添加"}
             </p>
           </CardContent>
@@ -624,7 +712,7 @@ export default function ExchangeRatePage() {
                 温馨提示
               </p>
               <p className="text-xs text-blue-800/70 dark:text-blue-200/60">
-                游戏币可以在游园会各个游戏环节中赢取，赢取的游戏币可以兑换礼品或参与最后的礼品拍卖。汇率会根据活动进度实时调整，页面每10秒自动刷新，为您提供最新信息。
+                {sceneConfig.tipText}
               </p>
             </div>
           </div>
