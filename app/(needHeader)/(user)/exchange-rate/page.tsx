@@ -482,7 +482,6 @@ export default function ExchangeRatePage() {
                     setFormData({ ...formData, emoji: e.target.value })
                   }
                   placeholder="🎁"
-                  maxLength={2}
                 />
               </div>
               <div className="space-y-2">
