@@ -68,6 +68,27 @@ export async function getDictionaryValueByKey(key: string) {
   return result.value; // 直接返回值而不是整个对象
 }
 
+// 通过key获取完整的字典项
+export async function getDictionaryItemByKey(key: string) {
+  const response = await fetch(`/api/admin/settings/dictionary/key/${key}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    // 如果是404，返回null而不是抛出错误
+    if (response.status === 404) {
+      return null;
+    }
+    const error = await response.json();
+    throw new Error(error.error || "获取字典项失败");
+  }
+
+  return response.json();
+}
+
 // 创建字典项
 export async function createDictionaryItem(data: {
   key: string;

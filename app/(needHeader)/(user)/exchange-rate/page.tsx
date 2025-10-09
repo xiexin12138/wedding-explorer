@@ -35,11 +35,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/components/UserProvider";
 import { Coins, Gift, Plus, Pencil, Trash2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Clock, RefreshCw, Gavel } from "lucide-react";
-import type { DictionaryItem } from "@/features/dictionary";
 import {
   createDictionaryItemClient,
-  deleteDictionaryItemClient,
   updateDictionaryItemClient,
+  getDictionaryItemByKeyClient,
 } from "@/features/dictionary";
 import { SettingValueType } from "@/app/generated/prisma";
 
@@ -62,7 +61,7 @@ interface SceneConfig {
 const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
   'gift-exchange': {
     key: 'gift-exchange',
-    keyPrefix: 'game_coin_item_',
+    keyPrefix: 'game_coin_exchange_list',
     title: '礼物兑换',
     description: '游园会过程中赢取的游戏币可以兑换礼品',
     icon: <Gift className="h-5 w-5" />,
@@ -73,7 +72,7 @@ const SCENE_CONFIGS: Record<SceneType, SceneConfig> = {
   },
   'auction': {
     key: 'auction',
-    keyPrefix: 'game_coin_auction_',
+    keyPrefix: 'game_coin_auction_list',
     title: '礼物拍卖',
     description: '在礼物拍卖环节，可以通过各种行为代替游戏币',
     icon: <Gavel className="h-5 w-5" />,
@@ -153,30 +152,8 @@ export default function ExchangeRatePage() {
 
       const data = await response.json();
       
-      // 转换数据格式
-      const coinItems = data.map((item: DictionaryItem) => {
-        try {
-          const value = item.value ? JSON.parse(item.value) : {};
-          return {
-            id: item.id,
-            giftName: value.giftName || item.displayName,
-            coinAmount: value.coinAmount || 0,
-            description: value.description || item.description || "",
-            emoji: value.emoji || "🎁",
-            sortOrder: item.sortOrder || 0,
-          };
-        } catch {
-          // 如果 JSON 解析失败，返回默认值
-          return {
-            id: item.id,
-            giftName: item.displayName,
-            coinAmount: 0,
-            description: item.description || "",
-            emoji: "🎁",
-            sortOrder: item.sortOrder || 0,
-          };
-        }
-      });
+      // 数据已经是数组格式，直接使用
+      const coinItems = Array.isArray(data) ? data : [];
 
       setExchangeItems(coinItems);
       setLastUpdateTime(new Date());
@@ -268,43 +245,55 @@ export default function ExchangeRatePage() {
     }
 
     try {
-      // 构建 value JSON
-      const valueJson = JSON.stringify({
+      // 构建新的项目数据
+      const newItem: ExchangeItem = {
+        id: isAddingNew ? `item_${Date.now()}` : editingItem!.id,
         giftName: formData.giftName,
         coinAmount: coinAmount,
         description: formData.description,
         emoji: formData.emoji,
-      });
+        sortOrder: isAddingNew ? exchangeItems.length : (editingItem?.sortOrder || 0),
+      };
 
+      let updatedItems: ExchangeItem[];
+      
       if (isAddingNew) {
-        // 创建新兑换项目（根据当前场景使用不同的 key 前缀）
-        const key = `${sceneConfig.keyPrefix}${Date.now()}`;
+        // 添加新项目
+        updatedItems = [...exchangeItems, newItem];
+      } else {
+        // 更新现有项目
+        updatedItems = exchangeItems.map(item => 
+          item.id === editingItem!.id ? newItem : item
+        );
+      }
+
+      // 获取或创建字典项
+      const settingKey = sceneConfig.keyPrefix;
+      const dictionaryItem = await getDictionaryItemByKeyClient(settingKey);
+      
+      const itemsJson = JSON.stringify(updatedItems);
+      
+      if (dictionaryItem) {
+        // 更新现有字典项
+        await updateDictionaryItemClient(dictionaryItem.id, {
+          value: itemsJson,
+          valueType: SettingValueType.JSON,
+        });
+      } else {
+        // 创建新字典项
         await createDictionaryItemClient({
-          key,
-          displayName: formData.giftName,
-          value: valueJson,
-          description: formData.description,
+          key: settingKey,
+          displayName: sceneConfig.title,
+          value: itemsJson,
+          description: `${sceneConfig.title}列表数据`,
           valueType: SettingValueType.JSON,
-        });
-        
-        toast({
-          title: "创建成功",
-          description: `${sceneConfig.itemLabel} "${formData.giftName}" 已创建`,
-        });
-      } else if (editingItem) {
-        // 更新兑换项目
-        await updateDictionaryItemClient(editingItem.id, {
-          displayName: formData.giftName,
-          value: valueJson,
-          description: formData.description,
-          valueType: SettingValueType.JSON,
-        });
-        
-        toast({
-          title: "更新成功",
-          description: `${sceneConfig.itemLabel} "${formData.giftName}" 已更新`,
         });
       }
+      
+      toast({
+        title: isAddingNew ? "创建成功" : "更新成功",
+        description: `${sceneConfig.itemLabel} "${formData.giftName}" 已${isAddingNew ? "创建" : "更新"}`,
+      });
       
       // 重新加载数据以获取最新状态
       await loadExchangeItems(currentScene);
@@ -325,19 +314,36 @@ export default function ExchangeRatePage() {
       giftName: "",
       coinAmount: "",
       description: "",
-      emoji: "🎁",
+      emoji: sceneConfig.defaultEmoji,
     });
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDictionaryItemClient(id);
-      toast({
-        title: "删除成功",
-        description: `${sceneConfig.itemLabel}已删除`,
-      });
-      // 重新加载数据以获取最新状态
-      await loadExchangeItems(currentScene);
+      // 从数组中移除该项
+      const updatedItems = exchangeItems.filter(item => item.id !== id);
+      
+      // 获取字典项
+      const settingKey = sceneConfig.keyPrefix;
+      const dictionaryItem = await getDictionaryItemByKeyClient(settingKey);
+      
+      if (dictionaryItem) {
+        const itemsJson = JSON.stringify(updatedItems);
+        
+        // 更新字典项
+        await updateDictionaryItemClient(dictionaryItem.id, {
+          value: itemsJson,
+          valueType: SettingValueType.JSON,
+        });
+        
+        toast({
+          title: "删除成功",
+          description: `${sceneConfig.itemLabel}已删除`,
+        });
+        
+        // 重新加载数据以获取最新状态
+        await loadExchangeItems(currentScene);
+      }
     } catch (error) {
       console.error("删除兑换项目失败:", error);
       toast({
@@ -704,7 +710,7 @@ export default function ExchangeRatePage() {
 
       {/* 提示信息 */}
       <Card className="mt-6 border-blue-200/50 bg-gradient-to-br from-blue-50/50 via-sky-50/50 to-blue-50/50 dark:from-blue-950/10 dark:via-sky-950/10 dark:to-blue-950/10">
-        <CardContent className="p-4">
+        <CardContent className="px-4">
           <div className="flex items-start gap-3">
             <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
             <div className="flex-1">

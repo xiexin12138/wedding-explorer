@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import {
-  getAllDictionaryItems,
-  type DictionaryItem,
+  getDictionaryItemByKey,
 } from "@/lib/repositories/dictionary.repository";
 
 // 禁用 Next.js 默认缓存，确保每次请求都获取最新数据
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// 场景类型映射到 key 前缀
-const SCENE_KEY_PREFIX_MAP: Record<string, string> = {
-  'gift-exchange': 'game_coin_item_',        // 礼物兑换
-  'auction': 'game_coin_auction_',           // 礼物拍卖
+// 场景类型映射到固定的 key
+const SCENE_KEY_MAP: Record<string, string> = {
+  'gift-exchange': 'game_coin_exchange_list',  // 礼物兑换列表
+  'auction': 'game_coin_auction_list',          // 礼物拍卖列表
 };
 
 // 获取游戏币兑换项目（所有登录用户都可访问）
@@ -25,23 +24,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const scene = searchParams.get('scene') || 'gift-exchange';
     
-    // 获取对应场景的 key 前缀
-    const keyPrefix = SCENE_KEY_PREFIX_MAP[scene] || SCENE_KEY_PREFIX_MAP['gift-exchange'];
+    // 获取对应场景的 key
+    const settingKey = SCENE_KEY_MAP[scene] || SCENE_KEY_MAP['gift-exchange'];
 
-    // 获取所有字典项
-    const settings = await getAllDictionaryItems();
-
-    // 过滤出对应场景的字典项
-    const coinItems = settings
-      .filter((item: DictionaryItem) => item.key.startsWith(keyPrefix))
-      .map((item: DictionaryItem) => ({
-        ...item,
-        id: item._id,
-      }))
-      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    // 获取字典项
+    const setting = await getDictionaryItemByKey(settingKey);
+    
+    let items = [];
+    if (setting && setting.value) {
+      try {
+        // 解析 JSON 数组
+        items = JSON.parse(setting.value);
+        // 确保是数组
+        if (!Array.isArray(items)) {
+          items = [];
+        }
+      } catch (error) {
+        console.error("解析兑换项目数据失败:", error);
+        items = [];
+      }
+    }
 
     // 返回结果（不缓存，确保实时性）
-    return NextResponse.json(coinItems, {
+    return NextResponse.json(items, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',

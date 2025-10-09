@@ -19,12 +19,17 @@ export async function GET(
       );
     }
 
-    // 返回包含value字段的对象，以便客户端可以直接获取.value
+    // 返回完整的字典项对象（包含 id 用于后续更新）
     return NextResponse.json({ 
+      id: setting._id,  // 将 _id 映射为 id
       value: setting.value,
       key: setting.key,
       displayName: setting.displayName,
-      valueType: setting.valueType
+      valueType: setting.valueType,
+      description: setting.description,
+      category: setting.category,
+      sortOrder: setting.sortOrder,
+      isEnabled: setting.isEnabled,
     });
   } catch (error) {
     console.error("通过key获取字典项失败:", error);

@@ -13,6 +13,7 @@ export {
   deleteDictionaryItem as deleteDictionaryItemClient,
   getDictionaryItem,
   getDictionaryValueByKey,
+  getDictionaryItemByKey as getDictionaryItemByKeyClient,
   getDictionaryItemsByCategory,
   getSystemDictionaryItems,
 } from '@/lib/services/dictionary';
