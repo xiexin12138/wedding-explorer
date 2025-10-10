@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllDictionaryItems, createDictionaryItem } from "@/lib/repositories/dictionary.repository";
-import { SettingCategory, SettingValueType } from "@/lib/repositories/dictionary.repository";
+import { getAllAttractions, createAttraction } from "@/lib/repositories/attractions.repository";
 import { requireAuth } from "@/lib/auth";
 import { cache, CACHE_KEYS } from "@/lib/cache";
 
@@ -18,30 +17,15 @@ export async function GET() {
       return NextResponse.json({ success: true, data: cached });
     }
 
-    // 从数据字典获取景点分类的所有数据
-    const attractions = await getAllDictionaryItems(SettingCategory.ATTRACTIONS, true);
-
-    // 解析景点数据（JSON格式）
-    const parsedAttractions = attractions.map((item) => {
-      try {
-        const attractionData = JSON.parse(item.value || '{}');
-        return {
-          id: item._id,
-          key: item.key,
-          ...attractionData,
-        };
-      } catch (error) {
-        console.error(`解析景点数据失败 (${item.key}):`, error);
-        return null;
-      }
-    }).filter(Boolean);
+    // 从景点仓储获取所有景点数据
+    const attractions = await getAllAttractions();
 
     // 缓存结果（缓存5分钟）
-    cache.set(ATTRACTIONS_CACHE_KEY, parsedAttractions, 5 * 60 * 1000);
+    cache.set(ATTRACTIONS_CACHE_KEY, attractions, 5 * 60 * 1000);
 
     return NextResponse.json({ 
       success: true, 
-      data: parsedAttractions 
+      data: attractions 
     });
   } catch (error) {
     console.error("获取景点数据失败:", error);
@@ -63,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const attractionData = await request.json();
-    const { key, name, position, description, type, media, unlockDistance } = attractionData;
+    const { key, name, position, description, type, media, unlockDistance, isEnabled, sortOrder } = attractionData;
 
     // 验证必填字段
     if (!key || !name || !position || !description || !type) {
@@ -73,49 +57,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 构建景点数据对象
-    const attractionValue = {
+    // 创建景点数据
+    const newAttraction = await createAttraction({
+      key,
       name,
       position,
       description,
       type,
       media: media || [],
       unlockDistance: unlockDistance || 100,
-    };
-
-    // 创建数据字典项
-    const newAttraction = await createDictionaryItem({
-      key,
-      displayName: name,
-      value: JSON.stringify(attractionValue),
-      description: `景点数据: ${description}`,
-      valueType: SettingValueType.JSON,
-      category: SettingCategory.ATTRACTIONS,
-      isSystem: false,
-      isEnabled: true,
-      sortOrder: 0,
-      createdBy: user.sub,
-    });
+      isEnabled: isEnabled !== false,
+      sortOrder: sortOrder || 0,
+    }, user.sub);
 
     // 清除缓存
     cache.delete(ATTRACTIONS_CACHE_KEY);
 
-    // 返回创建的景点数据
-    const result = {
-      id: newAttraction._id,
-      key: newAttraction.key,
-      ...attractionValue,
-    };
-
     return NextResponse.json({ 
       success: true, 
-      data: result 
+      data: newAttraction 
     }, { status: 201 });
   } catch (error) {
     console.error("创建景点数据失败:", error);
     
     // 处理特定错误
-    if (error instanceof Error && error.message === "键名已存在") {
+    if (error instanceof Error && error.message === "景点键名已存在") {
       return NextResponse.json(
         { error: "景点键名已存在" },
         { status: 400 }

@@ -31,10 +31,10 @@ import { cn } from "@/lib/utils";
 import { useUser } from "@/components/UserProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { getAllAttractions } from "@/lib/services/attractions.service";
-import { cache, CACHE_KEYS } from "@/lib/cache";
+// import { cache, CACHE_KEYS } from "@/lib/cache";
 
 // 景点数据缓存键
-const ATTRACTIONS_CACHE_KEY = CACHE_KEYS.ATTRACTIONS_DATA;
+// const ATTRACTIONS_CACHE_KEY = CACHE_KEYS.ATTRACTIONS_DATA;
 
 // 导入新的 AttractionCard 组件和相关类型
 import {

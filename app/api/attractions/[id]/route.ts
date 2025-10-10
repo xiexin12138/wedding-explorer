@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { deleteDictionaryItem, getDictionaryItemById, updateDictionaryItem } from "@/lib/repositories/dictionary.repository";
+import { getAttractionById, updateAttraction, deleteAttraction } from "@/lib/repositories/attractions.repository";
 import { requireAuth } from "@/lib/auth";
 import { cache, CACHE_KEYS } from "@/lib/cache";
 import { deleteAttractionMedia } from "@/lib/cos-file-manager";
@@ -39,12 +39,12 @@ export async function PATCH(
 
     // 获取请求体
     const body = await request.json();
-    const { description, name } = body;
+    const { description, name, position, type, media, unlockDistance, isEnabled, sortOrder } = body;
 
     // 验证至少有一个字段需要更新
-    if (!description && !name) {
+    if (!description && !name && !position && !type && media === undefined && unlockDistance === undefined && isEnabled === undefined && sortOrder === undefined) {
       return NextResponse.json(
-        { error: "至少需要提供标题或描述中的一个字段" },
+        { error: "至少需要提供一个字段进行更新" },
         { status: 400 }
       );
     }
@@ -66,7 +66,7 @@ export async function PATCH(
 
     // 获取当前景点数据
     console.log("🔍 正在获取景点数据...");
-    const attraction = await getDictionaryItemById(id);
+    const attraction = await getAttractionById(id);
     
     if (!attraction) {
       console.log("❌ 景点不存在");
@@ -76,58 +76,29 @@ export async function PATCH(
       );
     }
 
-    // 解析并更新景点数据
-    let attractionData;
-    try {
-      attractionData = JSON.parse(attraction.value || '{}');
-    } catch (parseError) {
-      console.error("❌ 解析景点数据失败:", parseError);
-      return NextResponse.json(
-        { error: "景点数据格式错误" },
-        { status: 500 }
-      );
-    }
-
-    // 更新字段
-    if (description) {
-      attractionData.description = description.trim();
-    }
-    if (name) {
-      attractionData.name = name.trim();
-    }
+    // 构建更新数据
+    const updateData: Record<string, unknown> = {};
+    if (description) updateData.description = description.trim();
+    if (name) updateData.name = name.trim();
+    if (position) updateData.position = position;
+    if (type) updateData.type = type;
+    if (media !== undefined) updateData.media = media;
+    if (unlockDistance !== undefined) updateData.unlockDistance = unlockDistance;
+    if (isEnabled !== undefined) updateData.isEnabled = isEnabled;
+    if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
 
     // 更新数据库
     console.log("🔄 正在更新景点数据...");
-    const updateData: any = {
-      value: JSON.stringify(attractionData),
-      updatedBy: user.sub,
-    };
-
-    // 如果更新了标题，同时更新 displayName 和 description
-    if (name) {
-      updateData.displayName = name.trim();
-      updateData.description = `景点数据: ${attractionData.description}`;
-    } else if (description) {
-      updateData.description = `景点数据: ${description.trim()}`;
-    }
-
-    const updatedAttraction = await updateDictionaryItem(id, updateData);
+    const updatedAttraction = await updateAttraction(id, updateData, user.sub);
     console.log("✅ 景点数据更新成功");
 
     // 清除缓存
     cache.delete(ATTRACTIONS_CACHE_KEY);
     console.log("✅ 缓存已清除");
 
-    // 返回更新后的数据
-    const result = {
-      id: updatedAttraction._id,
-      key: updatedAttraction.key,
-      ...attractionData,
-    };
-
     return NextResponse.json({ 
       success: true, 
-      data: result,
+      data: updatedAttraction,
       message: "景点信息更新成功"
     });
   } catch (error) {
@@ -139,10 +110,17 @@ export async function PATCH(
     
     // 处理特定错误
     if (error instanceof Error) {
-      if (error.message === "字典项不存在") {
+      if (error.message === "景点不存在") {
         return NextResponse.json(
           { success: false, error: "景点不存在" },
           { status: 404 }
+        );
+      }
+      
+      if (error.message === "景点键名已存在") {
+        return NextResponse.json(
+          { success: false, error: "景点键名已存在" },
+          { status: 400 }
         );
       }
       
@@ -190,7 +168,7 @@ export async function DELETE(
 
     // 1. 先获取景点数据（用于删除 COS 文件）
     console.log("🔍 正在获取景点数据...");
-    const attraction = await getDictionaryItemById(id);
+    const attraction = await getAttractionById(id);
     
     if (!attraction) {
       console.log("❌ 景点不存在");
@@ -205,20 +183,8 @@ export async function DELETE(
     let mediaDeleteResult = { success: 0, failed: 0, total: 0, skipped: 0 };
     
     try {
-      // 解析景点数据中的媒体文件
-      let media: Array<{ type: 'image' | 'video'; url: string; title?: string }> | undefined;
-      
-      if (attraction.value && typeof attraction.value === 'string') {
-        try {
-          const attractionData = JSON.parse(attraction.value);
-          media = attractionData.media;
-        } catch (parseError) {
-          console.warn("⚠️ 解析景点数据失败，跳过媒体文件删除:", parseError);
-        }
-      }
-
-      if (media && media.length > 0) {
-        mediaDeleteResult = await deleteAttractionMedia(media);
+      if (attraction.media && attraction.media.length > 0) {
+        mediaDeleteResult = await deleteAttractionMedia(attraction.media);
         console.log("📊 媒体文件删除结果:", mediaDeleteResult);
       } else {
         console.log("ℹ️ 景点没有媒体文件");
@@ -230,7 +196,7 @@ export async function DELETE(
 
     // 3. 删除景点数据
     console.log("🔄 正在删除景点数据...");
-    await deleteDictionaryItem(id);
+    await deleteAttraction(id);
     console.log("✅ 景点数据删除成功");
 
     // 4. 清除缓存
@@ -254,16 +220,10 @@ export async function DELETE(
     
     // 处理特定错误
     if (error instanceof Error) {
-      if (error.message === "字典项不存在") {
+      if (error.message === "景点不存在") {
         return NextResponse.json(
           { success: false, error: "景点不存在" },
           { status: 404 }
-        );
-      }
-      if (error.message === "系统内置设置不允许删除") {
-        return NextResponse.json(
-          { success: false, error: "系统内置景点不允许删除" },
-          { status: 403 }
         );
       }
       

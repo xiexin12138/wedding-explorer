@@ -34,6 +34,7 @@ export async function getAllAttractions(): Promise<AttractionDetail[]> {
     throw new Error(result.error || "获取景点数据失败");
   }
 
+  // 新的数据结构已经是完整的景点对象数组
   const attractions = result.data as AttractionDetail[];
   
   // 缓存结果（缓存3分钟）

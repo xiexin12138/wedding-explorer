@@ -13,7 +13,9 @@
     "lint": "next lint",
     "seed:import-users": "tsx prisma/seeds/import-users-from-csv.ts",
     "seed:verify-users": "tsx prisma/seeds/verify-users.ts",
-    "migrate:user-ids": "tsx scripts/run-migration.ts"
+    "migrate:user-ids": "tsx scripts/run-migration.ts",
+    "migrate:attractions": "tsx scripts/migrate-attractions-to-list.ts",
+    "init:attractions": "tsx scripts/init-attractions-data.ts"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",

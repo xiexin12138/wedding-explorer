@@ -601,16 +601,6 @@ export function AttractionCard({
               </div>
             </div>
 
-            {isUnlocked && (
-              <div className="mt-6">
-                {/* 这里可以添加更多详细内容，仅在解锁后显示 */}
-                <h3 className="text-lg font-semibold mb-2">详细信息</h3>
-                <p className="text-muted-foreground">
-                  您已解锁此位置的详细内容。这里可以显示更多关于
-                  {attraction.name}的详细信息。
-                </p>
-              </div>
-            )}
           </div>
         </div>
 

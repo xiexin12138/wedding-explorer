@@ -1,9 +1,9 @@
 /**
  * 初始化景点数据到数据字典
- * 将硬编码的示例景点数据迁移到数据字典系统
+ * 使用新的景点列表数据结构
  */
 
-import { createDictionaryItem, SettingCategory, SettingValueType } from '@/lib/repositories/dictionary.repository';
+import { createAttraction, getAllAttractions } from '@/lib/repositories/attractions.repository';
 import { AttractionType } from '@/components/AttractionCard';
 
 // 示例景点数据
@@ -94,35 +94,40 @@ async function initAttractionsData() {
   console.log('开始初始化景点数据...');
 
   try {
+    // 检查是否已有景点数据
+    const existingAttractions = await getAllAttractions(true);
+    if (existingAttractions.length > 0) {
+      console.log(`⚠️  警告：已存在 ${existingAttractions.length} 个景点`);
+      console.log('如果需要重新初始化，请先清空现有数据');
+      return;
+    }
+
+    console.log(`准备创建 ${SAMPLE_ATTRACTIONS.length} 个示例景点...\n`);
+
     for (const attraction of SAMPLE_ATTRACTIONS) {
       const { key, name, ...attractionData } = attraction;
       
       console.log(`正在创建景点: ${name}`);
       
-      // 构建景点数据对象
-      const attractionValue = {
-        name,
-        ...attractionData,
-      };
+      try {
+        // 使用新的 createAttraction 方法
+        await createAttraction({
+          key,
+          name,
+          ...attractionData,
+        }, 'system');
 
-      // 创建数据字典项
-      await createDictionaryItem({
-        key,
-        displayName: name,
-        value: JSON.stringify(attractionValue),
-        description: `景点数据: ${attractionData.description}`,
-        valueType: SettingValueType.JSON,
-        category: SettingCategory.ATTRACTIONS,
-        isSystem: false,
-        isEnabled: true,
-        sortOrder: 0,
-        createdBy: 'system',
-      });
-
-      console.log(`✅ 景点 ${name} 创建成功`);
+        console.log(`  ✅ 景点 ${name} 创建成功`);
+      } catch (error) {
+        console.error(`  ❌ 景点 ${name} 创建失败:`, error);
+      }
     }
 
-    console.log('🎉 所有景点数据初始化完成！');
+    console.log('\n🎉 所有景点数据初始化完成！');
+    
+    // 显示创建结果
+    const finalAttractions = await getAllAttractions(true);
+    console.log(`\n📊 当前景点总数: ${finalAttractions.length}`);
   } catch (error) {
     console.error('❌ 初始化景点数据失败:', error);
     throw error;
@@ -142,4 +147,5 @@ if (require.main === module) {
     });
 }
 
+// 导出函数供其他模块使用
 export { initAttractionsData };
