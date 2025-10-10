@@ -72,4 +72,6 @@ export const CACHE_KEYS = {
   DICTIONARY_ITEM: (id: string) => `dictionary:item:${id}`,
   DICTIONARY_BY_KEY: (key: string) => `dictionary:key:${key}`,
   DICTIONARY_BY_CATEGORY: (category: string) => `dictionary:category:${category}`,
+  ATTRACTIONS_DATA: 'attractions:data',
+  ATTRACTIONS_CLIENT: 'attractions:client',
 } as const;

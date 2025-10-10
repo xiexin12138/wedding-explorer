@@ -19,6 +19,7 @@ import { AttractionForm } from "@/components/AttractionForm";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/components/UserProvider";
 import { useToast } from "@/components/ui/use-toast";
+import { getAllAttractions } from "@/lib/services/attractions.service";
 
 // 导入新的 AttractionCard 组件和相关类型
 import {
@@ -149,8 +150,8 @@ export function MapExplorer() {
   // 所有状态声明放在组件顶部
   const [map, setMap] = useState<AMap.Map | null>(null);
   const [AMapInstance, setAMapInstance] = useState<typeof AMap | null>(null);
-  const [attractions, setAttractions] =
-    useState<Attraction[]>(SAMPLE_ATTRACTIONS);
+  const [attractions, setAttractions] = useState<Attraction[]>([]);
+  const [attractionsLoading, setAttractionsLoading] = useState<boolean>(true);
   const [currentAttractionIndex, setCurrentAttractionIndex] =
     useState<number>(0);
   const [showAttractionsList, setShowAttractionsList] =
@@ -181,6 +182,38 @@ export function MapExplorer() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 加载景点数据
+  useEffect(() => {
+    const loadAttractions = async () => {
+      try {
+        setAttractionsLoading(true);
+        const attractionsData = await getAllAttractions();
+        setAttractions(attractionsData);
+        
+        // 如果有景点数据，设置第一个为当前景点
+        if (attractionsData.length > 0) {
+          setCurrentAttractionIndex(0);
+        }
+      } catch (error) {
+        console.error("加载景点数据失败:", error);
+        // 如果加载失败，使用示例数据作为后备
+        setAttractions(SAMPLE_ATTRACTIONS);
+        if (SAMPLE_ATTRACTIONS.length > 0) {
+          setCurrentAttractionIndex(0);
+        }
+        toast({
+          title: "景点数据加载失败",
+          description: "已切换到示例数据，部分功能可能受限",
+          variant: "destructive",
+        });
+      } finally {
+        setAttractionsLoading(false);
+      }
+    };
+
+    loadAttractions();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 定时更新用户位置
   useEffect(() => {
@@ -766,8 +799,20 @@ export function MapExplorer() {
         </div>
       </div>
 
+      {/* 景点加载状态 */}
+      {attractionsLoading && (
+        <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: 'max(6rem, calc(env(safe-area-inset-bottom, 2rem) + 4rem))' }}>
+          <Card className="bg-background/95 backdrop-blur-sm shadow-lg p-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              正在加载景点数据...
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* 景点信息浮框 - 使用新的 AttractionCard 组件 */}
-      {attractions.length > 0 && currentAttractionIndex >= 0 && (
+      {!attractionsLoading && attractions.length > 0 && currentAttractionIndex >= 0 && (
         <div
           className={
             cardExpanded
@@ -805,7 +850,19 @@ export function MapExplorer() {
                 </Button>
               </div>
               <div className="space-y-2">
-                {attractions.map((attraction, index) => (
+                {attractionsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      正在加载景点数据...
+                    </div>
+                  </div>
+                ) : attractions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    暂无景点数据
+                  </div>
+                ) : (
+                  attractions.map((attraction, index) => (
                   <div
                     key={attraction.id}
                     className={`p-3 rounded-lg cursor-pointer ${
@@ -837,7 +894,8 @@ export function MapExplorer() {
                       {attraction.description}
                     </p>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </Card>

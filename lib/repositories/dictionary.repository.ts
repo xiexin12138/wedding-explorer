@@ -33,6 +33,7 @@ export enum SettingCategory {
   GUEST = 'GUEST',
   SCHEDULE = 'SCHEDULE',
   MAP = 'MAP',
+  ATTRACTIONS = 'ATTRACTIONS', // 景点数据分类
   CHAT = 'CHAT',
   ANALYTICS = 'ANALYTICS',
   UI_UX = 'UI_UX',
