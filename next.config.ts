@@ -24,6 +24,18 @@ const nextConfig: NextConfig = {
   // 配置图片优化
   images: {
     formats: ['image/webp', 'image/avif'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'wedding-1370686216.cos.ap-singapore.myqcloud.com',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'files.authing.co',
+        pathname: '/authing-console/**',
+      },
+    ],
   },
 
   // API 路由缓存控制配置

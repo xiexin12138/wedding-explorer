@@ -46,7 +46,8 @@
     "tailwind-merge": "^3.3.1",
     "tencentcloud-sdk-nodejs": "^4.1.126",
     "ua-parser-js": "^2.0.4",
-    "vconsole": "^3.15.1"
+    "vconsole": "^3.15.1",
+    "vod-js-sdk-v6": "1.7.1-beta.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

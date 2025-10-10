@@ -8,14 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { X, Save, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AttractionType } from "@/components/AttractionCard";
+import { AttractionType, AttractionDetail } from "@/components/AttractionCard";
 import { attractionTypeConfig } from "@/components/MapExplorer";
-import { MediaUploader, UploadableFile, uploadFile, FinalMedia } from "@/components/MediaUploader";
+import { MediaUploader, UploadableFile, uploadFile } from "@/components/MediaUploader";
 import COS from 'cos-js-sdk-v5';
 
 interface AttractionFormProps {
   position: [number, number];
-  onSubmitSuccess: (attraction: any) => void;
+  onSubmitSuccess: (attraction: AttractionDetail) => void;
   onCancel: () => void;
 }
 
@@ -97,8 +97,9 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel }: Attracti
             });
             updateFileStatus(mediaFile.id, 'success', finalUrl);
             return { url: finalUrl, type: mediaFile.file.type.startsWith('image/') ? 'image' : 'video', title: mediaFile.file.name };
-          } catch (error: any) {
-            updateFileStatus(mediaFile.id, 'error', undefined, error.message || '上传失败');
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '上传失败';
+            updateFileStatus(mediaFile.id, 'error', undefined, errorMessage);
             throw error;
           }
         });
@@ -134,11 +135,19 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel }: Attracti
       }
 
       const result = await response.json();
+      
+      // 防御性检查
+      if (typeof onSubmitSuccess !== 'function') {
+        console.error('onSubmitSuccess is not a function:', onSubmitSuccess);
+        throw new Error('回调函数未定义');
+      }
+      
       onSubmitSuccess(result.data);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('提交失败:', error);
-      setErrors(prev => ({ ...prev, form: error.message || '发生未知错误' }));
+      const errorMessage = error instanceof Error ? error.message : '发生未知错误';
+      setErrors(prev => ({ ...prev, form: errorMessage }));
     } finally {
       setIsSubmitting(false);
     }

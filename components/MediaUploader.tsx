@@ -5,7 +5,9 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { X, Upload, Video, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Upload, Video, Loader2, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { OptimizedImage } from "@/components/OptimizedImage";
+import { VideoThumbnail } from "@/components/OptimizedVideo";
 import { cn } from "@/lib/utils";
 import COS from 'cos-js-sdk-v5';
 
@@ -33,7 +35,30 @@ export const uploadFile = (
   file: File,
   onProgress: (progress: number) => void
 ): Promise<string> => {
-  const key = `uploads/${crypto.randomUUID()}-${file.name}`;
+  // 生成文件名：视频强制 .mp4，图片强制 .jpg
+  const isVideo = file.type.startsWith('video/');
+  const isImage = file.type.startsWith('image/');
+  const originalFileName = file.name;
+  const fileNameWithoutExt = originalFileName.substring(0, originalFileName.lastIndexOf('.')) || originalFileName;
+  
+  let ext: string;
+  if (isVideo) {
+    ext = '.mp4';
+  } else if (isImage) {
+    ext = '.jpg';
+  } else {
+    ext = originalFileName.substring(originalFileName.lastIndexOf('.'));
+  }
+  
+  const key = `uploads/${crypto.randomUUID()}-${fileNameWithoutExt}${ext}`;
+  
+  console.log(`📤 上传文件: ${originalFileName} → ${key}`);
+  if (isVideo && !originalFileName.endsWith('.mp4')) {
+    console.log(`🎬 视频文件扩展名已自动转换为 .mp4`);
+  }
+  if (isImage && !originalFileName.endsWith('.jpg') && !originalFileName.endsWith('.jpeg')) {
+    console.log(`🖼️ 图片文件扩展名已自动转换为 .jpg`);
+  }
   
   return new Promise((resolve, reject) => {
     cos.sliceUploadFile(
@@ -42,6 +67,7 @@ export const uploadFile = (
         Region: process.env.NEXT_PUBLIC_TENCENT_COS_REGION!,
         Key: key,
         Body: file,
+        // 移除 ACL 设置，保持存储桶的默认权限（私有）
         onProgress: (progressData) => {
           const percent = Math.round(progressData.percent * 100);
           onProgress(percent);
@@ -52,7 +78,23 @@ export const uploadFile = (
           return reject(err);
         }
         // data.Location 包含完整的 URL
-        const finalUrl = `https://${data.Location}`;
+        let finalUrl = `https://${data.Location}`;
+        
+        // 图片和视频上传后，远端会自动转码，返回转码后的 URL
+        // 图片：自动转为 .jpg
+        // 视频：自动转为 .mp4
+        if (isImage) {
+          // 确保返回的是 .jpg 格式的 URL（远端已转码）
+          finalUrl = finalUrl.replace(/\.[^/.]+$/, '.jpg');
+          console.log(`✅ 图片上传成功，返回转码后的 URL: ${finalUrl}`);
+        } else if (isVideo) {
+          // 确保返回的是 .mp4 格式的 URL（远端已转码）
+          finalUrl = finalUrl.replace(/\.[^/.]+$/, '.mp4');
+          console.log(`✅ 视频上传成功，返回转码后的 URL: ${finalUrl}`);
+        } else {
+          console.log(`✅ 上传成功: ${finalUrl}`);
+        }
+        
         resolve(finalUrl);
       }
     );
@@ -111,10 +153,43 @@ export function MediaUploader({
               <div className="flex items-start gap-3">
                 <div className="relative w-16 h-16 bg-muted rounded overflow-hidden">
                   {item.file.type.startsWith('image/') ? (
-                    <Image src={item.previewUrl} alt={item.file.name} fill className="object-cover" unoptimized />
+                    item.finalUrl && item.status === 'success' ? (
+                      <OptimizedImage
+                        src={item.finalUrl}
+                        alt={item.file.name}
+                        width={64}
+                        height={64}
+                        className="object-cover"
+                        optimize={{ width: 200, quality: 75, format: 'webp' }}
+                      />
+                    ) : (
+                      <Image src={item.previewUrl} alt={item.file.name} fill className="object-cover" unoptimized />
+                    )
                   ) : (
-                    <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
-                      <Video className="h-8 w-8 text-muted-foreground" />
+                    item.finalUrl && item.status === 'success' ? (
+                      <VideoThumbnail
+                        src={item.finalUrl}
+                        width={64}
+                        height={64}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                        <Video className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )
+                  )}
+                  {/* 类型标识 */}
+                  {item.status === 'success' && (
+                    <div className={cn(
+                      "absolute bottom-0 right-0 p-0.5 rounded-tl",
+                      item.file.type.startsWith('image/') ? "bg-blue-500/80" : "bg-purple-500/80"
+                    )}>
+                      {item.file.type.startsWith('image/') ? (
+                        <ImageIcon className="w-3 h-3 text-white" />
+                      ) : (
+                        <Video className="w-3 h-3 text-white" />
+                      )}
                     </div>
                   )}
                 </div>

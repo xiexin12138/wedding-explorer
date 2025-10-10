@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
 import gcoord from "gcoord";
 
@@ -8,12 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   ChevronLeft,
   ChevronRight,
   MapPin,
   List,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { AttractionForm } from "@/components/AttractionForm";
 import { cn } from "@/lib/utils";
@@ -174,6 +185,8 @@ export function MapExplorer() {
   const [userPositionCircle, setUserPositionCircle] =
     useState<AMap.Circle | null>(null);
   const [showAttractionForm, setShowAttractionForm] = useState<boolean>(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const { theme } = useTheme();
   const { user } = useUser();
   const { toast } = useToast();
@@ -494,9 +507,12 @@ export function MapExplorer() {
   };
 
   // 处理景点表单提交
-  const handleAttractionSubmit = (newAttraction: Attraction) => {
-    setAttractions([...attractions, newAttraction]);
-    setCurrentAttractionIndex(attractions.length);
+  const handleAttractionSubmit = useCallback((newAttraction: Attraction) => {
+    setAttractions(prev => {
+      const updated = [...prev, newAttraction];
+      setCurrentAttractionIndex(updated.length - 1);
+      return updated;
+    });
     setShowAttractionForm(false);
     
     // 将地图中心移动到新添加的景点
@@ -509,12 +525,70 @@ export function MapExplorer() {
       title: "景点添加成功",
       description: `景点「${newAttraction.name}」已成功添加到地图中`,
     });
-  };
+  }, [map, toast]);
 
   // 处理景点表单取消
-  const handleAttractionCancel = () => {
+  const handleAttractionCancel = useCallback(() => {
     setShowAttractionForm(false);
-  };
+  }, []);
+
+  // 处理删除景点
+  const handleDeleteAttraction = useCallback(async (attractionId: string) => {
+    setIsDeleting(true);
+    try {
+      console.log('🗑️ 开始删除景点，ID:', attractionId);
+      
+      const response = await fetch(`/api/attractions/${attractionId}`, {
+        method: 'DELETE',
+      });
+
+      console.log('📡 删除请求响应状态:', response.status);
+
+      let result;
+      try {
+        const text = await response.text();
+        console.log('📄 响应内容:', text);
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error('❌ 解析响应失败:', parseError);
+        throw new Error('服务器返回了无效的响应格式');
+      }
+
+      if (!response.ok) {
+        throw new Error(result.error || '删除景点失败');
+      }
+
+      console.log('✅ 景点删除成功');
+
+      // 从列表中移除已删除的景点
+      setAttractions(prev => prev.filter(a => a.id !== attractionId));
+      
+      // 如果删除的是当前景点，重置选中索引
+      const deletedIndex = attractions.findIndex(a => a.id === attractionId);
+      if (deletedIndex === currentAttractionIndex) {
+        setCurrentAttractionIndex(0);
+      } else if (deletedIndex < currentAttractionIndex) {
+        setCurrentAttractionIndex(prev => Math.max(0, prev - 1));
+      }
+
+      toast({
+        title: "删除成功",
+        description: "景点已成功删除",
+      });
+
+      setDeleteConfirmId(null);
+    } catch (error) {
+      console.error('❌ 删除景点失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '删除景点失败';
+      toast({
+        title: "删除失败",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [attractions, currentAttractionIndex, toast]);
 
   // 更新用户位置标记和精度圈的函数
   const updateUserPositionMarkerAndCircle = (
@@ -865,34 +939,54 @@ export function MapExplorer() {
                   attractions.map((attraction, index) => (
                   <div
                     key={attraction.id}
-                    className={`p-3 rounded-lg cursor-pointer ${
+                    className={`p-3 rounded-lg ${
                       index === currentAttractionIndex
                         ? "bg-primary/10 border border-primary"
                         : "bg-muted"
                     }`}
-                    onClick={() => {
-                      setCurrentAttractionIndex(index);
-                      if (map) {
-                        map.setCenter(attraction.position);
-                      }
-                      setShowAttractionsList(false);
-                    }}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium">{attraction.name}</h3>
-                      <Badge
-                        className={cn(
-                          attractionTypeConfig[attraction.type]?.className ||
-                            attractionTypeConfig[AttractionType.OTHER].className
-                        )}
-                      >
-                        {attractionTypeConfig[attraction.type]?.label ||
-                          attractionTypeConfig[AttractionType.OTHER].label}
-                      </Badge>
+                    <div 
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setCurrentAttractionIndex(index);
+                        if (map) {
+                          map.setCenter(attraction.position);
+                        }
+                        setShowAttractionsList(false);
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium flex-grow">{attraction.name}</h3>
+                        <Badge
+                          className={cn(
+                            attractionTypeConfig[attraction.type]?.className ||
+                              attractionTypeConfig[AttractionType.OTHER].className
+                          )}
+                        >
+                          {attractionTypeConfig[attraction.type]?.label ||
+                            attractionTypeConfig[AttractionType.OTHER].label}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {attraction.description}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {attraction.description}
-                    </p>
+                    {user?.isAdmin && (
+                      <div className="mt-2 pt-2 border-t border-border/50">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirmId(attraction.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          删除景点
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   ))
                 )}
@@ -906,10 +1000,44 @@ export function MapExplorer() {
       {showAttractionForm && map && (
         <AttractionForm
           position={[map.getCenter().getLng(), map.getCenter().getLat()]}
-          onSubmit={handleAttractionSubmit}
+          onSubmitSuccess={handleAttractionSubmit}
           onCancel={handleAttractionCancel}
         />
       )}
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除景点</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作将永久删除该景点数据，且无法恢复。确定要继续吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeleting}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteConfirmId) {
+                  handleDeleteAttraction(deleteConfirmId);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  删除中...
+                </>
+              ) : (
+                '确认删除'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

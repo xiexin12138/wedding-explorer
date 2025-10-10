@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2 } from "lucide-react";
-import Image from "next/image";
+import { OptimizedImage } from "@/components/OptimizedImage";
+import { OptimizedVideo } from "@/components/OptimizedVideo";
 import { detectEnvironment } from "@/lib/environment-detector";
 import { openMap } from "@/lib/map-launcher";
 import { attractionTypeConfig } from "@/components/MapExplorer";
@@ -186,17 +187,21 @@ export function AttractionCard({
       <div className="w-full h-[40vh] relative overflow-hidden bg-black">
         {currentMedia.type === "image" ? (
           <div className="relative w-full h-full">
-            <Image
+            <OptimizedImage
               src={currentMedia.url}
               alt={currentMedia.title || attraction.name}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-contain"
+              optimize={{
+                quality: 85,
+                format: 'webp',
+              }}
               unoptimized={currentMedia.url.startsWith("data:")} // 如果是 base64 图片则不优化
             />
           </div>
         ) : (
-          <video
+          <OptimizedVideo
             src={currentMedia.url}
             controls
             className="w-full h-full object-contain"

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@/components/UserProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Home, Loader2, Shield, User as UserIcon, Coins } from "lucide-react";
+import { AlertCircle, Home, Loader2, Shield, User as UserIcon } from "lucide-react";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 
 interface TargetUser {

@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User } from "@/app/generated/prisma";
-import Image from "next/image";
+import { AvatarImage } from "@/components/OptimizedImage";
 
 interface LeaderboardEntry extends User {
   rank: number;
@@ -124,13 +124,6 @@ const LeaderboardPage = () => {
     return "神秘人";
   };
 
-  const handleAvatarError = (
-    e: React.SyntheticEvent<HTMLImageElement, Event>
-  ) => {
-    e.currentTarget.src =
-      "https://files.authing.co/authing-console/default-user-avatar.png";
-  };
-
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <Card className="shadow-lg">
@@ -174,16 +167,14 @@ const LeaderboardPage = () => {
                     )}
                   </div>
                   <div className="flex-shrink-0 ml-2">
-                    <Image
+                    <AvatarImage
                       src={
                         user.avatar ||
                         "https://files.authing.co/authing-console/default-user-avatar.png"
                       }
                       alt={getUserDisplayName(user)}
-                      width={48}
-                      height={48}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-yellow-200 dark:border-yellow-700"
-                      onError={handleAvatarError}
+                      size={48}
+                      className="rounded-full object-cover border-2 border-yellow-200 dark:border-yellow-700"
                     />
                   </div>
                   <div className="flex-grow ml-4">
