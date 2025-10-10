@@ -12,6 +12,15 @@ const setting: Prisma.SystemSettingCreateInput[] = [
     isSystem: true,
     isEnabled: true,
   },
+  {
+    key: 'LEADERBOARD_MIN_COIN_THRESHOLD',
+    displayName: '排行榜最低上榜金币数',
+    valueType: 'NUMBER',
+    category: 'SYSTEM',
+    value: '100',
+    isSystem: true,
+    isEnabled: true,
+  },
 ]
 
 export default async function main() {

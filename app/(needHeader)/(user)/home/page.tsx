@@ -9,6 +9,7 @@ import {
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
 import { Map, Coins, Heart, Calendar } from "lucide-react";
 import { NavigationButton } from "@/components/NavigationButton";
+import LeaderboardCard from "@/components/LeaderboardCard";
 
 export const metadata: Metadata = {
   title: "首页 - Xie & Feng Wedding",
@@ -42,7 +43,7 @@ export default function HomePage() {
       </Card>
 
       {/* 功能卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="relative overflow-hidden border-purple-300/50 bg-gradient-to-br from-purple-50 via-violet-50 to-purple-50 dark:from-purple-950/20 dark:via-violet-950/20 dark:to-purple-950/20">
           {/* 日历/时间背景装饰 */}
           <div className="absolute inset-0 opacity-5 dark:opacity-10">
@@ -96,6 +97,8 @@ export default function HomePage() {
             </NavigationButton>
           </CardContent>
         </Card>
+
+        <LeaderboardCard />
         
         <Card className="relative overflow-hidden border-emerald-300/50 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-emerald-950/20">
           {/* 地图探索背景装饰 */}

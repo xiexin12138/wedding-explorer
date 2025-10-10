@@ -8,12 +8,12 @@ import * as userService from '@/lib/services/user.service';
 
 export async function GET(request: NextRequest) {
   try {
-    const page = Number(request.nextUrl.searchParams.get('page') || '1');
-    const pageSize = Number(request.nextUrl.searchParams.get('pageSize') || '10');
+    const limit = Number(request.nextUrl.searchParams.get('limit') || '10');
+    const offset = Number(request.nextUrl.searchParams.get('offset') || '0');
 
     const result = await userService.getCoinLeaderboard({
-      page,
-      pageSize,
+      limit,
+      offset,
     });
 
     return NextResponse.json({

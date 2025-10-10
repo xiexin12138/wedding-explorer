@@ -5,8 +5,10 @@
 
 import * as userRepo from '@/lib/repositories/user.repository';
 import * as coinTransactionRepo from '@/lib/repositories/coin-transaction.repository';
-import type { User, TransactionType, CoinTransaction } from '@/app/generated/prisma';
+import type { User, TransactionType, CoinTransaction, Prisma } from '@/app/generated/prisma';
 import { db } from '@/lib/db';
+import { GAME_CONFIG } from '@/lib/game-config';
+import { getDictionaryItemByKey } from '@/lib/repositories/dictionary.repository';
 
 /**
  * 用户登录或注册
@@ -89,8 +91,8 @@ export async function loginOrRegister(params: {
     } else {
       // 用户不存在，创建新用户和关联
       user = await db.$transaction(async (tx) => {
-        // 初始游戏币数量
-        const INITIAL_COINS = 10;
+        // 从配置中获取初始游戏币数量
+        const INITIAL_COINS = GAME_CONFIG.initialCoins;
 
         // 创建用户（初始化游戏币）
         const newUser = await tx.user.create({
@@ -400,30 +402,48 @@ export async function adminAdjustCoins(params: {
  * 获取游戏币排行榜
  */
 export async function getCoinLeaderboard(params: {
-  page?: number;
-  pageSize?: number;
+  limit?: number;
+  offset?: number;
 }): Promise<{
   leaderboard: User[];
   total: number;
-  currentPage: number;
-  pageSize: number;
+  offset: number;
+  limit: number;
 }> {
   try {
-    const { page = 1, pageSize = 10 } = params;
-    const offset = (page - 1) * pageSize;
+    const { limit = 10, offset = 0 } = params;
 
-    const leaderboard = await userRepo.getCoinLeaderboard(pageSize, offset);
+    // 从数据字典获取最低上榜门槛
+    const minCoinsThresholdItem = await getDictionaryItemByKey(
+      'LEADERBOARD_MIN_COIN_THRESHOLD'
+    );
+    const minCoins = minCoinsThresholdItem?.value
+      ? parseInt(minCoinsThresholdItem.value, 10) + 1
+      : 0;
 
-    // 获取总用户数
+    const where: Prisma.UserWhereInput = {
+      isActive: true,
+      coins: {
+        gte: minCoins,
+      },
+    };
+
+    const leaderboard = await userRepo.getCoinLeaderboard(
+      limit,
+      offset,
+      minCoins
+    );
+
+    // 获取满足条件的总用户数
     const total = await db.user.count({
-      where: { isActive: true },
+      where,
     });
 
     return {
       leaderboard,
       total,
-      currentPage: page,
-      pageSize,
+      offset,
+      limit,
     };
   } catch (error) {
     console.error('获取排行榜失败:', error);

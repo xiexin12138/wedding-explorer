@@ -14,6 +14,7 @@ import {
   Map,
   Coins,
   QrCode,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -288,6 +289,12 @@ export function Header() {
                 >
                   <Map className="mr-2 h-4 w-4 text-primary" />
                   地图探索
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => router.push('/leaderboard')}
+                >
+                  <Trophy className="mr-2 h-4 w-4 text-yellow-500" />
+                  游戏币排行榜
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowLogoutDialog(true)}
