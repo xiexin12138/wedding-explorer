@@ -74,6 +74,7 @@ export interface VideoSnapshotTaskParams {
 /**
  * 检测是否为 COS URL
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isCOSUrl(url: string): boolean {
   return url.includes('.myqcloud.com') && url.includes('.cos.');
 }
@@ -81,6 +82,7 @@ function isCOSUrl(url: string): boolean {
 /**
  * 检测是否为视频文件
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isVideoUrl(url: string): boolean {
   const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.flv'];
   return videoExtensions.some(ext => url.toLowerCase().includes(ext));

@@ -3,7 +3,6 @@
 import { SignedImage } from './SignedImage';
 import { 
   optimizeImageUrl, 
-  generateSrcSet, 
   ImageOptimizeOptions,
   ImagePresets,
   getDevicePreset 
@@ -65,19 +64,14 @@ export function OptimizedImage({
   // 生成优化后的主 URL
   const optimizedSrc = optimizeImageUrl(src, optimizeOptions);
 
-  // 生成响应式 srcSet
-  const srcSet = responsive && !preset
-    ? generateSrcSet(src, undefined, optimizeOptions)
-    : undefined;
-
-  // 默认 sizes 配置
-  const defaultSizes = sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw';
+  // Next.js Image 组件会自动处理响应式图片，不需要手动传递 srcSet
+  // 只传递 sizes 属性即可
+  const imageSizes = responsive ? (sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw') : sizes;
 
   return (
     <SignedImage
       src={optimizedSrc}
-      srcSet={srcSet}
-      sizes={srcSet ? defaultSizes : undefined}
+      sizes={imageSizes}
       alt={alt}
       {...props}
     />

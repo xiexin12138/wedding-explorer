@@ -73,7 +73,7 @@ export function OptimizedVideo({
 
   // 获取网络类型（如果支持）
   const networkType = typeof navigator !== 'undefined' && 'connection' in navigator
-    ? (navigator as any).connection?.effectiveType
+    ? (navigator as { connection?: { effectiveType?: '4g' | '3g' | 'wifi' | 'slow-2g' | '2g' } }).connection?.effectiveType
     : undefined;
 
   // 智能预加载策略
@@ -234,6 +234,7 @@ export function VideoThumbnail({
   }
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={thumbnailUrl}
       alt={alt}
