@@ -6,13 +6,14 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
+import { APP_NAME } from "@/lib/client-config";
 
 export default function MapPage() {
   const router = useRouter();
 
   // 设置页面标题
   useEffect(() => {
-    document.title = "地图探索 - Xie & Feng Wedding";
+    document.title = `地图探索 - ${APP_NAME}`;
   }, []);
 
   const handleBackToHome = () => {

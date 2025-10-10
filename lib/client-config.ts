@@ -33,6 +33,10 @@ export {
   GOOGLE_ANALYTICS_ID
 };
 
+// 应用信息常量
+export const APP_NAME = 'Xie & Feng Wedding';
+export const APP_DESCRIPTION = '欢迎您参加我们的婚礼';
+
 // 配置对象形式（可选）
 export const CLIENT_CONFIG = {
   authingAppId: AUTHING_APP_ID,
@@ -42,4 +46,6 @@ export const CLIENT_CONFIG = {
   analyticsSiteId: ANALYTICS_SITE_ID,
   analyticsToken: ANALYTICS_TOKEN,
   googleAnalyticsId: GOOGLE_ANALYTICS_ID,
+  appName: APP_NAME,
+  appDescription: APP_DESCRIPTION,
 } as const; 

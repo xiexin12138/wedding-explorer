@@ -3,6 +3,7 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { APP_NAME } from "@/lib/client-config";
 import {
   Card,
   CardContent,
@@ -13,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "管理员设置 - Xie & Feng Wedding",
+  title: `管理员设置 - ${APP_NAME}`,
   description: "管理系统配置和数据字典",
 };
 

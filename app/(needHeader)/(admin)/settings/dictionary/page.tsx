@@ -4,6 +4,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { APP_NAME } from "@/lib/client-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,7 +61,7 @@ export default function DictionaryConfigPage() {
 
   // 设置页面标题
   useEffect(() => {
-    document.title = "数据字典管理 - Xie & Feng Wedding";
+    document.title = `数据字典管理 - ${APP_NAME}`;
   }, []);
   
   const [formData, setFormData] = useState<FormData>({

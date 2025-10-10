@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getDictionaryValueByKey } from "@/features/dictionary";
+ import { APP_NAME } from "@/lib/client-config";
 import { cn } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 
@@ -29,7 +30,7 @@ function Timeline() {
 
   // 设置页面标题
   useEffect(() => {
-    document.title = "活动时间安排 - Xie & Feng Wedding";
+    document.title = `活动时间安排 - ${APP_NAME}`;
   }, []);
 
   // 解析日期字符串为Date对象

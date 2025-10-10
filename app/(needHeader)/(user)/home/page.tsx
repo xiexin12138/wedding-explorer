@@ -7,12 +7,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SPECIAL_ROUTES } from "@/lib/routes.config";
+import { APP_NAME } from "@/lib/client-config";
 import { Map, Coins, Heart, Calendar } from "lucide-react";
 import { NavigationButton } from "@/components/NavigationButton";
 import LeaderboardCard from "@/components/LeaderboardCard";
 
 export const metadata: Metadata = {
-  title: "首页 - Xie & Feng Wedding",
+  title: `首页 - ${APP_NAME}`,
   description: "欢迎来到我们的婚礼探索项目",
 };
 

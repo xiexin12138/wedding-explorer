@@ -4,11 +4,12 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { UserProvider } from "@/components/UserProvider";
 import { ViewportHeightProvider } from "@/components/ViewportHeightProvider";
 import { Toaster } from "@/components/ui/toaster";
+import { APP_NAME, APP_DESCRIPTION } from "@/lib/client-config";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Xie & Feng Wedding",
-  description: "欢迎您参加我们的婚礼",
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
 };
 
 export default async function RootLayout({

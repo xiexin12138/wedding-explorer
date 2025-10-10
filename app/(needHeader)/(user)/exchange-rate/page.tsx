@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { APP_NAME } from "@/lib/client-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -125,7 +126,7 @@ export default function ExchangeRatePage() {
 
   // 设置页面标题
   useEffect(() => {
-    document.title = "游戏币兑换汇率 - Xie & Feng Wedding";
+    document.title = `游戏币兑换汇率 - ${APP_NAME}`;
   }, []);
 
   // 加载兑换项目

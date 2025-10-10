@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { APP_NAME } from "@/lib/client-config";
 import Image from "next/image";
 
 export default function LoadingPage() {
@@ -31,7 +32,7 @@ export default function LoadingPage() {
         <Card className="w-full max-w-md bg-background/80 backdrop-blur-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">
-              Wedding Explorer
+              {APP_NAME}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-6">
