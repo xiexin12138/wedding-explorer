@@ -31,6 +31,10 @@ import { cn } from "@/lib/utils";
 import { useUser } from "@/components/UserProvider";
 import { useToast } from "@/components/ui/use-toast";
 import { getAllAttractions } from "@/lib/services/attractions.service";
+import { cache, CACHE_KEYS } from "@/lib/cache";
+
+// 景点数据缓存键
+const ATTRACTIONS_CACHE_KEY = CACHE_KEYS.ATTRACTIONS_DATA;
 
 // 导入新的 AttractionCard 组件和相关类型
 import {
@@ -532,6 +536,25 @@ export function MapExplorer() {
     setShowAttractionForm(false);
   }, []);
 
+  // 处理景点描述和标题更新
+  const handleDescriptionUpdate = useCallback((attractionId: string, newDescription: string, newName?: string) => {
+    setAttractions(prev => prev.map(a => {
+      if (a.id === attractionId) {
+        return {
+          ...a,
+          description: newDescription,
+          ...(newName && { name: newName })
+        };
+      }
+      return a;
+    }));
+    
+    // 清除缓存
+    cache.delete(ATTRACTIONS_CACHE_KEY);
+    
+    console.log('景点信息已更新:', attractionId, { description: newDescription, name: newName });
+  }, []);
+
   // 处理删除景点
   const handleDeleteAttraction = useCallback(async (attractionId: string) => {
     setIsDeleting(true);
@@ -904,6 +927,8 @@ export function MapExplorer() {
               setCardExpanded(!cardExpanded);
             }}
             AMapInstance={AMapInstance}
+            isAdmin={user?.isAdmin}
+            onDescriptionUpdate={handleDescriptionUpdate}
           />
         </div>
       )}
