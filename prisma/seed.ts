@@ -14,7 +14,7 @@ const setting: Prisma.SystemSettingCreateInput[] = [
   },
   {
     key: 'LEADERBOARD_MIN_COIN_THRESHOLD',
-    displayName: '排行榜最低上榜金币数',
+    displayName: '排行榜最低上榜游戏币数',
     valueType: 'NUMBER',
     category: 'SYSTEM',
     value: '100',

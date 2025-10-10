@@ -43,7 +43,7 @@ export default function LeaderboardCard() {
         </CardTitle>
         <CardDescription className="text-orange-800/80 dark:text-orange-200/70">
           {minCoinThreshold 
-            ? `拥有 ${minCoinThreshold} 个金币以上即可上榜，查看谁是最富有的玩家`
+            ? `拥有 ${minCoinThreshold} 个游戏币以上即可上榜，查看谁是最富有的玩家`
             : '查看当前游戏币排行榜，看看谁是最富有的玩家'
           }
         </CardDescription>

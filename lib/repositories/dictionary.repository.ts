@@ -88,13 +88,18 @@ export async function getDictionaryItemById(id: string): Promise<DictionaryItem 
   try {
     const result = await collection.doc(id).get();
 
-    if (!result.data || result.data.length === 0) {
+    if (!result.data) {
       return null;
     }
 
-    return result.data[0] as DictionaryItem;
+    // CloudBase doc().get() 返回的是单个文档，不是数组
+    return result.data as DictionaryItem;
   } catch (error) {
     console.error('根据 ID 获取字典项失败:', error);
+    // 如果是文档不存在的错误，返回 null 而不是抛出异常
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'DOCUMENT_NOT_FOUND') {
+      return null;
+    }
     throw new Error('获取字典项失败');
   }
 }

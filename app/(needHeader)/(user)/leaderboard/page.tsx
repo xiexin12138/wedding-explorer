@@ -18,13 +18,19 @@ const LeaderboardPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [minCoinThreshold, setMinCoinThreshold] = useState<number | null>(null);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
   const limit = 20; // 每页加载20个
 
   const fetchLeaderboard = useCallback(
-    async (currentOffset: number) => {
-      if (isLoading) return;
+    async (currentOffset: number, isRefresh: boolean = false) => {
+      if (isLoading && !isRefresh) return;
 
-      setIsLoading(true);
+      if (isRefresh) {
+        setIsAutoRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      
       try {
         const response = await fetch(
           `/api/leaderboard?limit=${limit}&offset=${currentOffset}`
@@ -54,7 +60,11 @@ const LeaderboardPage = () => {
         console.error("Failed to fetch leaderboard:", error);
         setHasMore(false);
       } finally {
-        setIsLoading(false);
+        if (isRefresh) {
+          setIsAutoRefreshing(false);
+        } else {
+          setIsLoading(false);
+        }
       }
     },
     [isLoading]
@@ -82,6 +92,19 @@ const LeaderboardPage = () => {
     fetchLeaderboard(0);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // Initial fetch only
+
+  // 定时刷新排行榜数据
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      // 只刷新第一页的数据
+      fetchLeaderboard(0, true);
+    }, 10000); // 10秒刷新一次
+
+    // 清理定时器
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLoadMore = () => {
     if (hasMore && !isLoading) {
@@ -111,12 +134,22 @@ const LeaderboardPage = () => {
     <div className="container mx-auto p-4 max-w-2xl">
       <Card className="shadow-lg">
         <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
-          <CardTitle className="text-center text-2xl font-bold text-yellow-800 dark:text-yellow-200">
-            🏆 金币排行榜 🏆
+          <CardTitle className="text-center text-2xl font-bold text-yellow-800 dark:text-yellow-200 flex items-center justify-center gap-2">
+            🏆 游戏币排行榜 🏆
+            {isAutoRefreshing && (
+              <div className="animate-spin text-yellow-600 dark:text-yellow-400">
+                ⟳
+              </div>
+            )}
           </CardTitle>
           {minCoinThreshold && (
             <p className="text-center text-sm text-yellow-600 dark:text-yellow-400 mt-2">
-              拥有 {minCoinThreshold} 个金币以上即可上榜，快来挑战吧！
+              拥有 {minCoinThreshold} 个游戏币以上即可上榜，快来挑战吧！
+            </p>
+          )}
+          {!isAutoRefreshing && (
+            <p className="text-center text-xs text-yellow-500 dark:text-yellow-500 mt-1 opacity-70">
+              📱 每10秒自动刷新数据
             </p>
           )}
         </CardHeader>
@@ -205,11 +238,11 @@ const LeaderboardPage = () => {
                 <div className="mb-10">
                   <p className="text-lg text-gray-600 dark:text-gray-300 mb-4 max-w-md mx-auto leading-relaxed">
                     {minCoinThreshold
-                      ? `💰 努力获得超过 ${minCoinThreshold} 枚金币，成为第一位传奇探索者！`
+                      ? `💰 努力获得超过 ${minCoinThreshold} 枚游戏币，成为第一位传奇探索者！`
                       : "🗺️ 踏上冒险之旅，成为第一位登上荣耀榜单的勇者！"}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                    探索神秘地点，收集珍贵金币，让你的名字闪耀在排行榜顶端✨
+                    探索神秘地点，收集珍贵游戏币，让你的名字闪耀在排行榜顶端✨
                   </p>
                 </div>
 
@@ -221,7 +254,7 @@ const LeaderboardPage = () => {
                   </div>
                   <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-4 rounded-xl border border-amber-200/50 dark:border-amber-700/50">
                     <div className="text-2xl mb-2">💰</div>
-                    <p className="text-xs text-gray-600 dark:text-gray-300">收集金币</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">收集游戏币</p>
                   </div>
                   <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 p-4 rounded-xl border border-orange-200/50 dark:border-orange-700/50">
                     <div className="text-2xl mb-2">👑</div>

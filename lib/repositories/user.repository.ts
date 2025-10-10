@@ -223,7 +223,7 @@ export async function deductUserCoins(
  * 获取游戏币排行榜（按当前游戏币余额排序）
  * @param limit 返回数量，默认 10
  * @param offset 偏移量，默认 0
- * @param minCoins 最低上榜金币数
+ * @param minCoins 最低上榜游戏币数
  */
 export async function getCoinLeaderboard(
   limit: number = 10,

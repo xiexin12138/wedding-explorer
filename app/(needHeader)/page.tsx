@@ -18,12 +18,13 @@ import {
 import { HomeButton } from "@/components/HomeButton";
 import { WeddingCountdown } from "@/components/WeddingCountdown";
 import { ConfettiEffect } from "@/components/ConfettiEffect"; // 方案二
-import { MapPin, Navigation, Car, Loader2, ChevronDown } from "lucide-react";
+import { MapPin, Navigation, Car, Loader2, ChevronDown, Hotel } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 
 export default function HomePage() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isHotelGuideOpen, setIsHotelGuideOpen] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [showScrollHint, setShowScrollHint] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -181,9 +182,9 @@ export default function HomePage() {
         ref={scrollContainerRef}
         className="relative z-10 min-h-full overflow-y-auto p-4"
       >
-        <div className="content-container w-full space-y-8 flex gap-80 flex-col mb-12">
+        <div className="content-container w-full space-y-8 flex gap-2 flex-col mb-12">
           {/* 欢迎卡片 */}
-          <Card className="w-full pt-4 max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto">
+          <Card className="w-full pt-4 max-w-md bg-background/80 backdrop-blur-sm mx-auto my-auto mb-[60rem]">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold">
                 欢迎参加我们的婚礼
@@ -223,13 +224,6 @@ export default function HomePage() {
                   className="w-full h-auto"
                   priority
                 />
-              </div>
-
-              {/* 地址信息 */}
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  为方便您的出行，我们为您提供地图导航和自驾路线指引
-                </p>
               </div>
 
               {/* 导航按钮 */}
@@ -325,6 +319,192 @@ export default function HomePage() {
               <div className="text-center pt-2">
                 <p className="text-xs text-muted-foreground">
                   点击上方按钮即可查看导航和自驾路线
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 外地宾客入住酒店卡片 */}
+          <Card className="w-full max-w-md bg-background/80 backdrop-blur-sm mx-auto">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
+                <Hotel className="h-6 w-6 text-primary" />
+                入住酒店
+              </CardTitle>
+              <CardDescription className="text-lg font-medium">
+                广东 · 潮州 · 财库酒店
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 酒店图片 */}
+              <div className="relative w-full rounded-lg overflow-hidden">
+                <Image
+                  src="/images/hotel.jpg"
+                  alt="财库酒店外观"
+                  width={1200}
+                  height={900}
+                  className="w-full h-auto"
+                  priority
+                />
+              </div>
+
+              {/* 导航按钮 */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full bg-[#00A870]/10 hover:bg-[#00A870]/20 border-[#00A870]/30"
+                >
+                  <a
+                    href="https://surl.amap.com/2d2CcPW964Ot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    <span>高德地图</span>
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full bg-[#3385FF]/10 hover:bg-[#3385FF]/20 border-[#3385FF]/30"
+                >
+                  <a
+                    href="https://j.map.baidu.com/8b/rjFk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    <span>百度地图</span>
+                  </a>
+                </Button>
+              </div>
+
+              {/* 自驾路线指引按钮 */}
+              <Dialog
+                open={isHotelGuideOpen}
+                onOpenChange={(open) => {
+                  setIsHotelGuideOpen(open);
+                }}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30"
+                  >
+                    <Car className="h-4 w-4 mr-2" />
+                    <span>酒店服务信息</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+                  <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+                    <DialogTitle className="flex items-center gap-2">
+                      <Hotel className="h-5 w-5" />
+                      酒店服务信息
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="relative flex-1 overflow-y-auto px-6 pb-6">
+                    <div className="space-y-4 text-sm">
+                      <div className="bg-background/50 rounded-lg p-4 space-y-3">
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">🏩</span>
+                          <div>
+                            <span className="font-medium text-primary">【地址】</span>
+                            <span>潮州市湘桥区东山路中段春楚大厦3号</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">📶</span>
+                          <div>
+                            <span className="font-medium text-primary">【WIFI】</span>
+                            <span>房间号</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">🔑</span>
+                          <div>
+                            <span className="font-medium text-primary">【WIFI密码】</span>
+                            <span>手机验证码登录</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">🍱</span>
+                          <div>
+                            <span className="font-medium text-primary">【外卖地址】</span>
+                            <span>财库酒店(潮州韩文公祠韩山师范学院店)(房间号***)</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">📲</span>
+                          <div>
+                            <span className="font-medium text-primary">【投屏】</span>
+                            <span>连接WiFi微信扫一扫</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">🏋🏻</span>
+                          <div>
+                            <span className="font-medium text-primary">【健身】</span>
+                            <span>2楼免费健身房</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">👧🏻</span>
+                          <div>
+                            <span className="font-medium text-primary">【儿童乐园】</span>
+                            <span>2楼</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">🎽</span>
+                          <div>
+                            <span className="font-medium text-primary">【洗衣】</span>
+                            <span>2楼免费自助洗衣</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">🥟</span>
+                          <div>
+                            <span className="font-medium text-primary">【早餐】</span>
+                            <span>2楼7：30-10：00</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">🅿</span>
+                          <div>
+                            <span className="font-medium text-primary">【停车】</span>
+                            <span>酒店后面停车场</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">☕</span>
+                          <div>
+                            <span className="font-medium text-primary">【饮品】</span>
+                            <span>客房内赠送矿泉水，茶叶，咖啡</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* 提示信息 */}
+              <div className="text-center pt-2">
+                <p className="text-xs text-muted-foreground">
+                  点击上方按钮即可查看导航和酒店服务信息
                 </p>
               </div>
             </CardContent>
