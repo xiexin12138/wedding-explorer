@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2 } from "lucide-react";
-import Image from "next/image";
+import { OptimizedImage } from "@/components/OptimizedImage";
+import { OptimizedVideo } from "@/components/OptimizedVideo";
 import { detectEnvironment } from "@/lib/environment-detector";
 import { openMap } from "@/lib/map-launcher";
 import { attractionTypeConfig } from "@/components/MapExplorer";
+import { getSignedUrl } from "@/lib/cos-url-signer";
 
 // 定义景点类型枚举
 export enum AttractionType {
@@ -55,6 +57,14 @@ export function AttractionCard({
   const [internalExpanded, setInternalExpanded] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [openingMapType, setOpeningMapType] = useState<'amap' | 'baidu' | 'tencent' | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+  const [signedFullscreenUrl, setSignedFullscreenUrl] = useState<string>("");
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [isMediaImageLoading, setIsMediaImageLoading] = useState(true); // 媒体区域图片加载状态
+  const [imageScale, setImageScale] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   // 使用外部传入的 expanded 状态，如果没有则使用内部状态
   const expanded =
@@ -145,14 +155,148 @@ export function AttractionCard({
     }
   };
 
+  // 获取全屏图片的签名 URL
+  useEffect(() => {
+    if (!fullscreenImage) {
+      setSignedFullscreenUrl("");
+      setIsImageLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsImageLoading(true);
+
+    const loadSignedUrl = async () => {
+      try {
+        const signed = await getSignedUrl(fullscreenImage);
+        if (isMounted) {
+          setSignedFullscreenUrl(signed);
+        }
+      } catch (err) {
+        console.error("Failed to load signed URL:", err);
+        if (isMounted) {
+          setSignedFullscreenUrl(fullscreenImage); // 降级使用原始 URL
+        }
+      }
+    };
+
+    loadSignedUrl();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fullscreenImage]);
+
+  // 处理图片点击 - 全屏查看
+  const handleImageClick = (imageUrl: string) => {
+    setFullscreenImage(imageUrl);
+    setImageScale(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  // 关闭全屏图片
+  const closeFullscreenImage = () => {
+    setFullscreenImage(null);
+    setImageScale(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  // 处理图片缩放
+  const handleImageZoom = (delta: number) => {
+    setImageScale((prev) => {
+      const newScale = prev + delta;
+      if (newScale < 0.5) return 0.5;
+      if (newScale > 5) return 5;
+      return newScale;
+    });
+  };
+
+  // 处理触摸缩放（双指）
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      (e.currentTarget as HTMLElement & { initialPinchDistance?: number; initialScale?: number }).initialPinchDistance = distance;
+      (e.currentTarget as HTMLElement & { initialPinchDistance?: number; initialScale?: number }).initialScale = imageScale;
+    } else if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.touches[0].clientX - imagePosition.x,
+        y: e.touches[0].clientY - imagePosition.y,
+      });
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+      );
+      const initialDistance = (e.currentTarget as HTMLElement & { initialPinchDistance?: number }).initialPinchDistance;
+      const initialScale = (e.currentTarget as HTMLElement & { initialScale?: number }).initialScale || 1;
+
+      if (initialDistance) {
+        const scale = (distance / initialDistance) * initialScale;
+        setImageScale(Math.min(Math.max(scale, 0.5), 5));
+      }
+    } else if (e.touches.length === 1 && isDragging) {
+      setImagePosition({
+        x: e.touches[0].clientX - dragStart.x,
+        y: e.touches[0].clientY - dragStart.y,
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  // 鼠标拖拽支持（PC端）
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - imagePosition.x,
+      y: e.clientY - imagePosition.y,
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setImagePosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // 鼠标滚轮缩放（PC端）
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    handleImageZoom(delta);
+  };
+
   // 处理媒体导航
   const goToNextMedia = () => {
     if (!attraction.media || attraction.media.length === 0) return;
+    setIsMediaImageLoading(true); // 切换到下一张时显示加载状态
     setCurrentMediaIndex((prev) => (prev + 1) % attraction.media!.length);
   };
 
   const goToPreviousMedia = () => {
     if (!attraction.media || attraction.media.length === 0) return;
+    setIsMediaImageLoading(true); // 切换到上一张时显示加载状态
     setCurrentMediaIndex(
       (prev) => (prev - 1 + attraction.media!.length) % attraction.media!.length
     );
@@ -215,19 +359,35 @@ export function AttractionCard({
       <div className="w-full">
         {/* 媒体显示区域 */}
         <div className="w-full h-[40vh] relative overflow-hidden bg-black">
+          {/* 加载中状态 */}
+          {isMediaImageLoading && currentMedia.type === "image" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10">
+              <Loader2 className="h-12 w-12 animate-spin text-white mb-4" />
+              <p className="text-white text-sm">加载中...</p>
+            </div>
+          )}
+
           {currentMedia.type === "image" ? (
-            <div className="relative w-full h-full">
-              <Image
+            <div 
+              className="relative w-full h-full cursor-pointer"
+              onClick={() => handleImageClick(currentMedia.url)}
+            >
+              <OptimizedImage
                 src={currentMedia.url}
                 alt={currentMedia.title || attraction.name}
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-contain"
+                optimize={{
+                  quality: 85,
+                  format: "webp",
+                }}
                 unoptimized={currentMedia.url.startsWith("data:")} // 如果是 base64 图片则不优化
+                onLoadingComplete={() => setIsMediaImageLoading(false)}
               />
             </div>
           ) : (
-            <video
+            <OptimizedVideo
               src={currentMedia.url}
               controls
               className="w-full h-full object-contain"
@@ -267,6 +427,113 @@ export function AttractionCard({
       </div>
     );
   };
+
+  // 全屏图片查看器 - 优先级最高
+  if (fullscreenImage) {
+    return (
+      <div
+        className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onWheel={handleWheel}
+      >
+        {/* 关闭按钮 */}
+        <Button
+          variant="outline"
+          size="icon"
+          className="absolute top-4 right-4 z-20 rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
+          onClick={closeFullscreenImage}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+
+        {/* 缩放提示 */}
+        <div className="absolute top-4 left-4 z-20 bg-background/60 backdrop-blur-sm rounded-lg px-3 py-2 text-sm">
+          {imageScale.toFixed(1)}x
+        </div>
+
+        {/* 操作提示（移动端） */}
+        <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center">
+          <div className="bg-background/60 backdrop-blur-sm rounded-lg px-4 py-2 text-xs text-center">
+            双指缩放 · 单指拖动
+          </div>
+        </div>
+
+        {/* 图片容器 */}
+        <div
+          className="relative w-full h-full flex items-center justify-center overflow-hidden"
+          style={{ touchAction: "none" }}
+        >
+          {/* 加载中状态 */}
+          {isImageLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10">
+              <Loader2 className="h-12 w-12 animate-spin text-white mb-4" />
+              <p className="text-white text-sm">加载中...</p>
+            </div>
+          )}
+          
+          {signedFullscreenUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={signedFullscreenUrl}
+              alt="全屏查看"
+              className="max-w-none select-none"
+              style={{
+                transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`,
+                transition: "none", // 完全禁用过渡动画，防止闪烁
+                cursor: isDragging ? "grabbing" : "grab",
+                maxWidth: "100vw",
+                maxHeight: "100vh",
+                width: "auto",
+                height: "auto",
+                willChange: "transform", // 优化性能
+                pointerEvents: "none", // 防止图片本身的事件干扰
+                opacity: isImageLoading ? 0 : 1, // 加载时隐藏
+              }}
+              draggable={false}
+              onLoad={() => setIsImageLoading(false)}
+              onError={() => setIsImageLoading(false)}
+            />
+          )}
+        </div>
+
+        {/* 缩放控制按钮（可选，PC端使用） */}
+        <div className="absolute bottom-4 right-4 z-20 flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
+            onClick={() => handleImageZoom(-0.2)}
+          >
+            <span className="text-lg">-</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
+            onClick={() => handleImageZoom(0.2)}
+          >
+            <span className="text-lg">+</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full bg-background/60 backdrop-blur-sm hover:bg-background/80"
+            onClick={() => {
+              setImageScale(1);
+              setImagePosition({ x: 0, y: 0 });
+            }}
+          >
+            <span className="text-xs">重置</span>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // 渲染展开视图
   if (expanded) {

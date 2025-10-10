@@ -536,24 +536,6 @@ export function MapExplorer() {
     setShowAttractionForm(false);
   }, []);
 
-  // 处理景点描述和标题更新
-  const handleDescriptionUpdate = useCallback((attractionId: string, newDescription: string, newName?: string) => {
-    setAttractions(prev => prev.map(a => {
-      if (a.id === attractionId) {
-        return {
-          ...a,
-          description: newDescription,
-          ...(newName && { name: newName })
-        };
-      }
-      return a;
-    }));
-    
-    // 清除缓存
-    cache.delete(ATTRACTIONS_CACHE_KEY);
-    
-    console.log('景点信息已更新:', attractionId, { description: newDescription, name: newName });
-  }, []);
 
   // 处理删除景点
   const handleDeleteAttraction = useCallback(async (attractionId: string) => {
@@ -927,8 +909,6 @@ export function MapExplorer() {
               setCardExpanded(!cardExpanded);
             }}
             AMapInstance={AMapInstance}
-            isAdmin={user?.isAdmin}
-            onDescriptionUpdate={handleDescriptionUpdate}
           />
         </div>
       )}
@@ -961,59 +941,103 @@ export function MapExplorer() {
                     暂无景点数据
                   </div>
                 ) : (
-                  attractions.map((attraction, index) => (
-                  <div
-                    key={attraction.id}
-                    className={`p-3 rounded-lg ${
-                      index === currentAttractionIndex
-                        ? "bg-primary/10 border border-primary"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <div 
-                      className="cursor-pointer"
-                      onClick={() => {
-                        setCurrentAttractionIndex(index);
-                        if (map) {
-                          map.setCenter(attraction.position);
-                        }
-                        setShowAttractionsList(false);
-                      }}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium flex-grow">{attraction.name}</h3>
-                        <Badge
-                          className={cn(
-                            attractionTypeConfig[attraction.type]?.className ||
-                              attractionTypeConfig[AttractionType.OTHER].className
-                          )}
-                        >
-                          {attractionTypeConfig[attraction.type]?.label ||
-                            attractionTypeConfig[AttractionType.OTHER].label}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {attraction.description}
-                      </p>
-                    </div>
-                    {user?.isAdmin && (
-                      <div className="mt-2 pt-2 border-t border-border/50">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteConfirmId(attraction.id);
+                  attractions.map((attraction, index) => {
+                    // 计算距离
+                    let distance: number | null = null;
+                    let isUnlocked = false;
+                    
+                    if (userPosition && AMapInstance) {
+                      const point1 = new AMapInstance.LngLat(userPosition[0], userPosition[1]);
+                      const point2 = new AMapInstance.LngLat(attraction.position[0], attraction.position[1]);
+                      distance = point1.distance(point2);
+                      const unlockDistance = attraction.unlockDistance || 100;
+                      isUnlocked = distance <= unlockDistance;
+                    }
+
+                    // 格式化距离显示
+                    const formatDistance = (dist: number | null): string => {
+                      if (dist === null) return "未知";
+                      if (dist >= 1000) return `${(dist / 1000).toFixed(1)}km`;
+                      return `${Math.round(dist)}m`;
+                    };
+
+                    return (
+                      <div
+                        key={attraction.id}
+                        className={`p-3 rounded-lg ${
+                          index === currentAttractionIndex
+                            ? "bg-primary/10 border border-primary"
+                            : "bg-muted"
+                        }`}
+                      >
+                        <div 
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setCurrentAttractionIndex(index);
+                            if (map) {
+                              map.setCenter(attraction.position);
+                            }
+                            setShowAttractionsList(false);
                           }}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          删除景点
-                        </Button>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium flex-grow">{attraction.name}</h3>
+                            <Badge
+                              className={cn(
+                                attractionTypeConfig[attraction.type]?.className ||
+                                  attractionTypeConfig[AttractionType.OTHER].className
+                              )}
+                            >
+                              {attractionTypeConfig[attraction.type]?.label ||
+                                attractionTypeConfig[AttractionType.OTHER].label}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {attraction.description}
+                          </p>
+                          {/* 距离和解锁状态 */}
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs"
+                            >
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {formatDistance(distance)}
+                            </Badge>
+                            {distance !== null && (
+                              <Badge 
+                                variant={isUnlocked ? "default" : "secondary"}
+                                className={cn(
+                                  "text-xs",
+                                  isUnlocked 
+                                    ? "bg-green-500/90 hover:bg-green-500 text-white" 
+                                    : "bg-gray-500/90 hover:bg-gray-500 text-white"
+                                )}
+                              >
+                                {isUnlocked ? "已解锁" : "未解锁"}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {user?.isAdmin && (
+                          <div className="mt-2 pt-2 border-t border-border/50">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirmId(attraction.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              删除景点
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
