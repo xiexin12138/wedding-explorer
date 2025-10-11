@@ -29,8 +29,8 @@ export const db =
     errorFormat: process.env.NODE_ENV === 'development' ? 'pretty' : 'minimal',
     // 事务配置
     transactionOptions: {
-      maxWait: 5000, // 最大等待时间 5秒
-      timeout: 10000, // 事务超时 10秒
+      maxWait: 15000, // 最大等待时间 15秒（增加等待时间）
+      timeout: 20000, // 事务超时 20秒（增加超时时间）
       isolationLevel: undefined, // 使用默认隔离级别
     },
   })

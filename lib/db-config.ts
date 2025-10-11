@@ -12,13 +12,13 @@ export const dbConfig = {
   // 连接池配置
   connectionPool: {
     // 最大连接数（Vercel 无服务器环境建议较小值）
-    maxConnections: process.env.VERCEL ? 5 : 10, // 增加连接数，网络条件好
+    maxConnections: process.env.VERCEL ? 3 : 10, // 先恢复到 3，避免连接数过多
     // 最小连接数
     minConnections: 0,
-    // 连接超时时间（毫秒）- 香港到上海延迟很低
-    connectionTimeout: 8000, // 8秒，香港到上海网络很好
-    // 查询超时时间（毫秒）- 可以设置更短
-    queryTimeout: 6000, // 6秒，本地网络延迟低
+    // 连接超时时间（毫秒）- 香港到上海延迟很低，但要考虑连接池等待时间
+    connectionTimeout: 15000, // 15秒，给连接池足够的等待时间
+    // 查询超时时间（毫秒）- 单次查询的超时
+    queryTimeout: 10000, // 10秒，单次查询超时
     // 空闲连接超时时间（毫秒）
     idleTimeout: 30000, // 30秒，保持不变
     // 连接生命周期（毫秒）
@@ -88,11 +88,11 @@ export function getOptimizedDatabaseUrl(): string {
       connection_limit: dbConfig.connectionPool.maxConnections.toString(),
       pool_timeout: Math.floor(dbConfig.connectionPool.idleTimeout / 1000).toString(), // 秒
       
-      // 连接超时配置（香港到上海延迟很低）
-      connect_timeout: Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString(), // 8秒
+      // 连接超时配置（需要考虑连接池等待时间）
+      connect_timeout: Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString(), // 15秒
       
       // Socket 配置
-      socket_timeout: Math.floor(dbConfig.connectionPool.queryTimeout / 1000).toString(), // 6秒
+      socket_timeout: Math.floor(dbConfig.connectionPool.queryTimeout / 1000).toString(), // 10秒
       
       // MySQL 特定优化
       charset: 'utf8mb4', // 支持完整的 Unicode
