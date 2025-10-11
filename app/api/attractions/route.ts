@@ -47,26 +47,35 @@ export async function POST(request: NextRequest) {
     }
 
     const attractionData = await request.json();
-    const { key, name, position, description, type, media, unlockDistance, isEnabled, sortOrder } = attractionData;
+    const { name, position, description, type, media, unlockDistance, rewardCoins, isActive, sortOrder } = attractionData;
 
     // 验证必填字段
-    if (!key || !name || !position || !description || !type) {
+    if (!name || !position || !description || !type) {
       return NextResponse.json(
-        { error: "景点键名、名称、位置、描述和类型为必填项" },
+        { error: "景点名称、位置、描述和类型为必填项" },
+        { status: 400 }
+      );
+    }
+
+    // 验证坐标格式
+    if (!Array.isArray(position) || position.length !== 2) {
+      return NextResponse.json(
+        { error: "位置坐标格式错误" },
         { status: 400 }
       );
     }
 
     // 创建景点数据
     const newAttraction = await createAttraction({
-      key,
       name,
-      position,
+      longitude: position[0],
+      latitude: position[1],
       description,
       type,
       media: media || [],
       unlockDistance: unlockDistance || 100,
-      isEnabled: isEnabled !== false,
+      rewardCoins: rewardCoins || 10,
+      isActive: isActive !== false,
       sortOrder: sortOrder || 0,
     }, user.sub);
 
@@ -79,14 +88,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error("创建景点数据失败:", error);
-    
-    // 处理特定错误
-    if (error instanceof Error && error.message === "景点键名已存在") {
-      return NextResponse.json(
-        { error: "景点键名已存在" },
-        { status: 400 }
-      );
-    }
     
     return NextResponse.json(
       { error: "创建景点数据失败" },

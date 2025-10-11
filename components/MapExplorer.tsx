@@ -47,7 +47,7 @@ import {
 type Attraction = AttractionDetail;
 
 // 导出类型配置供其他组件使用
-export const attractionTypeConfig = {
+export const attractionTypeConfig: Record<AttractionType, { label: string; className: string }> = {
   [AttractionType.SCENIC]: {
     label: "景点",
     className:
@@ -75,89 +75,8 @@ export const getAttractionTypeConfig = (type: AttractionType) => {
   return attractionTypeConfig[type];
 };
 
-// 示例景点数据
-const SAMPLE_ATTRACTIONS: Attraction[] = [
-  {
-    id: "1",
-    name: "陈桥文化广场",
-    position: [113.2815, 23.1231], // 这里使用示例坐标，需要替换为实际坐标
-    description: "文化广场，提供休闲娱乐场所",
-    type: AttractionType.SCENIC,
-    media: [
-      {
-        type: "image",
-        url: "https://example.com/images/cultural-square-1.jpg",
-        title: "文化广场全景",
-      },
-      {
-        type: "image",
-        url: "https://example.com/images/cultural-square-2.jpg",
-        title: "文化广场活动区",
-      },
-    ],
-    unlockDistance: 100,
-  },
-  {
-    id: "2",
-    name: "陈桥村",
-    position: [113.2825, 23.1241], // 示例坐标
-    description: "历史悠久的村落",
-    type: AttractionType.SCENIC,
-    media: [
-      {
-        type: "image",
-        url: "https://example.com/images/village-1.jpg",
-        title: "村落全景",
-      },
-      {
-        type: "video",
-        url: "https://example.com/videos/village-history.mp4",
-        title: "村落历史介绍",
-      },
-    ],
-    unlockDistance: 150,
-  },
-  {
-    id: "3",
-    name: "人民美食广场",
-    position: [113.2835, 23.1251], // 示例坐标
-    description: "提供各种当地特色美食的广场",
-    type: AttractionType.FOOD,
-    media: [
-      {
-        type: "image",
-        url: "https://example.com/images/food-court-1.jpg",
-        title: "美食广场全景",
-      },
-      {
-        type: "image",
-        url: "https://example.com/images/food-court-2.jpg",
-        title: "特色小吃",
-      },
-    ],
-    unlockDistance: 80,
-  },
-  {
-    id: "4",
-    name: "深圳万象城",
-    position: [114.11056116258436, 22.538851422581348], // 示例坐标
-    description: "极尽奢华的超级老牌商场",
-    type: AttractionType.SHOPPING,
-    media: [
-      {
-        type: "image",
-        url: "https://example.com/images/food-court-1.jpg",
-        title: "美食广场全景",
-      },
-      {
-        type: "image",
-        url: "https://example.com/images/food-court-2.jpg",
-        title: "特色小吃",
-      },
-    ],
-    unlockDistance: 80,
-  },
-];
+// 示例景点数据 - 作为后备数据使用
+const SAMPLE_ATTRACTIONS: Attraction[] = [];
 
 export function MapExplorer() {
   const mapRef = useRef<HTMLDivElement>(null);

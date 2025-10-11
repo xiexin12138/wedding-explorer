@@ -89,6 +89,7 @@ model User {
   wechatUser       WechatUser?
   prizeExchanges   PrizeExchangeRecord[]
   coinTransactions CoinTransaction[]
+  attractionCheckIns UserAttractionCheckIn[]
 
   @@index([email])
   @@index([role])
@@ -271,4 +272,89 @@ enum TransactionType {
   SYSTEM
 
   @@map("transaction_type")
+}
+
+/// 景点表
+model Attraction {
+  /// 景点唯一标识符
+  id              String                  @id @default(cuid())
+  /// 景点名称
+  name            String                  @db.VarChar(200)
+  /// 景点描述
+  description     String?                 @db.Text
+  /// 景点类型（SCENIC景点, FOOD美食, SHOPPING购物, OTHER其他）
+  type            AttractionType          @default(OTHER)
+  /// 经度（GCJ02坐标系）
+  longitude       Float
+  /// 纬度（GCJ02坐标系）
+  latitude        Float
+  /// 解锁距离（米）
+  unlockDistance  Int                     @default(100)
+  /// 媒体资源（JSON格式存储图片和视频信息）
+  media           String?                 @db.Text
+  /// 打卡奖励金币数
+  rewardCoins     Int                     @default(10)
+  /// 是否启用
+  isActive        Boolean                 @default(true)
+  /// 排序权重
+  sortOrder       Int                     @default(0)
+  /// 创建时间
+  createdAt       DateTime                @default(now())
+  /// 更新时间
+  updatedAt       DateTime                @updatedAt
+  /// 创建者ID
+  createdBy       String?                 @db.VarChar(50)
+  /// 更新者ID
+  updatedBy       String?                 @db.VarChar(50)
+  /// 用户打卡记录
+  checkIns        UserAttractionCheckIn[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@index([longitude])
+  @@index([latitude])
+  @@map("attractions")
+}
+
+/// 用户景点打卡记录表
+model UserAttractionCheckIn {
+  /// 记录唯一标识符
+  id           String     @id @default(cuid())
+  /// 用户ID
+  userId       String
+  /// 景点ID
+  attractionId String
+  /// 打卡时间
+  checkedInAt  DateTime   @default(now())
+  /// 打卡时的距离（米）
+  distance     Float?
+  /// 本次打卡获得的金币数
+  coinsEarned  Int        @default(0)
+  /// 打卡时的经度（用户位置）
+  longitude    Float?
+  /// 打卡时的纬度（用户位置）
+  latitude     Float?
+  /// 创建时间
+  createdAt    DateTime   @default(now())
+  /// 更新时间
+  updatedAt    DateTime   @updatedAt
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attraction   Attraction @relation(fields: [attractionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, attractionId])
+  @@index([userId])
+  @@index([attractionId])
+  @@index([checkedInAt])
+  @@map("user_attraction_check_ins")
+}
+
+/// 景点类型枚举
+enum AttractionType {
+  SCENIC
+  FOOD
+  SHOPPING
+  OTHER
+
+  @@map("attraction_type")
 }

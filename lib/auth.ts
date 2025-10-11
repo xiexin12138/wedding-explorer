@@ -13,7 +13,8 @@ function getAuthingSecret() {
 }
 
 export interface AuthingUser {
-  sub: string
+  sub: string // Authing 用户ID
+  dbUserId?: string // 数据库用户ID（从 authing_users 表查询得到）
   email?: string
   name?: string
   nickname?: string
@@ -184,12 +185,33 @@ export async function isRequestAuthenticated(request: NextRequest): Promise<{
 
 /**
  * 要求用户必须已登录（用于 API 路由）
+ * 会自动查询并添加数据库用户ID
  */
 export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
   const { isLoggedIn, user } = await isRequestAuthenticated(request)
 
   if (!isLoggedIn || !user) {
     throw new Error('未授权：需要登录')
+  }
+
+  // 从 authing_users 表查询对应的数据库用户ID
+  if (!user.dbUserId) {
+    try {
+      const { db } = await import('@/lib/db')
+      const authingUser = await db.authingUser.findUnique({
+        where: { authingId: user.sub },
+        select: { userId: true }
+      })
+
+      if (authingUser) {
+        user.dbUserId = authingUser.userId
+        console.log('✅ 映射 Authing ID 到数据库 ID:', user.sub, '->', user.dbUserId)
+      } else {
+        console.warn('⚠️ 未找到 Authing ID 对应的数据库用户:', user.sub)
+      }
+    } catch (error) {
+      console.error('❌ 查询数据库用户ID失败:', error)
+    }
   }
 
   return user

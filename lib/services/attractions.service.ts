@@ -45,7 +45,6 @@ export async function getAllAttractions(): Promise<AttractionDetail[]> {
 
 // 创建新的景点数据（需要管理员权限）
 export async function createAttraction(attractionData: {
-  key: string;
   name: string;
   position: [number, number];
   description: string;
@@ -56,6 +55,7 @@ export async function createAttraction(attractionData: {
     title?: string;
   }>;
   unlockDistance?: number;
+  rewardCoins?: number;
 }): Promise<AttractionDetail> {
   const response = await fetch("/api/attractions", {
     method: "POST",
@@ -85,4 +85,71 @@ export async function createAttraction(attractionData: {
 // 清除景点数据缓存
 export function clearAttractionsCache() {
   cache.delete(ATTRACTIONS_CACHE_KEY);
+}
+
+// 打卡景点
+export async function checkInAttraction(attractionId: string, data: {
+  distance?: number;
+  longitude?: number;
+  latitude?: number;
+}): Promise<{ success: boolean; coinsEarned: number }> {
+  try {
+    console.log('🎯 发起打卡请求:', { attractionId, data });
+    
+    const response = await fetch(`/api/attractions/${attractionId}/check-in`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    console.log('📡 打卡响应状态:', response.status, response.statusText);
+
+    // 读取响应内容
+    const result = await response.json();
+    console.log('📦 打卡响应数据:', result);
+
+    if (!response.ok) {
+      throw new Error(result.error || result.details || `打卡失败: ${response.statusText}`);
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || "打卡失败");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('❌ 打卡服务错误:', error);
+    throw error;
+  }
+}
+
+// 获取打卡状态
+export async function getCheckInStatus(attractionId: string): Promise<{
+  hasCheckedIn: boolean;
+  checkInData?: {
+    checkedInAt: string;
+    coinsEarned: number;
+  };
+}> {
+  const response = await fetch(`/api/attractions/${attractionId}/check-in-status`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "获取打卡状态失败");
+  }
+
+  const result = await response.json();
+  
+  if (!result.success) {
+    throw new Error(result.error || "获取打卡状态失败");
+  }
+
+  return result.data;
 }

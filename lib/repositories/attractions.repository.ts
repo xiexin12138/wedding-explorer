@@ -1,61 +1,82 @@
 /**
  * 景点数据仓储层
- * 将所有景点作为一个列表存储在单个字典项中
+ * 使用 Prisma 数据库操作景点数据
  */
 
-import { getDictionaryItemByKey, updateDictionaryItem, SettingCategory, SettingValueType, createDictionaryItem } from './dictionary.repository';
-import { AttractionType } from '@/components/AttractionCard';
+import { db } from '@/lib/db';
+import { AttractionType as PrismaAttractionType, Attraction as PrismaAttraction } from '@/app/generated/prisma';
+
+// 媒体资源接口
+export interface MediaItem {
+  type: 'image' | 'video';
+  url: string;
+  title?: string;
+}
 
 // 景点数据接口
 export interface Attraction {
-  id: string; // 唯一标识
-  key: string; // 景点的唯一键名（用于代码引用）
+  id: string;
   name: string;
+  description: string | null;
+  type: PrismaAttractionType;
   position: [number, number];
-  description: string;
-  type: AttractionType;
-  media?: Array<{
-    type: 'image' | 'video';
-    url: string;
-    title?: string;
-  }>;
-  unlockDistance?: number;
-  isEnabled?: boolean; // 是否启用
-  sortOrder?: number; // 排序
-  createdAt?: Date;
-  updatedAt?: Date;
-  createdBy?: string;
-  updatedBy?: string;
+  unlockDistance: number;
+  media?: MediaItem[];
+  rewardCoins: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: string | null;
+  updatedBy?: string | null;
 }
 
-// 景点列表的字典键
-const ATTRACTIONS_LIST_KEY = 'attractions_list';
+// 将 Prisma Attraction 转换为应用层 Attraction 格式
+function mapPrismaAttractionToAttraction(prismaAttraction: PrismaAttraction): Attraction {
+  let media: MediaItem[] | undefined;
+  if (prismaAttraction.media) {
+    try {
+      media = JSON.parse(prismaAttraction.media) as MediaItem[];
+    } catch (error) {
+      console.error('解析媒体数据失败:', error);
+      media = undefined;
+    }
+  }
+
+  return {
+    id: prismaAttraction.id,
+    name: prismaAttraction.name,
+    description: prismaAttraction.description,
+    type: prismaAttraction.type,
+    position: [prismaAttraction.longitude, prismaAttraction.latitude],
+    unlockDistance: prismaAttraction.unlockDistance,
+    media,
+    rewardCoins: prismaAttraction.rewardCoins,
+    isActive: prismaAttraction.isActive,
+    sortOrder: prismaAttraction.sortOrder,
+    createdAt: prismaAttraction.createdAt,
+    updatedAt: prismaAttraction.updatedAt,
+    createdBy: prismaAttraction.createdBy,
+    updatedBy: prismaAttraction.updatedBy,
+  };
+}
 
 /**
  * 获取所有景点数据
  */
 export async function getAllAttractions(includeDisabled: boolean = false): Promise<Attraction[]> {
   try {
-    const dictionaryItem = await getDictionaryItemByKey(ATTRACTIONS_LIST_KEY);
+    const where = includeDisabled ? {} : { isActive: true };
     
-    if (!dictionaryItem || !dictionaryItem.value) {
-      // 如果不存在，返回空数组
-      return [];
-    }
+    const prismaAttractions = await db.attraction.findMany({
+      where,
+      orderBy: [
+        { sortOrder: 'asc' },
+        { createdAt: 'desc' }
+      ]
+    });
 
-    try {
-      const attractions = JSON.parse(dictionaryItem.value) as Attraction[];
-      
-      // 过滤掉禁用的景点（如果需要）
-      if (!includeDisabled) {
-        return attractions.filter(a => a.isEnabled !== false);
-      }
-      
-      return attractions;
-    } catch (parseError) {
-      console.error('解析景点数据失败:', parseError);
-      return [];
-    }
+    return prismaAttractions.map(mapPrismaAttractionToAttraction);
   } catch (error) {
     console.error('获取景点数据失败:', error);
     throw new Error('获取景点数据失败');
@@ -67,23 +88,17 @@ export async function getAllAttractions(includeDisabled: boolean = false): Promi
  */
 export async function getAttractionById(id: string): Promise<Attraction | null> {
   try {
-    const attractions = await getAllAttractions(true); // 包括禁用的景点
-    return attractions.find(a => a.id === id) || null;
+    const prismaAttraction = await db.attraction.findUnique({
+      where: { id }
+    });
+
+    if (!prismaAttraction) {
+      return null;
+    }
+
+    return mapPrismaAttractionToAttraction(prismaAttraction);
   } catch (error) {
     console.error('根据 ID 获取景点失败:', error);
-    throw new Error('获取景点失败');
-  }
-}
-
-/**
- * 根据 key 获取单个景点
- */
-export async function getAttractionByKey(key: string): Promise<Attraction | null> {
-  try {
-    const attractions = await getAllAttractions(true); // 包括禁用的景点
-    return attractions.find(a => a.key === key) || null;
-  } catch (error) {
-    console.error('根据 key 获取景点失败:', error);
     throw new Error('获取景点失败');
   }
 }
@@ -92,44 +107,42 @@ export async function getAttractionByKey(key: string): Promise<Attraction | null
  * 创建新景点
  */
 export async function createAttraction(
-  data: Omit<Attraction, 'id' | 'createdAt' | 'updatedAt'>,
+  data: {
+    name: string;
+    description?: string;
+    type: PrismaAttractionType;
+    longitude: number;
+    latitude: number;
+    unlockDistance?: number;
+    media?: MediaItem[];
+    rewardCoins?: number;
+    isActive?: boolean;
+    sortOrder?: number;
+  },
   createdBy?: string
 ): Promise<Attraction> {
   try {
-    const attractions = await getAllAttractions(true);
-    
-    // 检查 key 是否已存在
-    const existingByKey = attractions.find(a => a.key === data.key);
-    if (existingByKey) {
-      throw new Error('景点键名已存在');
-    }
+    const mediaJson = data.media ? JSON.stringify(data.media) : null;
 
-    // 生成新的 ID（使用时间戳 + 随机数）
-    const newId = `attraction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const now = new Date();
-    const newAttraction: Attraction = {
-      id: newId,
-      ...data,
-      isEnabled: data.isEnabled !== false, // 默认启用
-      sortOrder: data.sortOrder || 0,
-      createdAt: now,
-      updatedAt: now,
-      createdBy,
-    };
+    const prismaAttraction = await db.attraction.create({
+      data: {
+        name: data.name,
+        description: data.description || null,
+        type: data.type,
+        longitude: data.longitude,
+        latitude: data.latitude,
+        unlockDistance: data.unlockDistance || 100,
+        media: mediaJson,
+        rewardCoins: data.rewardCoins || 10,
+        isActive: data.isActive !== false,
+        sortOrder: data.sortOrder || 0,
+        createdBy: createdBy || null,
+      }
+    });
 
-    // 添加到列表
-    attractions.push(newAttraction);
-
-    // 保存到字典
-    await saveAttractionsList(attractions, createdBy);
-
-    return newAttraction;
+    return mapPrismaAttractionToAttraction(prismaAttraction);
   } catch (error) {
     console.error('创建景点失败:', error);
-    if (error instanceof Error) {
-      throw error;
-    }
     throw new Error('创建景点失败');
   }
 }
@@ -139,42 +152,64 @@ export async function createAttraction(
  */
 export async function updateAttraction(
   id: string,
-  data: Partial<Omit<Attraction, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>>,
+  data: {
+    name?: string;
+    description?: string;
+    type?: PrismaAttractionType;
+    longitude?: number;
+    latitude?: number;
+    unlockDistance?: number;
+    media?: MediaItem[];
+    rewardCoins?: number;
+    isActive?: boolean;
+    sortOrder?: number;
+  },
   updatedBy?: string
 ): Promise<Attraction> {
   try {
-    const attractions = await getAllAttractions(true);
+    const updateData: {
+      name?: string;
+      description?: string;
+      type?: PrismaAttractionType;
+      longitude?: number;
+      latitude?: number;
+      unlockDistance?: number;
+      media?: string | null;
+      rewardCoins?: number;
+      isActive?: boolean;
+      sortOrder?: number;
+      updatedBy?: string | null;
+    } = {};
     
-    const index = attractions.findIndex(a => a.id === id);
-    if (index === -1) {
-      throw new Error('景点不存在');
+    // 处理普通字段
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.longitude !== undefined) updateData.longitude = data.longitude;
+    if (data.latitude !== undefined) updateData.latitude = data.latitude;
+    if (data.unlockDistance !== undefined) updateData.unlockDistance = data.unlockDistance;
+    if (data.rewardCoins !== undefined) updateData.rewardCoins = data.rewardCoins;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
+    
+    // 处理媒体数据
+    if (data.media !== undefined) {
+      updateData.media = data.media ? JSON.stringify(data.media) : null;
+    }
+    
+    // 添加更新者信息
+    if (updatedBy) {
+      updateData.updatedBy = updatedBy;
     }
 
-    // 如果更新了 key，检查是否与其他景点冲突
-    if (data.key && data.key !== attractions[index].key) {
-      const existingByKey = attractions.find(a => a.key === data.key && a.id !== id);
-      if (existingByKey) {
-        throw new Error('景点键名已存在');
-      }
-    }
+    const prismaAttraction = await db.attraction.update({
+      where: { id },
+      data: updateData
+    });
 
-    // 更新景点
-    attractions[index] = {
-      ...attractions[index],
-      ...data,
-      updatedAt: new Date(),
-      updatedBy,
-    };
-
-    // 保存到字典
-    await saveAttractionsList(attractions, updatedBy);
-
-    return attractions[index];
+    return mapPrismaAttractionToAttraction(prismaAttraction);
   } catch (error) {
     console.error('更新景点失败:', error);
-    if (error instanceof Error) {
-      throw error;
-    }
     throw new Error('更新景点失败');
   }
 }
@@ -184,23 +219,11 @@ export async function updateAttraction(
  */
 export async function deleteAttraction(id: string): Promise<void> {
   try {
-    const attractions = await getAllAttractions(true);
-    
-    const index = attractions.findIndex(a => a.id === id);
-    if (index === -1) {
-      throw new Error('景点不存在');
-    }
-
-    // 从列表中移除
-    attractions.splice(index, 1);
-
-    // 保存到字典
-    await saveAttractionsList(attractions);
+    await db.attraction.delete({
+      where: { id }
+    });
   } catch (error) {
     console.error('删除景点失败:', error);
-    if (error instanceof Error) {
-      throw error;
-    }
     throw new Error('删除景点失败');
   }
 }
@@ -209,29 +232,21 @@ export async function deleteAttraction(id: string): Promise<void> {
  * 批量更新景点（用于排序等操作）
  */
 export async function batchUpdateAttractions(
-  updates: Array<{ id: string; data: Partial<Omit<Attraction, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'>> }>,
+  updates: Array<{ id: string; data: { sortOrder?: number; isActive?: boolean } }>,
   updatedBy?: string
-): Promise<Attraction[]> {
+): Promise<void> {
   try {
-    const attractions = await getAllAttractions(true);
-    
-    const now = new Date();
-    for (const update of updates) {
-      const index = attractions.findIndex(a => a.id === update.id);
-      if (index !== -1) {
-        attractions[index] = {
-          ...attractions[index],
-          ...update.data,
-          updatedAt: now,
-          updatedBy,
-        };
-      }
-    }
-
-    // 保存到字典
-    await saveAttractionsList(attractions, updatedBy);
-
-    return attractions;
+    await db.$transaction(
+      updates.map(update =>
+        db.attraction.update({
+          where: { id: update.id },
+          data: {
+            ...update.data,
+            updatedBy: updatedBy || null,
+          }
+        })
+      )
+    );
   } catch (error) {
     console.error('批量更新景点失败:', error);
     throw new Error('批量更新景点失败');
@@ -239,60 +254,95 @@ export async function batchUpdateAttractions(
 }
 
 /**
- * 保存景点列表到字典
+ * 检查用户是否已打卡某景点
  */
-async function saveAttractionsList(attractions: Attraction[], updatedBy?: string): Promise<void> {
+export async function checkUserAttractionCheckIn(
+  userId: string,
+  attractionId: string
+): Promise<boolean> {
   try {
-    // 按照 sortOrder 排序
-    attractions.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-    
-    const attractionsJson = JSON.stringify(attractions);
-    
-    // 检查字典项是否存在
-    const dictionaryItem = await getDictionaryItemByKey(ATTRACTIONS_LIST_KEY);
-    
-    if (dictionaryItem && dictionaryItem._id) {
-      // 更新现有字典项
-      await updateDictionaryItem(dictionaryItem._id, {
-        value: attractionsJson,
-        updatedBy,
-      });
-    } else {
-      // 创建新字典项
-      await createDictionaryItem({
-        key: ATTRACTIONS_LIST_KEY,
-        displayName: '景点列表',
-        value: attractionsJson,
-        description: '所有景点数据的集合',
-        valueType: SettingValueType.JSON,
-        category: SettingCategory.ATTRACTIONS,
-        isSystem: true, // 标记为系统设置，不允许直接删除
-        isEnabled: true,
-        sortOrder: 0,
-        createdBy: updatedBy || 'system',
-      });
-    }
+    const checkIn = await db.userAttractionCheckIn.findUnique({
+      where: {
+        userId_attractionId: {
+          userId,
+          attractionId
+        }
+      }
+    });
+
+    return !!checkIn;
   } catch (error) {
-    console.error('保存景点列表失败:', error);
-    throw new Error('保存景点列表失败');
+    console.error('检查打卡状态失败:', error);
+    throw new Error('检查打卡状态失败');
   }
 }
 
 /**
- * 初始化景点列表（如果不存在）
+ * 获取用户的打卡记录
  */
-export async function initAttractionsListIfNotExists(): Promise<void> {
+export async function getUserCheckInRecord(
+  userId: string,
+  attractionId: string
+) {
   try {
-    const dictionaryItem = await getDictionaryItemByKey(ATTRACTIONS_LIST_KEY);
-    
-    if (!dictionaryItem) {
-      // 创建空的景点列表
-      await saveAttractionsList([]);
-      console.log('✅ 景点列表初始化成功');
-    }
+    return await db.userAttractionCheckIn.findUnique({
+      where: {
+        userId_attractionId: {
+          userId,
+          attractionId
+        }
+      }
+    });
   } catch (error) {
-    console.error('初始化景点列表失败:', error);
-    throw new Error('初始化景点列表失败');
+    console.error('获取打卡记录失败:', error);
+    throw new Error('获取打卡记录失败');
   }
 }
 
+/**
+ * 创建打卡记录
+ */
+export async function createCheckInRecord(data: {
+  userId: string;
+  attractionId: string;
+  distance?: number;
+  coinsEarned: number;
+  longitude?: number;
+  latitude?: number;
+}) {
+  try {
+    return await db.userAttractionCheckIn.create({
+      data: {
+        userId: data.userId,
+        attractionId: data.attractionId,
+        distance: data.distance || null,
+        coinsEarned: data.coinsEarned,
+        longitude: data.longitude || null,
+        latitude: data.latitude || null,
+      }
+    });
+  } catch (error) {
+    console.error('创建打卡记录失败:', error);
+    throw new Error('创建打卡记录失败');
+  }
+}
+
+/**
+ * 获取用户的所有打卡记录
+ */
+export async function getUserAllCheckIns(userId: string) {
+  try {
+    return await db.userAttractionCheckIn.findMany({
+      where: { userId },
+      include: {
+        attraction: true
+      },
+      orderBy: {
+        checkedInAt: 'desc'
+      }
+    });
+  } catch (error) {
+    console.error('获取用户打卡记录失败:', error);
+    throw new Error('获取用户打卡记录失败');
+  }
+}

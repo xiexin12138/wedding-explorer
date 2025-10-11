@@ -5,20 +5,23 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2 } from "lucide-react";
+import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2, Check } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { OptimizedVideo } from "@/components/OptimizedVideo";
 import { detectEnvironment } from "@/lib/environment-detector";
 import { openMap } from "@/lib/map-launcher";
 import { attractionTypeConfig } from "@/components/MapExplorer";
 import { getSignedUrl } from "@/lib/cos-url-signer";
+import { checkInAttraction, getCheckInStatus } from "@/lib/services/attractions.service";
+import { useToast } from "@/components/ui/use-toast";
+import { useUser } from "@/components/UserProvider";
 
-// 定义景点类型枚举
+// 定义景点类型枚举 - 与 Prisma 保持一致
 export enum AttractionType {
-  SCENIC = "scenic",
-  FOOD = "food",
-  SHOPPING = "shopping",
-  OTHER = "other",
+  SCENIC = "SCENIC",
+  FOOD = "FOOD",
+  SHOPPING = "SHOPPING",
+  OTHER = "OTHER",
 }
 
 // 定义媒体类型
@@ -65,6 +68,15 @@ export function AttractionCard({
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // 打卡相关状态
+  const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [checkInData, setCheckInData] = useState<{ checkedInAt: string; coinsEarned: number } | null>(null);
+  const [isLoadingCheckInStatus, setIsLoadingCheckInStatus] = useState(true);
+  
+  const { toast } = useToast();
+  const { user } = useUser();
 
   // 使用外部传入的 expanded 状态，如果没有则使用内部状态
   const expanded =
@@ -136,6 +148,103 @@ export function AttractionCard({
     const unlockDistance = attraction.unlockDistance || 100; // 默认100米
     setIsUnlocked(distance <= unlockDistance);
   }, [userPosition, attraction, calculateDistance]);
+
+  // 获取打卡状态
+  useEffect(() => {
+    const loadCheckInStatus = async () => {
+      if (!user) {
+        setIsLoadingCheckInStatus(false);
+        return;
+      }
+
+      try {
+        setIsLoadingCheckInStatus(true);
+        const status = await getCheckInStatus(attraction.id);
+        setHasCheckedIn(status.hasCheckedIn);
+        if (status.checkInData) {
+          setCheckInData(status.checkInData);
+        }
+      } catch (error) {
+        console.error('获取打卡状态失败:', error);
+      } finally {
+        setIsLoadingCheckInStatus(false);
+      }
+    };
+
+    loadCheckInStatus();
+  }, [attraction.id, user]);
+
+  // 处理打卡
+  const handleCheckIn = async () => {
+    if (!user) {
+      toast({
+        title: "请先登录",
+        description: "您需要登录后才能打卡",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (hasCheckedIn) {
+      toast({
+        title: "已经打卡过了",
+        description: "您已经在该景点打卡过了",
+        variant: "default",
+      });
+      return;
+    }
+
+    if (!isUnlocked) {
+      toast({
+        title: "距离太远",
+        description: "您需要靠近景点才能打卡",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsCheckingIn(true);
+      
+      // 计算当前距离
+      let distance: number | undefined;
+      if (userPosition) {
+        distance = calculateDistance(
+          userPosition[0],
+          userPosition[1],
+          attraction.position[0],
+          attraction.position[1]
+        );
+      }
+
+      const result = await checkInAttraction(attraction.id, {
+        distance,
+        longitude: userPosition?.[0],
+        latitude: userPosition?.[1],
+      });
+
+      setHasCheckedIn(true);
+      setCheckInData({
+        checkedInAt: new Date().toISOString(),
+        coinsEarned: result.coinsEarned,
+      });
+
+      toast({
+        title: "打卡成功! 🎉",
+        description: `恭喜你获得 ${result.coinsEarned} 金币奖励!`,
+      });
+    } catch (error) {
+      console.error('打卡失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '打卡失败';
+      toast({
+        title: "打卡失败",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingIn(false);
+    }
+  };
 
   // 通用地图打开方法
   const handleOpenMap = async (mapType: 'amap' | 'baidu' | 'tencent') => {
@@ -568,6 +677,56 @@ export function AttractionCard({
             <div className="prose dark:prose-invert">
               <p>{attraction.description}</p>
             </div>
+
+            {/* 打卡按钮 */}
+            {user && (
+              <div className="mt-6">
+                {isLoadingCheckInStatus ? (
+                  <div className="flex items-center justify-center py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-sm text-muted-foreground">加载打卡状态...</span>
+                  </div>
+                ) : hasCheckedIn ? (
+                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <span className="font-semibold text-green-700 dark:text-green-300">已打卡</span>
+                    </div>
+                    {checkInData && (
+                      <div className="text-sm text-green-600 dark:text-green-400">
+                        <p>打卡时间: {new Date(checkInData.checkedInAt).toLocaleString('zh-CN')}</p>
+                        <p>获得金币: +{checkInData.coinsEarned}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    variant={isUnlocked ? "default" : "outline"}
+                    size="lg"
+                    className="w-full font-semibold"
+                    onClick={handleCheckIn}
+                    disabled={!isUnlocked || isCheckingIn}
+                  >
+                    {isCheckingIn ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        打卡中...
+                      </>
+                    ) : isUnlocked ? (
+                      <>
+                        <Check className="h-5 w-5 mr-2" />
+                        立即打卡
+                      </>
+                    ) : (
+                      <>
+                        <Map className="h-5 w-5 mr-2" />
+                        靠近后可打卡
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* 地图导航按钮 - 根据解锁状态显示不同文案 */}
             <div className="mt-4">
