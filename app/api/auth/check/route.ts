@@ -3,14 +3,13 @@ import { isRequestAuthenticated } from '@/lib/auth'
 import { getAdminIds } from '@/lib/middleware/config'
 import { getRequestIdFromHeaders, logServerRequest, logServerResponse } from '@/lib/request-tracker'
 import { setAuthApiHeaders } from '@/lib/utils'
-import * as userService from '@/lib/services/user.service'
-import { withPerformanceMonitoring, monitorDatabaseOperation } from '@/lib/api-performance-wrapper'
+import { withPerformanceMonitoring } from '@/lib/api-performance-wrapper'
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withPerformanceMonitoring(async (
   request: NextRequest,
-  { tracker, dbMonitor, externalMonitor }
+  { tracker, externalMonitor }
 ) => {
   const requestId = getRequestIdFromHeaders(request.headers) || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
@@ -64,34 +63,14 @@ export const GET = withPerformanceMonitoring(async (
   
   tracker.checkpoint('构建用户信息');
 
-  // 同步用户到数据库
-  let dbUser;
-  try {
-    dbUser = await monitorDatabaseOperation(
-      dbMonitor,
-      'loginOrRegister',
-      'User',
-      () => userService.loginOrRegister({
-        authingId: user.sub,
-        name: displayName,
-        nickname: nickname,
-        email: user.email,
-        avatar: typeof user.picture === 'string' ? user.picture : (typeof user.photo === 'string' ? user.photo : undefined),
-        isAdmin,
-      })
-    );
-    tracker.checkpoint('同步用户到数据库', { dbUserId: dbUser.id });
-  } catch (error) {
-    console.error('⚠️ 同步用户到数据库失败:', error);
-    tracker.checkpoint('同步用户失败');
-    // 即使同步失败，也继续返回认证信息
-  }
+  // 零触库策略：不在 check 中触发数据库操作
+  // 如需同步，由前端在拿不到 dbId 时调用懒同步接口（/api/auth/sync 或 /api/user/profile）
 
   // 返回用户信息，包含 data 字段和管理员状态
   const response = NextResponse.json({
     user: {
       id: user.sub,
-      dbId: dbUser?.id,
+      dbId: undefined,
       name: displayName,
       email: user.email,
       username: user.username,
@@ -102,7 +81,7 @@ export const GET = withPerformanceMonitoring(async (
         username: user.username,
         email: user.email,
         isAdmin,
-        dbId: dbUser?.id,
+        dbId: undefined,
         ...user
       }
     },

@@ -76,17 +76,42 @@ export function getOptimizedDatabaseUrl(): string {
   }
 
   try {
-    // 如果 URL 已经包含参数，直接返回
+    // 如果 URL 已经包含参数，则进行合并并覆盖关键参数，确保使用我们的优化配置
     if (baseUrl.includes('?')) {
-      console.log('📊 使用已配置的数据库连接参数');
-      return baseUrl;
+      try {
+        const urlObj = new URL(baseUrl);
+        const sp = urlObj.searchParams;
+
+        // 覆盖/设置关键参数（单位均为秒）
+        sp.set('connection_limit', dbConfig.connectionPool.maxConnections.toString());
+        sp.set('pool_timeout', Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString());
+        sp.set('connect_timeout', Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString());
+        sp.set('socket_timeout', Math.floor(dbConfig.connectionPool.queryTimeout / 1000).toString());
+        // 其他优化参数（若已有则覆盖为推荐值）
+        sp.set('charset', 'utf8mb4');
+        sp.set('timezone', 'Z');
+        sp.set('statement_cache_size', '100');
+
+        const mergedUrl = urlObj.toString();
+
+        console.log('📊 已合并并覆盖数据库连接参数');
+        console.log(`   - 最大连接数: ${dbConfig.connectionPool.maxConnections}`);
+        console.log(`   - 连接超时(pool/connect): ${dbConfig.connectionPool.connectionTimeout}ms`);
+        console.log(`   - 查询超时(socket): ${dbConfig.connectionPool.queryTimeout}ms`);
+        console.log(`   - 空闲超时: ${dbConfig.connectionPool.idleTimeout}ms`);
+
+        return mergedUrl;
+      } catch (e) {
+        console.warn('⚠️ 数据库 URL 合并失败，回退使用原始 URL:', e);
+        return baseUrl;
+      }
     }
 
     // 添加针对跨地域访问优化的连接参数
     const params = new URLSearchParams({
       // 连接池配置
       connection_limit: dbConfig.connectionPool.maxConnections.toString(),
-      pool_timeout: Math.floor(dbConfig.connectionPool.idleTimeout / 1000).toString(), // 秒
+      pool_timeout: Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString(), // 秒
       
       // 连接超时配置（需要考虑连接池等待时间）
       connect_timeout: Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString(), // 15秒
