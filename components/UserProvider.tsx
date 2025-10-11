@@ -81,9 +81,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // 4. 完成加载状态
       setLoading(false);
 
-      // 5. 调用 Authing 指定的 url 进行登出
+      // 5. 调用 Authing 指定的 url 进行登出，登出后返回首页
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      console.log("🚀 ~ logout ~ 登出后将返回首页:", origin);
       const redirectUri = `${AUTHING_APP_HOST}/login/profile/logout?redirect_uri=${encodeURIComponent(
-        window.location.href
+        origin
       )}`;
       window.location.href = redirectUri;
     } catch (error) {

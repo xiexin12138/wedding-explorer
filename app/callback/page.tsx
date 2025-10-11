@@ -75,10 +75,19 @@ export default function Callback() {
       // 5. 触发 UserProvider 中的 checkAuth 来更新全局用户状态
       await checkAuth();
 
-      console.log("✅ 用户状态更新成功，准备跳转到默认页面");
+      console.log("✅ 用户状态更新成功，准备跳转");
 
-      // 6. 跳转到默认页面
-      router.push(SPECIAL_ROUTES.DEFAULT_HOME);
+      // 6. 跳转到目标页面
+      // 优先使用保存的回调 URL，否则跳转到默认首页
+      const callbackUrl = sessionStorage.getItem('login_callback_url');
+      if (callbackUrl) {
+        console.log(`🔗 跳转到登录前的页面: ${callbackUrl}`);
+        sessionStorage.removeItem('login_callback_url'); // 清除已使用的回调 URL
+        router.push(callbackUrl);
+      } else {
+        console.log(`🏠 跳转到默认首页: ${SPECIAL_ROUTES.DEFAULT_HOME}`);
+        router.push(SPECIAL_ROUTES.DEFAULT_HOME);
+      }
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "未知错误";
       console.error("❌ Authing 回调处理失败:", e);

@@ -131,7 +131,7 @@ export function Header() {
     }
 
     console.log("🏠 Header: 点击首页按钮");
-    
+
     // 立即设置导航状态，提供即时视觉反馈
     setIsNavigatingHome(true);
 
@@ -153,22 +153,22 @@ export function Header() {
       console.error("用户未登录");
       return;
     }
-    
+
     setCoinsLoading(true);
     try {
       console.log("🪙 正在获取用户游戏币信息...");
       // 不传 userId，让 API 从认证信息自动获取并同步用户
-      const response = await fetch('/api/user/profile');
+      const response = await fetch("/api/user/profile");
       const data = await response.json();
-      
+
       console.log("📊 用户资料响应:", data);
-      
+
       if (data.success) {
         setUserCoins(data.data.user.coins);
         setUserRank(data.data.rank);
         console.log("✅ 游戏币信息获取成功:", {
           coins: data.data.user.coins,
-          rank: data.data.rank
+          rank: data.data.rank,
         });
       } else {
         console.error("❌ 获取用户资料失败:", data.error);
@@ -208,7 +208,6 @@ export function Header() {
 
         {/* 右侧控制按钮 */}
         <div className="flex items-center space-x-3">
-
           {/* 主题切换 */}
           <ModeToggle />
 
@@ -290,9 +289,7 @@ export function Header() {
                   <Map className="mr-2 h-4 w-4 text-primary" />
                   地图探索
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => router.push('/leaderboard')}
-                >
+                <DropdownMenuItem onClick={() => router.push("/leaderboard")}>
                   <Trophy className="mr-2 h-4 w-4 text-yellow-500" />
                   游戏币排行榜
                 </DropdownMenuItem>
@@ -370,16 +367,20 @@ export function Header() {
               我的游戏币
             </DialogTitle>
             <DialogDescription>
-              查看您的游戏币余额和个人二维码（管理员可扫码进行操作）
+              查看您的游戏币余额和个人二维码
+              <br />
+              （管理员可扫码进行操作）
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="flex flex-col items-center space-y-6 py-4">
             {/* 二维码 */}
             <div className="relative">
               <div className="p-4 bg-white rounded-lg shadow-lg">
                 <QRCodeSVG
-                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/admin-panel?userId=${user?.data?.dbId || user?.id || ""}`}
+                  value={`${
+                    typeof window !== "undefined" ? window.location.origin : ""
+                  }/admin-panel?userId=${user?.data?.dbId || user?.id || ""}`}
                   size={200}
                   level="H"
                   includeMargin={true}
@@ -401,7 +402,9 @@ export function Header() {
               {coinsLoading ? (
                 <div className="flex items-center justify-center py-6">
                   <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
-                  <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    加载中...
+                  </span>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -412,10 +415,9 @@ export function Header() {
                       <span className="text-sm font-medium">游戏币数量</span>
                     </div>
                     <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                      {userCoins !== null ? userCoins.toLocaleString() : '--'}
+                      {userCoins !== null ? userCoins.toLocaleString() : "--"}
                     </span>
                   </div>
-                  
 
                   {/* 排名 */}
                   {userRank !== null && (

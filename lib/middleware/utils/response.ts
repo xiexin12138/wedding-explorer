@@ -33,8 +33,26 @@ export function createNextResponse(): NextResponse {
  * 创建未授权响应
  */
 export function createUnauthorizedResponse(request: NextRequest, loginPath: string): NextResponse {
-  console.log(`🔒 未授权访问，重定向到登录页: ${request.nextUrl.pathname}`)
-  return createRedirectResponse(request, loginPath)
+  const originalPath = request.nextUrl.pathname
+  const search = request.nextUrl.search
+  
+  console.log(`🔒 未授权访问，重定向到登录页: ${originalPath}`)
+  
+  // 构建登录 URL，并保存原始路径
+  const loginUrl = new URL(loginPath, request.url)
+  
+  // 只有在原始路径不是登录相关路径时才保存
+  if (originalPath !== loginPath && 
+      originalPath !== '/callback' && 
+      originalPath !== '/login' &&
+      originalPath !== '/') {
+    // 保存完整的原始路径（包括查询参数）
+    const callbackUrl = originalPath + search
+    loginUrl.searchParams.set('callbackUrl', callbackUrl)
+    console.log(`🔗 保存回调 URL: ${callbackUrl}`)
+  }
+  
+  return createRedirectResponse(request, loginUrl.toString())
 }
 
 /**
