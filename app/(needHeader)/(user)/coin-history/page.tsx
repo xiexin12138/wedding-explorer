@@ -20,8 +20,6 @@ import {
   Calendar,
 } from "lucide-react";
 import type { CoinTransaction, TransactionType } from "@/app/generated/prisma";
-import { APP_NAME } from "@/lib/client-config";
-import type { Metadata } from "next";
 
 // 交易类型的中文映射
 const TRANSACTION_TYPE_MAP: Record<TransactionType, string> = {
@@ -103,7 +101,7 @@ export default function CoinHistoryPage() {
       setLoading(true);
       try {
         const url = new URL("/api/user/transactions", window.location.origin);
-        url.searchParams.set("userId", user.data.dbId);
+        url.searchParams.set("userId", String(user.data.dbId));
         url.searchParams.set("page", pageNum.toString());
         url.searchParams.set("pageSize", pageSize.toString());
         if (typeFilter !== "all") {
