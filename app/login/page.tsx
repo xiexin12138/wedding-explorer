@@ -1,10 +1,10 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { guard } from "@/lib/auth-graud/config";
 import { APP_NAME } from "@/lib/client-config";
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams();
   
   useEffect(() => {
@@ -34,5 +34,21 @@ export default function LoginPage() {
         <p className="text-muted-foreground">请稍候，正在为您准备登录界面...</p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen-dynamic flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <h2 className="text-xl font-semibold">正在跳转到登录页</h2>
+          <p className="text-muted-foreground">请稍候，正在为您准备登录界面...</p>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
