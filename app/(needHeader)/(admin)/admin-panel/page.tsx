@@ -198,9 +198,9 @@ export default function AdminPanelPage() {
                       <p className="text-sm text-muted-foreground">角色</p>
                       <p className="font-medium">
                         {targetUser.isAdmin ? (
-                          <span className="text-amber-700 dark:text-amber-500">管理员</span>
+                          <span className="text-amber-600 dark:text-amber-400">管理员</span>
                         ) : (
-                          <span className="text-gray-600 dark:text-gray-400">普通用户</span>
+                          <span className="text-muted-foreground">普通用户</span>
                         )}
                       </p>
                     </div>

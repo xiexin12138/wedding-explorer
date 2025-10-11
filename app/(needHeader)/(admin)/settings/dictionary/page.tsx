@@ -400,7 +400,7 @@ export default function DictionaryConfigPage() {
                       ? '请输入 JSON 对象，例如: {"key": "value"}'
                       : '请输入 JSON 数组，例如: ["item1", "item2"]'
                   }
-                  className={`min-h-[120px] font-mono text-xs ${jsonError ? "border-red-500" : ""}`}
+                  className={`min-h-[120px] font-mono text-xs ${jsonError ? "border-red-500 dark:border-red-400" : ""}`}
                 />
               ) : (
                 <Input
@@ -418,7 +418,7 @@ export default function DictionaryConfigPage() {
                 />
               )}
               {jsonError && (
-                <p className="text-xs text-red-500 mt-1">{jsonError}</p>
+                <p className="text-xs text-red-500 dark:text-red-400 mt-1">{jsonError}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -455,7 +455,7 @@ export default function DictionaryConfigPage() {
       {loading ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-gray-500">加载中...</p>
+            <p className="text-muted-foreground">加载中...</p>
           </CardContent>
         </Card>
       ) : (
@@ -466,31 +466,31 @@ export default function DictionaryConfigPage() {
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-1 sm:gap-2 lg:gap-4 flex-1">
                     <div>
-                      <Label className="text-sm font-medium text-gray-500">
+                      <Label className="text-sm font-medium text-muted-foreground">
                         键名
                       </Label>
                       <p className="text-sm break-words">{item.key}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-500">
+                      <Label className="text-sm font-medium text-muted-foreground">
                         显示名称
                       </Label>
                       <p className="text-sm break-words">{item.displayName}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-500">
+                      <Label className="text-sm font-medium text-muted-foreground">
                         键值
                       </Label>
                       <p className="text-sm break-words">{item.value}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-500">
+                      <Label className="text-sm font-medium text-muted-foreground">
                         值类型
                       </Label>
                       <p className="text-sm break-words">{item.valueType}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-500">
+                      <Label className="text-sm font-medium text-muted-foreground">
                         描述
                       </Label>
                       <p className="text-sm break-words">{item.description}</p>
@@ -558,7 +558,7 @@ export default function DictionaryConfigPage() {
           {dictionaryItems.length === 0 && (
             <Card>
               <CardContent className="p-8 text-center">
-                <p className="text-gray-500">暂无系统设置项，点击上方按钮添加</p>
+                <p className="text-muted-foreground">暂无系统设置项，点击上方按钮添加</p>
               </CardContent>
             </Card>
           )}

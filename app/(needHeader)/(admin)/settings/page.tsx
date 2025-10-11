@@ -44,7 +44,7 @@ export default async function AdminSettingsPage() {
             </CardHeader>
             <CardContent>
               <Link href="/settings/super-admin">
-                <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600">
                   进入配置
                 </Button>
               </Link>

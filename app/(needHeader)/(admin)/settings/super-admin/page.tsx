@@ -80,9 +80,9 @@ export default function SuperAdminConfigPage() {
       icon: <GamepadIcon className="h-6 w-6" />,
       isActive: true,
       stats: [
-        { label: "活跃项目", value: gameProjects.filter(p => p.isActive).length, color: "text-green-600" },
-        { label: "总项目数", value: gameProjects.length, color: "text-blue-600" },
-        { label: "总游戏次数", value: gameProjects.reduce((sum, p) => sum + p.totalGames, 0), color: "text-purple-600" }
+        { label: "活跃项目", value: gameProjects.filter(p => p.isActive).length, color: "text-green-600 dark:text-green-400" },
+        { label: "总项目数", value: gameProjects.length, color: "text-blue-600 dark:text-blue-400" },
+        { label: "总游戏次数", value: gameProjects.reduce((sum, p) => sum + p.totalGames, 0), color: "text-purple-600 dark:text-purple-400" }
       ]
     },
     {
@@ -506,7 +506,7 @@ export default function SuperAdminConfigPage() {
                   {/* 项目信息 */}
                   <div className="space-y-2 text-xs md:text-sm bg-muted/30 rounded-lg p-2 md:p-3">
                     <div className="flex items-start gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0 mt-1"></div>
+                      <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-400 flex-shrink-0 mt-1"></div>
                       <div className="flex-1 min-w-0">
                         <span className="font-medium">消耗按钮: </span>
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -520,12 +520,12 @@ export default function SuperAdminConfigPage() {
                       </div>
                     </div>
                     <div className="flex items-start gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0 mt-1"></div>
+                      <div className="h-2 w-2 rounded-full bg-green-500 dark:bg-green-400 flex-shrink-0 mt-1"></div>
                       <div className="flex-1 min-w-0">
                         <span className="font-medium">奖励按钮: </span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {project.rewardButtons.map((btn, idx) => (
-                            <Badge key={idx} variant="default" className="text-xs bg-green-600">
+                            <Badge key={idx} variant="default" className="text-xs bg-green-600 dark:bg-green-700 dark:hover:bg-green-600">
                               {formatButton(btn)}
                             </Badge>
                           ))}
@@ -534,7 +534,7 @@ export default function SuperAdminConfigPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                      <div className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400 flex-shrink-0"></div>
                       <span className="truncate">排序: {project.sortOrder}</span>
                     </div>
                   </div>
@@ -748,7 +748,7 @@ export default function SuperAdminConfigPage() {
                     添加自定义
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-2 min-h-[32px] p-2 border rounded-md bg-muted/30">
+                <div className="flex flex-wrap gap-2 min-h-[32px] p-2 border rounded-md bg-muted/30 dark:bg-muted/20">
                   {formData.costButtons.map((btn, idx) => (
                     <Badge
                       key={idx}
@@ -800,12 +800,12 @@ export default function SuperAdminConfigPage() {
                     添加自定义
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-2 min-h-[32px] p-2 border rounded-md bg-muted/30">
+                <div className="flex flex-wrap gap-2 min-h-[32px] p-2 border rounded-md bg-muted/30 dark:bg-muted/20">
                   {formData.rewardButtons.map((btn, idx) => (
                     <Badge
                       key={idx}
                       variant="default"
-                      className="cursor-pointer hover:opacity-80 gap-1 bg-green-600"
+                      className="cursor-pointer hover:opacity-80 gap-1 bg-green-600 dark:bg-green-700 dark:hover:bg-green-600"
                       onClick={() => handleRemoveRewardButton(idx)}
                     >
                       {formatButton(btn)}

@@ -48,25 +48,25 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const breadcrumbs = generateBreadcrumbs();
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
       {/* 面包屑导航 */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-card border-b border-gray-200 dark:border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-2 py-4">
             {breadcrumbs.map((crumb, index) => (
               <div key={crumb.href} className="flex items-center">
                 {index > 0 && (
-                  <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground mx-2" />
                 )}
                 {crumb.isLast ? (
-                  <span className="text-sm font-medium text-gray-900 flex items-center">
+                  <span className="text-sm font-medium text-foreground flex items-center">
                     {crumb.icon && <crumb.icon className="h-4 w-4 mr-1" />}
                     {crumb.name}
                   </span>
                 ) : (
                   <Link
                     href={crumb.href}
-                    className="text-sm font-medium text-gray-500 hover:text-gray-700 flex items-center transition-colors"
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center transition-colors"
                   >
                     {crumb.icon && <crumb.icon className="h-4 w-4 mr-1" />}
                     {crumb.name}

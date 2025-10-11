@@ -8,95 +8,116 @@ import * as userService from '@/lib/services/user.service';
 import * as userRepo from '@/lib/repositories/user.repository';
 import { isRequestAuthenticated } from '@/lib/auth';
 import { getAdminIds } from '@/lib/middleware/config';
+import { withPerformanceMonitoring, monitorDatabaseOperation } from '@/lib/api-performance-wrapper';
 
-export async function GET(request: NextRequest) {
-  try {
-    // 优先从查询参数获取用户ID，如果没有则从认证信息获取
-    const userIdParam = request.nextUrl.searchParams.get('userId');
+export const GET = withPerformanceMonitoring(async (
+  request: NextRequest,
+  { tracker, dbMonitor }
+) => {
+  // 优先从查询参数获取用户ID，如果没有则从认证信息获取
+  const userIdParam = request.nextUrl.searchParams.get('userId');
+  tracker.checkpoint('解析查询参数', { userIdParam });
+  
+  let user = null;
+
+  if (userIdParam) {
+    // 如果提供了 userId 参数，先尝试作为用户 ID 查询
+    user = await monitorDatabaseOperation(
+      dbMonitor,
+      'findUnique',
+      'User',
+      () => userRepo.getUserById(userIdParam)
+    );
     
-    let user = null;
-
-    if (userIdParam) {
-      // 如果提供了 userId 参数，先尝试作为用户 ID 查询
-      console.log('🔍 通过用户 ID 查询用户:', userIdParam);
-      user = await userRepo.getUserById(userIdParam);
-      
-      // 如果没找到，尝试作为 authingId 查询
-      if (!user) {
-        console.log('🔍 通过 Authing ID 查询用户:', userIdParam);
-        user = await userRepo.getUserByAuthingId(userIdParam);
-      }
-    } else {
-      // 从认证信息获取
-      const { isLoggedIn, user: authUser } = await isRequestAuthenticated(request);
-      
-      if (!isLoggedIn || !authUser) {
-        return NextResponse.json(
-          { error: '用户未登录' },
-          { status: 401 }
-        );
-      }
-      
-      const authingId = authUser.sub; // Authing ID
-      console.log('🔍 从认证信息查询用户，Authing ID:', authingId);
-      user = await userRepo.getUserByAuthingId(authingId);
-    }
-
-    // 如果还是没找到，尝试自动创建/同步用户
+    // 如果没找到，尝试作为 authingId 查询
     if (!user) {
-      console.log('📝 用户不存在，尝试自动同步');
-      const { isLoggedIn, user: authUser } = await isRequestAuthenticated(request);
-      
-      if (isLoggedIn && authUser) {
-        const adminIds = getAdminIds();
-        const isAdmin = adminIds.includes(authUser.sub);
-        
-        // 构建用户显示名称（使用多个字段作为后备）
-        const displayName = authUser.name 
-          || authUser.nickname 
-          || authUser.username 
-          || (authUser.email ? authUser.email.split('@')[0] : undefined)
-          || (typeof authUser.phone === 'string' ? authUser.phone : undefined)
-          || (typeof authUser.phoneNumber === 'string' ? authUser.phoneNumber : undefined)
-          || `用户${authUser.sub.substring(0, 8)}`;
+      user = await monitorDatabaseOperation(
+        dbMonitor,
+        'findByAuthingId',
+        'User',
+        () => userRepo.getUserByAuthingId(userIdParam)
+      );
+    }
+    tracker.checkpoint('通过参数查询用户', { found: !!user });
+  } else {
+    // 从认证信息获取
+    const { isLoggedIn, user: authUser } = await isRequestAuthenticated(request);
+    tracker.checkpoint('验证用户认证', { isLoggedIn });
+    
+    if (!isLoggedIn || !authUser) {
+      return NextResponse.json(
+        { error: '用户未登录' },
+        { status: 401 }
+      );
+    }
+    
+    const authingId = authUser.sub;
+    user = await monitorDatabaseOperation(
+      dbMonitor,
+      'findByAuthingId',
+      'User',
+      () => userRepo.getUserByAuthingId(authingId)
+    );
+    tracker.checkpoint('通过认证信息查询用户', { found: !!user });
+  }
 
-        const nickname = authUser.nickname 
-          || authUser.name 
-          || authUser.username 
-          || (authUser.email ? authUser.email.split('@')[0] : undefined);
-        
-        user = await userService.loginOrRegister({
+  // 如果还是没找到，尝试自动创建/同步用户
+  if (!user) {
+    const { isLoggedIn, user: authUser } = await isRequestAuthenticated(request);
+    
+    if (isLoggedIn && authUser) {
+      const adminIds = getAdminIds();
+      const isAdmin = adminIds.includes(authUser.sub);
+      
+      // 构建用户显示名称（使用多个字段作为后备）
+      const displayName = authUser.name 
+        || authUser.nickname 
+        || authUser.username 
+        || (authUser.email ? authUser.email.split('@')[0] : undefined)
+        || (typeof authUser.phone === 'string' ? authUser.phone : undefined)
+        || (typeof authUser.phoneNumber === 'string' ? authUser.phoneNumber : undefined)
+        || `用户${authUser.sub.substring(0, 8)}`;
+
+      const nickname = authUser.nickname 
+        || authUser.name 
+        || authUser.username 
+        || (authUser.email ? authUser.email.split('@')[0] : undefined);
+      
+      user = await monitorDatabaseOperation(
+        dbMonitor,
+        'loginOrRegister',
+        'User',
+        () => userService.loginOrRegister({
           authingId: authUser.sub,
           name: displayName,
           nickname: nickname,
           email: authUser.email,
           avatar: typeof authUser.picture === 'string' ? authUser.picture : undefined,
           isAdmin,
-        });
-        console.log('✅ 用户已自动同步到数据库:', user.id);
-      } else {
-        throw new Error('用户不存在');
-      }
+        })
+      );
+      tracker.checkpoint('自动同步用户到数据库', { userId: user.id });
+    } else {
+      throw new Error('用户不存在');
     }
-
-    const rank = await userRepo.getUserRank(user.id);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        user,
-        rank,
-      },
-    });
-  } catch (error) {
-    console.error('❌ 获取用户资料失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取用户资料失败',
-      },
-      { status: 500 }
-    );
   }
-}
+
+  const rank = await monitorDatabaseOperation(
+    dbMonitor,
+    'getUserRank',
+    'User',
+    () => userRepo.getUserRank(user.id)
+  );
+  tracker.checkpoint('获取用户排名', { rank });
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      user,
+      rank,
+    },
+  });
+}, {
+  name: '获取用户资料',
+});
 

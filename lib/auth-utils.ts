@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers';
 import { getAuthingSession } from '@/lib/auth';
 import { isSuperAdmin } from '@/lib/server-config';
 
