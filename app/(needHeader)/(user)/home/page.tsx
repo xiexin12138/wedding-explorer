@@ -81,7 +81,7 @@ export default function HomePage() {
           </div>
           <CardHeader className="relative z-10">
             <CardTitle className="text-lg font-semibold flex items-center gap-2 text-amber-900 dark:text-amber-100">
-              <Coins className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <Coins className="h-5 w-5 text-amber-700 dark:text-amber-500" />
               游戏币兑换礼物汇率
             </CardTitle>
             <CardDescription className="text-amber-800/80 dark:text-amber-200/70">

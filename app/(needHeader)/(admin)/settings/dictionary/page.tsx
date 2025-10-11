@@ -57,6 +57,8 @@ export default function DictionaryConfigPage() {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [jsonError, setJsonError] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { toast } = useToast();
 
   // 设置页面标题
@@ -203,6 +205,8 @@ export default function DictionaryConfigPage() {
     }
 
     try {
+      setIsSaving(true);
+      
       if (isAddingNew) {
         // 创建新字典项
         const newItem = await createDictionaryItemClient({
@@ -219,7 +223,7 @@ export default function DictionaryConfigPage() {
           )
         );
         toast({
-          title: "创建成功",
+          title: "✅ 创建成功",
           description: `字典项 "${formData.displayName}" 已创建`,
         });
       } else if (editingItem) {
@@ -240,47 +244,54 @@ export default function DictionaryConfigPage() {
             )
         );
         toast({
-          title: "更新成功",
+          title: "✅ 更新成功",
           description: `字典项 "${formData.displayName}" 已更新`,
         });
       }
+      
+      // 短暂延迟以让用户看到成功提示
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setIsDialogOpen(false);
+      setIsAddingNew(false);
+      setEditingItem(null);
+      setFormData({
+        key: "",
+        displayName: "",
+        value: "",
+        description: "",
+        valueType: SettingValueType.STRING,
+      });
     } catch (error) {
       console.error("保存字典项失败:", error);
       toast({
-        title: "保存失败",
+        title: "❌ 保存失败",
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsSaving(false);
     }
-    
-    setIsDialogOpen(false);
-    setIsAddingNew(false);
-    setEditingItem(null);
-    setFormData({
-      key: "",
-      displayName: "",
-      value: "",
-      description: "",
-      valueType: SettingValueType.STRING,
-    });
   };
 
   const handleDelete = async (id: string) => {
     try {
+      setIsDeleting(id);
       await deleteDictionaryItemClient(id);
       setDictionaryItems((prev) => prev.filter((item) => item.id !== id));
       toast({
-        title: "删除成功",
+        title: "✅ 删除成功",
         description: "字典项已删除",
       });
     } catch (error) {
       console.error("删除字典项失败:", error);
       toast({
-        title: "删除失败",
+        title: "❌ 删除失败",
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -422,12 +433,19 @@ export default function DictionaryConfigPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
               取消
             </Button>
-            <Button onClick={handleSave}>
-              保存
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent inline-block" />
+                  保存中...
+                </>
+              ) : (
+                "保存"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -489,8 +507,19 @@ export default function DictionaryConfigPage() {
                     {!item.isSystem && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">
-                            删除
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            disabled={isDeleting === item.id}
+                          >
+                            {isDeleting === item.id ? (
+                              <>
+                                <span className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-background border-t-transparent inline-block" />
+                                删除中...
+                              </>
+                            ) : (
+                              "删除"
+                            )}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -502,11 +531,19 @@ export default function DictionaryConfigPage() {
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>取消</AlertDialogCancel>
+                            <AlertDialogCancel disabled={isDeleting === item.id}>取消</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDelete(item.id)}
+                              disabled={isDeleting === item.id}
                             >
-                              删除
+                              {isDeleting === item.id ? (
+                                <>
+                                  <span className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-background border-t-transparent inline-block" />
+                                  删除中...
+                                </>
+                              ) : (
+                                "删除"
+                              )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

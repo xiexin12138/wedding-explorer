@@ -112,6 +112,8 @@ export default function ExchangeRatePage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'default'>('default');
   const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -246,6 +248,8 @@ export default function ExchangeRatePage() {
     }
 
     try {
+      setIsSaving(true);
+      
       // 构建新的项目数据
       const newItem: ExchangeItem = {
         id: isAddingNew ? `item_${Date.now()}` : editingItem!.id,
@@ -292,35 +296,41 @@ export default function ExchangeRatePage() {
       }
       
       toast({
-        title: isAddingNew ? "创建成功" : "更新成功",
+        title: isAddingNew ? "✅ 创建成功" : "✅ 更新成功",
         description: `${sceneConfig.itemLabel} "${formData.giftName}" 已${isAddingNew ? "创建" : "更新"}`,
       });
       
       // 重新加载数据以获取最新状态
       await loadExchangeItems(currentScene);
+      
+      // 短暂延迟以让用户看到成功提示
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setIsDialogOpen(false);
+      setIsAddingNew(false);
+      setEditingItem(null);
+      setFormData({
+        giftName: "",
+        coinAmount: "",
+        description: "",
+        emoji: sceneConfig.defaultEmoji,
+      });
     } catch (error) {
       console.error("保存兑换项目失败:", error);
       toast({
-        title: "保存失败",
+        title: "❌ 保存失败",
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsDialogOpen(false);
-    setIsAddingNew(false);
-    setEditingItem(null);
-    setFormData({
-      giftName: "",
-      coinAmount: "",
-      description: "",
-      emoji: sceneConfig.defaultEmoji,
-    });
   };
 
   const handleDelete = async (id: string) => {
     try {
+      setIsDeleting(id);
+      
       // 从数组中移除该项
       const updatedItems = exchangeItems.filter(item => item.id !== id);
       
@@ -338,7 +348,7 @@ export default function ExchangeRatePage() {
         });
         
         toast({
-          title: "删除成功",
+          title: "✅ 删除成功",
           description: `${sceneConfig.itemLabel}已删除`,
         });
         
@@ -348,10 +358,12 @@ export default function ExchangeRatePage() {
     } catch (error) {
       console.error("删除兑换项目失败:", error);
       toast({
-        title: "删除失败",
+        title: "❌ 删除失败",
         description: error instanceof Error ? error.message : "未知错误",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -427,11 +439,11 @@ export default function ExchangeRatePage() {
           <div className="absolute top-4 right-4 text-amber-400 text-8xl">💰</div>
           <div className="absolute bottom-6 left-6 text-amber-400 text-6xl">🪙</div>
           <div className="absolute top-1/2 left-1/4 text-amber-400 text-5xl">🎁</div>
-          <div className="absolute bottom-1/4 right-1/4 text-yellow-400 text-6xl">✨</div>
+          <div className="absolute bottom-1/4 right-1/4 text-amber-500 text-6xl">✨</div>
         </div>
         <CardHeader className="relative z-10 pb-4">
           <CardTitle className="text-2xl font-bold flex items-center gap-2 text-amber-900 dark:text-amber-100">
-            <Coins className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            <Coins className="h-6 w-6 text-amber-700 dark:text-amber-500" />
             游戏币兑换汇率
           </CardTitle>
           <CardDescription className="text-amber-800/80 dark:text-amber-200/70">
@@ -511,10 +523,10 @@ export default function ExchangeRatePage() {
                   </Button>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100/50 dark:bg-amber-900/20 border border-amber-300/30 dark:border-amber-700/30 w-fit">
-                  <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <Clock className="h-3.5 w-3.5 text-amber-700 dark:text-amber-500" />
                   <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
                     {formatUpdateTime(lastUpdateTime)}
-                    {isRefreshing && <span className="ml-1.5 text-amber-600 dark:text-amber-400 animate-pulse">更新中</span>}
+                    {isRefreshing && <span className="ml-1.5 text-amber-700 dark:text-amber-500 animate-pulse">更新中</span>}
                   </span>
                 </div>
               </div>
@@ -588,11 +600,20 @@ export default function ExchangeRatePage() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={handleCancel}>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
                 取消
               </Button>
-              <Button onClick={handleSave}>保存</Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent inline-block" />
+                    保存中...
+                  </>
+                ) : (
+                  "保存"
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -640,11 +661,11 @@ export default function ExchangeRatePage() {
                         {item.giftName}
                       </CardTitle>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                        <span className="text-lg font-bold text-amber-700 dark:text-amber-300">
+                        <Coins className="h-3.5 w-3.5 text-amber-700 dark:text-amber-500" />
+                        <span className="text-lg font-bold text-amber-800 dark:text-amber-500">
                           {item.coinAmount}
                         </span>
-                        <span className="text-xs text-amber-600 dark:text-amber-400">
+                        <span className="text-xs text-amber-700 dark:text-amber-500">
                           游戏币
                         </span>
                       </div>
@@ -677,9 +698,19 @@ export default function ExchangeRatePage() {
                           variant="outline"
                           size="sm"
                           className="border-red-400/50 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          disabled={isDeleting === item.id}
                         >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          删除
+                          {isDeleting === item.id ? (
+                            <>
+                              <span className="mr-1 h-3 w-3 animate-spin rounded-full border-2 border-red-600 border-t-transparent inline-block" />
+                              删除中...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              删除
+                            </>
+                          )}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -691,12 +722,20 @@ export default function ExchangeRatePage() {
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>取消</AlertDialogCancel>
+                          <AlertDialogCancel disabled={isDeleting === item.id}>取消</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDelete(item.id)}
                             className="bg-red-600 hover:bg-red-700"
+                            disabled={isDeleting === item.id}
                           >
-                            删除
+                            {isDeleting === item.id ? (
+                              <>
+                                <span className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-background border-t-transparent inline-block" />
+                                删除中...
+                              </>
+                            ) : (
+                              "删除"
+                            )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

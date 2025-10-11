@@ -407,6 +407,7 @@ export async function getCoinLeaderboard(params: {
 }): Promise<{
   leaderboard: User[];
   total: number;
+  totalUsers: number;
   offset: number;
   limit: number;
 }> {
@@ -434,14 +435,20 @@ export async function getCoinLeaderboard(params: {
       minCoins
     );
 
-    // 获取满足条件的总用户数
+    // 获取满足条件的上榜用户数
     const total = await db.user.count({
       where,
+    });
+
+    // 获取所有活跃用户总数
+    const totalUsers = await db.user.count({
+      where: { isActive: true },
     });
 
     return {
       leaderboard,
       total,
+      totalUsers,
       offset,
       limit,
     };
@@ -475,13 +482,25 @@ export async function getUserTransactions(params: {
   endDate?: Date;
 }) {
   try {
-    return await coinTransactionRepo.getUserCoinTransactions(params.userId, {
-      page: params.page,
-      pageSize: params.pageSize,
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 20;
+    
+    const result = await coinTransactionRepo.getUserCoinTransactions(params.userId, {
+      page,
+      pageSize,
       type: params.type,
       startDate: params.startDate,
       endDate: params.endDate,
     });
+    
+    const totalPages = Math.ceil(result.total / pageSize);
+    
+    return {
+      ...result,
+      page,
+      pageSize,
+      totalPages,
+    };
   } catch (error) {
     console.error('获取用户流水失败:', error);
     throw new Error('获取用户流水失败');

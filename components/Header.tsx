@@ -15,6 +15,7 @@ import {
   Coins,
   QrCode,
   Trophy,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -290,8 +291,12 @@ export function Header() {
                   地图探索
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/leaderboard")}>
-                  <Trophy className="mr-2 h-4 w-4 text-yellow-500" />
+                  <Trophy className="mr-2 h-4 w-4 text-amber-600 dark:text-amber-500" />
                   游戏币排行榜
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/coin-history")}>
+                  <Receipt className="mr-2 h-4 w-4 text-emerald-500" />
+                  我的游戏币明细
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setShowLogoutDialog(true)}
@@ -434,10 +439,18 @@ export function Header() {
               )}
             </div>
 
-            {/* 提示文字 */}
-            {/* <p className="text-xs text-center text-muted-foreground">
-              扫描二维码可查看个人信息
-            </p> */}
+            {/* 查看明细按钮 */}
+            <Button
+              variant="outline"
+              className="w-full border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
+              onClick={() => {
+                setShowCoinDialog(false);
+                router.push("/coin-history");
+              }}
+            >
+              <Receipt className="mr-2 h-4 w-4" />
+              查看收支明细
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
