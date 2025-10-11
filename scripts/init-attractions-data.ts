@@ -105,15 +105,16 @@ async function initAttractionsData() {
     console.log(`准备创建 ${SAMPLE_ATTRACTIONS.length} 个示例景点...\n`);
 
     for (const attraction of SAMPLE_ATTRACTIONS) {
-      const { key, name, ...attractionData } = attraction;
+      const { key, name, position, ...attractionData } = attraction;
       
       console.log(`正在创建景点: ${name}`);
       
       try {
         // 使用新的 createAttraction 方法
         await createAttraction({
-          key,
           name,
+          longitude: position[0],
+          latitude: position[1],
           ...attractionData,
         }, 'system');
 
