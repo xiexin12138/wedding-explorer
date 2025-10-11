@@ -3,27 +3,26 @@
  * 针对腾讯云 MySQL 的连接配置
  * 
  * 针对中国大陆访问优化：
- * 1. 调整连接超时时间 - 考虑跨地域网络延迟
- * 2. 启用连接池 - 减少重复建立连接的开销
- * 3. 优化查询超时 - 避免长时间等待
+ * 1. 数据库在上海，Vercel 部署在香港
+ * 2. 香港到上海延迟约 30-50ms，网络条件良好
+ * 3. 可以使用更激进的超时配置
  */
 
 export const dbConfig = {
   // 连接池配置
   connectionPool: {
     // 最大连接数（Vercel 无服务器环境建议较小值）
-    // 减少连接数以避免数据库连接数耗尽
-    maxConnections: process.env.VERCEL ? 3 : 10,
+    maxConnections: process.env.VERCEL ? 5 : 10, // 增加连接数，网络条件好
     // 最小连接数
     minConnections: 0,
-    // 连接超时时间（毫秒）- 增加以适应跨地域延迟
-    connectionTimeout: 20000, // 20秒，考虑中国大陆到新加坡的网络延迟
-    // 查询超时时间（毫秒）- 调整为更合理的值
-    queryTimeout: 15000, // 15秒，避免过长等待
+    // 连接超时时间（毫秒）- 香港到上海延迟很低
+    connectionTimeout: 8000, // 8秒，香港到上海网络很好
+    // 查询超时时间（毫秒）- 可以设置更短
+    queryTimeout: 6000, // 6秒，本地网络延迟低
     // 空闲连接超时时间（毫秒）
-    idleTimeout: 30000, // 30秒，Vercel函数通常不会运行太久
+    idleTimeout: 30000, // 30秒，保持不变
     // 连接生命周期（毫秒）
-    maxLifetime: 300000, // 5分钟，定期刷新连接
+    maxLifetime: 300000, // 5分钟，保持不变
   },
 
   // 重试配置
@@ -89,11 +88,11 @@ export function getOptimizedDatabaseUrl(): string {
       connection_limit: dbConfig.connectionPool.maxConnections.toString(),
       pool_timeout: Math.floor(dbConfig.connectionPool.idleTimeout / 1000).toString(), // 秒
       
-      // 连接超时配置（针对跨地域优化）
-      connect_timeout: Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString(), // 20秒
+      // 连接超时配置（香港到上海延迟很低）
+      connect_timeout: Math.floor(dbConfig.connectionPool.connectionTimeout / 1000).toString(), // 8秒
       
       // Socket 配置
-      socket_timeout: Math.floor(dbConfig.connectionPool.queryTimeout / 1000).toString(), // 15秒
+      socket_timeout: Math.floor(dbConfig.connectionPool.queryTimeout / 1000).toString(), // 6秒
       
       // MySQL 特定优化
       charset: 'utf8mb4', // 支持完整的 Unicode
