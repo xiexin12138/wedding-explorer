@@ -67,7 +67,7 @@ async function migrateAttractionsToList() {
 
         // 构建新的景点对象
         const newAttraction: Attraction = {
-          id: item._id || `attraction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: item.id || `attraction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: attractionData.name || item.displayName,
           description: attractionData.description || '',
           type: attractionData.type || 'SCENIC',
@@ -118,10 +118,10 @@ async function migrateAttractionsToList() {
     console.log('💾 正在保存新的景点列表...');
     const attractionsJson = JSON.stringify(newAttractionsList, null, 2);
 
-    if (existingList && existingList._id) {
+    if (existingList && existingList.id) {
       // 更新现有记录
       const { updateDictionaryItem } = await import('@/lib/repositories/dictionary.repository');
-      await updateDictionaryItem(existingList._id, {
+      await updateDictionaryItem(existingList.id, {
         value: attractionsJson,
         updatedBy: 'migration_script',
       });
@@ -139,6 +139,7 @@ async function migrateAttractionsToList() {
         isEnabled: true,
         sortOrder: 0,
         createdBy: 'migration_script',
+        updatedBy: 'migration_script',
       });
       console.log('✅ 已创建新的 attractions_list');
     }
@@ -155,12 +156,12 @@ async function migrateAttractionsToList() {
       let deleteFailed = 0;
 
       for (const item of oldAttractions) {
-        if (item.key === ATTRACTIONS_LIST_KEY || !item._id) {
+        if (item.key === ATTRACTIONS_LIST_KEY || !item.id) {
           continue;
         }
 
         try {
-          await deleteDictionaryItem(item._id);
+          await deleteDictionaryItem(item.id);
           console.log(`  ✅ 已删除: ${item.key}`);
           deleteSuccess++;
         } catch (error) {
