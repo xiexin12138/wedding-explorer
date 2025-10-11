@@ -225,12 +225,17 @@ export const CACHE_KEYS = {
   LEADERBOARD: (limit: number, offset: number) => `leaderboard:${limit}:${offset}`,
   ATTRACTION_CHECKIN_STATUS: (userId: string, attractionId: string) => 
     `attraction:checkin:${userId}:${attractionId}`,
+  // 用户认证缓存键
+  USER_BY_AUTHING_ID: (authingId: string) => `user:authing:${authingId}`,
+  USER_BY_UNION_ID: (unionId: string) => `user:union:${unionId}`,
+  USER_BY_OPEN_ID: (openId: string) => `user:open:${openId}`,
 } as const;
 
 // 缓存 TTL 配置（毫秒）
 export const CACHE_TTL = {
-  SHORT: 30 * 1000, // 30秒 - 用于频繁变化的数据
+  SHORT: 30 * 1000, // 30秒 - 用于快速变化的数据
   MEDIUM: 3 * 60 * 1000, // 3分钟 - 默认
+  USER_AUTH: 5 * 60 * 1000, // 5分钟 - 用户认证信息缓存
   LONG: 10 * 60 * 1000, // 10分钟 - 用于相对稳定的数据
   VERY_LONG: 30 * 60 * 1000, // 30分钟 - 用于很少变化的数据
 } as const;

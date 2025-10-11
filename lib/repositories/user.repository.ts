@@ -42,18 +42,22 @@ export async function getUserById(id: string): Promise<User | null> {
 
 /**
  * 根据 OpenID 获取用户
+ * @param includeRelations 是否包含关联表数据（默认：false，性能优化）
  */
-export async function getUserByOpenId(openId: string): Promise<User | null> {
+export async function getUserByOpenId(
+  openId: string,
+  includeRelations: boolean = false
+): Promise<User | null> {
   try {
     const wechatUser = await db.wechatUser.findUnique({
       where: { openId },
       include: {
-        user: {
+        user: includeRelations ? {
           include: {
             authingUser: true,
             wechatUser: true,
           },
-        },
+        } : true,
       },
     });
     return wechatUser?.user || null;
@@ -65,18 +69,22 @@ export async function getUserByOpenId(openId: string): Promise<User | null> {
 
 /**
  * 根据 UnionID 获取用户
+ * @param includeRelations 是否包含关联表数据（默认：false，性能优化）
  */
-export async function getUserByUnionId(unionId: string): Promise<User | null> {
+export async function getUserByUnionId(
+  unionId: string,
+  includeRelations: boolean = false
+): Promise<User | null> {
   try {
     const wechatUser = await db.wechatUser.findUnique({
       where: { unionId },
       include: {
-        user: {
+        user: includeRelations ? {
           include: {
             authingUser: true,
             wechatUser: true,
           },
-        },
+        } : true,
       },
     });
     return wechatUser?.user || null;
@@ -88,18 +96,22 @@ export async function getUserByUnionId(unionId: string): Promise<User | null> {
 
 /**
  * 根据 AuthingID 获取用户
+ * @param includeRelations 是否包含关联表数据（默认：false，性能优化）
  */
-export async function getUserByAuthingId(authingId: string): Promise<User | null> {
+export async function getUserByAuthingId(
+  authingId: string,
+  includeRelations: boolean = false
+): Promise<User | null> {
   try {
     const authingUser = await db.authingUser.findUnique({
       where: { authingId },
       include: {
-        user: {
+        user: includeRelations ? {
           include: {
             authingUser: true,
             wechatUser: true,
           },
-        },
+        } : true,
       },
     });
     return authingUser?.user || null;

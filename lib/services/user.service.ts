@@ -11,9 +11,14 @@ import { GAME_CONFIG } from '@/lib/game-config';
 import { getDictionaryItemByKey } from '@/lib/repositories/dictionary.repository';
 
 /**
- * 用户登录或注册
+ * 用户登录或注册（性能优化版本）
  * 如果用户不存在则自动创建
  * 支持 Authing ID、微信 OpenID/UnionID
+ * 
+ * 优化点：
+ * 1. 减少不必要的 JOIN 查询
+ * 2. 合并数据库操作，减少往返次数
+ * 3. 只在必要时才重新获取用户数据
  */
 export async function loginOrRegister(params: {
   authingId?: string;
@@ -29,65 +34,85 @@ export async function loginOrRegister(params: {
     const { authingId, openId, unionId, nickname, name, avatar, email, isAdmin } = params;
 
     let user: User | null = null;
+    let needsReload = false; // 标记是否需要重新加载用户数据
 
     // 优先通过 authingId 查找（Authing 登录）
+    // 性能优化：不加载关联表，减少 JOIN
     if (authingId) {
-      user = await userRepo.getUserByAuthingId(authingId);
+      user = await userRepo.getUserByAuthingId(authingId, false);
     }
 
     // 如果没有找到，再通过 unionId 查找（微信跨应用识别）
     if (!user && unionId) {
-      user = await userRepo.getUserByUnionId(unionId);
+      user = await userRepo.getUserByUnionId(unionId, false);
     }
 
     // 如果没有找到，再通过 openId 查找（微信登录）
     if (!user && openId) {
-      user = await userRepo.getUserByOpenId(openId);
+      user = await userRepo.getUserByOpenId(openId, false);
     }
 
     // 如果用户存在，更新最后登录时间和可能更新的信息
     if (user) {
-      user = await userRepo.updateUser(user.id, {
-        lastLoginAt: new Date(),
-        ...(nickname && { nickname }),
-        ...(name && { name }),
-        ...(avatar && { avatar }),
-        ...(email && { email }),
-        ...(isAdmin !== undefined && { role: isAdmin ? 'ADMIN' : user.role }),
+      // 性能优化：将更新和关联检查合并到一个事务中
+      await db.$transaction(async (tx) => {
+        // 更新用户信息
+        await tx.user.update({
+          where: { id: user!.id },
+          data: {
+            lastLoginAt: new Date(),
+            ...(nickname && { nickname }),
+            ...(name && { name }),
+            ...(avatar && { avatar }),
+            ...(email && { email }),
+            ...(isAdmin !== undefined && { role: isAdmin ? 'ADMIN' : user!.role }),
+          },
+        });
+
+        // 如果提供了新的认证信息，使用 upsert 减少查询
+        if (authingId) {
+          try {
+            await tx.authingUser.upsert({
+              where: { userId: user!.id },
+              update: {},
+              create: {
+                userId: user!.id,
+                authingId,
+              },
+            });
+            needsReload = true;
+          } catch (error) {
+            // 如果已存在，忽略错误
+            console.log('⚠️ Authing 关联已存在或创建失败:', error);
+          }
+        }
+
+        if (openId || unionId) {
+          try {
+            await tx.wechatUser.upsert({
+              where: { userId: user!.id },
+              update: {},
+              create: {
+                userId: user!.id,
+                openId: openId!,
+                unionId: unionId,
+              },
+            });
+            needsReload = true;
+          } catch (error) {
+            // 如果已存在，忽略错误
+            console.log('⚠️ 微信关联已存在或创建失败:', error);
+          }
+        }
       });
 
-      // 如果提供了新的认证信息，检查是否已存在关联
-      if (authingId) {
-        const existingAuthingUser = await db.authingUser.findFirst({
-          where: { userId: user.id },
-        });
-        if (!existingAuthingUser) {
-          await db.authingUser.create({
-            data: {
-              userId: user.id,
-              authingId,
-            },
-          });
+      // 只有在创建了新关联时才重新加载用户数据
+      if (needsReload) {
+        const reloadedUser = await userRepo.getUserById(user.id);
+        if (reloadedUser) {
+          user = reloadedUser;
         }
       }
-
-      if (openId || unionId) {
-        const existingWechatUser = await db.wechatUser.findFirst({
-          where: { userId: user.id },
-        });
-        if (!existingWechatUser) {
-          await db.wechatUser.create({
-            data: {
-              userId: user.id,
-              openId: openId!,
-              unionId: unionId,
-            },
-          });
-        }
-      }
-
-      // 重新获取用户数据（包含新创建的关联）
-      user = await userRepo.getUserById(user.id) as User;
     } else {
       // 用户不存在，创建新用户和关联
       user = await db.$transaction(async (tx) => {
