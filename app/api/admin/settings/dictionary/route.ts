@@ -6,7 +6,6 @@ import {
   createDictionaryItem,
   SettingCategory,
   SettingValueType,
-  type DictionaryItem,
 } from "@/lib/repositories/dictionary.repository";
 
 // 禁用 Next.js 默认缓存
@@ -29,19 +28,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached);
     }
 
-    // 使用 CloudBase 仓储层获取数据（获取所有字典项，不限制分类）
+    // 获取所有字典项
     const settings = await getAllDictionaryItems();
 
-    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
-    const transformedSettings = settings.map((item: DictionaryItem) => ({
-      ...item,
-      id: item._id,
-    }));
-
     // 缓存结果（缓存10分钟）
-    cache.set(CACHE_KEYS.DICTIONARY_ITEMS, transformedSettings, 10 * 60 * 1000);
+    cache.set(CACHE_KEYS.DICTIONARY_ITEMS, settings, 10 * 60 * 1000);
 
-    return NextResponse.json(transformedSettings);
+    return NextResponse.json(settings);
   } catch (error) {
     console.error("获取字典项失败:", error);
     return NextResponse.json(
@@ -72,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 使用 CloudBase 仓储层创建数据
+    // 创建字典项
     const newSetting = await createDictionaryItem({
       key,
       displayName,
@@ -84,19 +77,14 @@ export async function POST(request: NextRequest) {
       isEnabled: true,
       sortOrder: 0,
       createdBy: user.sub,
+      updatedBy: user.sub,
     });
 
     // 清除相关缓存
     cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
     cache.delete("exchange_rate_items"); // 同时清除兑换项目缓存
 
-    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
-    const transformedSetting = {
-      ...newSetting,
-      id: newSetting._id,
-    };
-
-    return NextResponse.json(transformedSetting, { status: 201 });
+    return NextResponse.json(newSetting, { status: 201 });
   } catch (error) {
     console.error("创建字典项失败:", error);
     

@@ -26,7 +26,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // 使用 CloudBase 仓储层获取数据
+    // 获取字典项
     const setting = await getDictionaryItemById(id);
 
     if (!setting) {
@@ -36,13 +36,7 @@ export async function GET(
       );
     }
 
-    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
-    const transformedSetting = {
-      ...setting,
-      id: setting._id,
-    };
-
-    return NextResponse.json(transformedSetting);
+    return NextResponse.json(setting);
   } catch (error) {
     console.error("获取字典项失败:", error);
     return NextResponse.json(
@@ -81,20 +75,14 @@ export async function PATCH(
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
     if (data.key !== undefined) updateData.key = data.key;
 
-    // 使用 CloudBase 仓储层更新数据
+    // 更新字典项
     const updatedSetting = await updateDictionaryItem(id, updateData);
 
     // 清除相关缓存
     cache.delete(CACHE_KEYS.DICTIONARY_ITEMS);
     cache.delete("exchange_rate_items"); // 同时清除兑换项目缓存
 
-    // 将 _id 转换为 id（CloudBase 使用 _id，前端使用 id）
-    const transformedSetting = {
-      ...updatedSetting,
-      id: updatedSetting._id,
-    };
-
-    return NextResponse.json(transformedSetting);
+    return NextResponse.json(updatedSetting);
   } catch (error) {
     console.error("更新字典项失败:", error);
     
@@ -139,7 +127,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // 使用 CloudBase 仓储层删除数据
+    // 删除字典项
     await deleteDictionaryItem(id);
 
     // 清除相关缓存

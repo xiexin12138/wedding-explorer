@@ -1,81 +1,44 @@
 /**
- * 数据字典仓储层 - CloudBase 实现
+ * 数据字典仓储层 - Prisma MySQL 实现
  * 负责数据字典的 CRUD 操作
  */
 
-import { cloudbaseDB, COLLECTIONS } from '@/lib/cloudbase';
+import { db } from '@/lib/db';
+import type { SystemSetting } from '@/app/generated/prisma';
+import { SettingCategory, SettingValueType } from '@/app/generated/prisma';
 
-// 数据字典数据结构
-export interface DictionaryItem {
-  _id?: string; // CloudBase 使用 _id 作为主键
-  key: string;
-  displayName: string;
-  value?: string;
-  valueType: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'JSON' | 'ARRAY';
-  category: string;
-  description?: string;
-  isSystem: boolean;
-  isEnabled: boolean;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy?: string;
-  updatedBy?: string;
-}
+// 数据字典数据结构（使用 Prisma 生成的类型）
+export type DictionaryItem = SystemSetting;
 
-// 设置分类枚举
-export enum SettingCategory {
-  SYSTEM = 'SYSTEM',
-  SECURITY = 'SECURITY',
-  NOTIFICATION = 'NOTIFICATION',
-  WEDDING = 'WEDDING',
-  VENUE = 'VENUE',
-  GUEST = 'GUEST',
-  SCHEDULE = 'SCHEDULE',
-  MAP = 'MAP',
-  ATTRACTIONS = 'ATTRACTIONS', // 景点数据分类
-  CHAT = 'CHAT',
-  ANALYTICS = 'ANALYTICS',
-  UI_UX = 'UI_UX',
-}
-
-// 设置值类型枚举
-export enum SettingValueType {
-  STRING = 'STRING',
-  NUMBER = 'NUMBER',
-  BOOLEAN = 'BOOLEAN',
-  JSON = 'JSON',
-  ARRAY = 'ARRAY',
-}
-
-const collection = cloudbaseDB.collection(COLLECTIONS.SYSTEM_SETTINGS);
+// 导出枚举供其他模块使用
+export { SettingCategory, SettingValueType };
 
 /**
  * 获取所有字典项
  */
 export async function getAllDictionaryItems(
-  category?: string,
+  category?: SettingCategory,
   isEnabled?: boolean
 ): Promise<DictionaryItem[]> {
   try {
-    let query = collection.where({});
+    const where: {
+      category?: SettingCategory;
+      isEnabled?: boolean;
+    } = {};
 
-    // 添加条件过滤
-    const conditions: Record<string, string | boolean> = {};
     if (category) {
-      conditions.category = category;
+      where.category = category;
     }
     if (isEnabled !== undefined) {
-      conditions.isEnabled = isEnabled;
+      where.isEnabled = isEnabled;
     }
 
-    if (Object.keys(conditions).length > 0) {
-      query = collection.where(conditions);
-    }
+    const items = await db.systemSetting.findMany({
+      where,
+      orderBy: { sortOrder: 'asc' },
+    });
 
-    const result = await query.orderBy('sortOrder', 'asc').get();
-
-    return result.data as DictionaryItem[];
+    return items;
   } catch (error) {
     console.error('获取字典项失败:', error);
     throw new Error('获取字典项失败');
@@ -87,20 +50,13 @@ export async function getAllDictionaryItems(
  */
 export async function getDictionaryItemById(id: string): Promise<DictionaryItem | null> {
   try {
-    const result = await collection.doc(id).get();
+    const item = await db.systemSetting.findUnique({
+      where: { id },
+    });
 
-    if (!result.data) {
-      return null;
-    }
-
-    // CloudBase doc().get() 返回的是单个文档，不是数组
-    return result.data as DictionaryItem;
+    return item;
   } catch (error) {
     console.error('根据 ID 获取字典项失败:', error);
-    // 如果是文档不存在的错误，返回 null 而不是抛出异常
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'DOCUMENT_NOT_FOUND') {
-      return null;
-    }
     throw new Error('获取字典项失败');
   }
 }
@@ -110,13 +66,11 @@ export async function getDictionaryItemById(id: string): Promise<DictionaryItem 
  */
 export async function getDictionaryItemByKey(key: string): Promise<DictionaryItem | null> {
   try {
-    const result = await collection.where({ key }).get();
+    const item = await db.systemSetting.findUnique({
+      where: { key },
+    });
 
-    if (!result.data || result.data.length === 0) {
-      return null;
-    }
-
-    return result.data[0] as DictionaryItem;
+    return item;
   } catch (error) {
     console.error('根据 key 获取字典项失败:', error);
     throw new Error('获取字典项失败');
@@ -127,7 +81,7 @@ export async function getDictionaryItemByKey(key: string): Promise<DictionaryIte
  * 创建字典项
  */
 export async function createDictionaryItem(
-  data: Omit<DictionaryItem, '_id' | 'createdAt' | 'updatedAt'>
+  data: Omit<DictionaryItem, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<DictionaryItem> {
   try {
     // 检查 key 是否已存在
@@ -136,20 +90,23 @@ export async function createDictionaryItem(
       throw new Error('键名已存在');
     }
 
-    const now = new Date();
-    const newItem = {
-      ...data,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const item = await db.systemSetting.create({
+      data: {
+        key: data.key,
+        displayName: data.displayName,
+        value: data.value,
+        valueType: data.valueType,
+        category: data.category,
+        description: data.description,
+        isSystem: data.isSystem,
+        isEnabled: data.isEnabled,
+        sortOrder: data.sortOrder,
+        createdBy: data.createdBy,
+        updatedBy: data.updatedBy,
+      },
+    });
 
-    const result = await collection.add(newItem);
-
-    // 返回创建的数据（包含 _id）
-    return {
-      _id: result.id,
-      ...newItem,
-    } as DictionaryItem;
+    return item;
   } catch (error) {
     console.error('创建字典项失败:', error);
     if (error instanceof Error && error.message === '键名已存在') {
@@ -164,7 +121,7 @@ export async function createDictionaryItem(
  */
 export async function updateDictionaryItem(
   id: string,
-  data: Partial<Omit<DictionaryItem, '_id' | 'createdAt' | 'updatedAt'>>
+  data: Partial<Omit<DictionaryItem, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<DictionaryItem> {
   try {
     // 检查字典项是否存在
@@ -178,20 +135,12 @@ export async function updateDictionaryItem(
       throw new Error('系统内置设置不允许修改键名');
     }
 
-    const updateData = {
-      ...data,
-      updatedAt: new Date(),
-    };
+    const item = await db.systemSetting.update({
+      where: { id },
+      data,
+    });
 
-    await collection.doc(id).update(updateData);
-
-    // 获取更新后的数据
-    const updated = await getDictionaryItemById(id);
-    if (!updated) {
-      throw new Error('更新后获取数据失败');
-    }
-
-    return updated;
+    return item;
   } catch (error) {
     console.error('更新字典项失败:', error);
     if (error instanceof Error) {
@@ -217,7 +166,9 @@ export async function deleteDictionaryItem(id: string): Promise<void> {
       throw new Error('系统内置设置不允许删除');
     }
 
-    await collection.doc(id).remove();
+    await db.systemSetting.delete({
+      where: { id },
+    });
   } catch (error) {
     console.error('删除字典项失败:', error);
     if (error instanceof Error) {

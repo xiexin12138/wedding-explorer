@@ -232,6 +232,7 @@ enum SettingCategory {
   GUEST
   SCHEDULE
   MAP
+  ATTRACTIONS
   CHAT
   ANALYTICS
   UI_UX
