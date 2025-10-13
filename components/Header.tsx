@@ -213,7 +213,7 @@ export function Header() {
           <ModeToggle />
 
           {/* 游戏币按钮 - 只在用户登录时显示 */}
-          {!loading && user && (
+          {/* {!loading && user && (
             <Button
               variant="outline"
               size="sm"
@@ -222,7 +222,7 @@ export function Header() {
             >
               <QrCode className="h-4 w-4 text-gray-800 dark:text-gray-200 transition-transform duration-200" />
             </Button>
-          )}
+          )} */}
 
           {/* 用户菜单 */}
           {loading ? (
@@ -290,14 +290,14 @@ export function Header() {
                   <Map className="mr-2 h-4 w-4 text-primary" />
                   地图探索
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/leaderboard")}>
+                {/* <DropdownMenuItem onClick={() => router.push("/leaderboard")}>
                   <Trophy className="mr-2 h-4 w-4 text-amber-600 dark:text-amber-500" />
                   游戏币排行榜
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/coin-history")}>
                   <Receipt className="mr-2 h-4 w-4 text-emerald-500" />
                   我的游戏币明细
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem
                   onClick={() => setShowLogoutDialog(true)}
                   className="text-destructive focus:text-destructive"

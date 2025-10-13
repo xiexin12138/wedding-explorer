@@ -99,7 +99,7 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        <LeaderboardCard />
+        {/* <LeaderboardCard /> */}
         
         <Card className="relative overflow-hidden border-emerald-300/50 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-emerald-950/20">
           {/* 地图探索背景装饰 */}
