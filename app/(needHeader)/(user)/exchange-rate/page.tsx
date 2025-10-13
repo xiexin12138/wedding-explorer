@@ -35,7 +35,12 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/components/UserProvider";
-import { Coins, Gift, Plus, Pencil, Trash2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Clock, RefreshCw, Gavel } from "lucide-react";
+import { Coins, Gift, Plus, Pencil, Trash2, Sparkles, ArrowUpDown, ArrowUp, ArrowDown, Clock, RefreshCw, Gavel, Eye, Upload, X } from "lucide-react";
+import { PrizeDetailModal } from "@/components/PrizeDetailModal";
+import { uploadFile } from "@/components/MediaUploader";
+import { SignedImage } from "@/components/SignedImage";
+import Image from "next/image";
+import COS from 'cos-js-sdk-v5';
 import {
   createDictionaryItemClient,
   updateDictionaryItemClient,
@@ -92,6 +97,7 @@ interface ExchangeItem {
   description: string;
   emoji?: string;
   sortOrder: number;
+  imageUrl?: string; // 礼品图片URL
 }
 
 // 表单数据结构
@@ -100,6 +106,7 @@ interface FormData {
   coinAmount: string;
   description: string;
   emoji: string;
+  imageUrl?: string;
 }
 
 export default function ExchangeRatePage() {
@@ -114,6 +121,11 @@ export default function ExchangeRatePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ExchangeItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -124,6 +136,7 @@ export default function ExchangeRatePage() {
     coinAmount: "",
     description: "",
     emoji: sceneConfig.defaultEmoji,
+    imageUrl: "",
   });
 
   // 设置页面标题
@@ -210,8 +223,17 @@ export default function ExchangeRatePage() {
       coinAmount: "",
       description: "",
       emoji: sceneConfig.defaultEmoji,
+      imageUrl: "",
     });
+    setImageFile(null);
+    setImagePreview(null);
     setIsDialogOpen(true);
+  };
+
+  // 处理查看详情
+  const handleViewDetail = (item: ExchangeItem) => {
+    setSelectedItem(item);
+    setIsDetailModalOpen(true);
   };
 
   const handleEdit = (item: ExchangeItem) => {
@@ -222,8 +244,70 @@ export default function ExchangeRatePage() {
       coinAmount: item.coinAmount.toString(),
       description: item.description,
       emoji: item.emoji || "🎁",
+      imageUrl: item.imageUrl || "",
     });
+    setImageFile(null);
+    setImagePreview(item.imageUrl || null);
     setIsDialogOpen(true);
+  };
+
+  // 处理图片选择
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "文件类型错误",
+          description: "请选择图片文件",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // 验证文件大小 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "文件过大",
+          description: "图片大小不能超过5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // 移除图片
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, imageUrl: "" }));
+  };
+
+  // 上传图片
+  const uploadImage = async (file: File): Promise<string> => {
+    // 获取临时密钥
+    const stsResponse = await fetch('/api/upload', { method: 'POST' });
+    if (!stsResponse.ok) throw new Error('获取上传授权失败');
+    const stsData = await stsResponse.json();
+
+    const cos = new COS({
+      getAuthorization: (options, callback) => {
+        callback({
+          TmpSecretId: stsData.Credentials.TmpSecretId,
+          TmpSecretKey: stsData.Credentials.TmpSecretKey,
+          XCosSecurityToken: stsData.Credentials.Token,
+          StartTime: stsData.StartTime,
+          ExpiredTime: stsData.ExpiredTime,
+        });
+      }
+    });
+
+    // 上传文件
+    return uploadFile(cos, file, () => {});
   };
 
   const handleSave = async () => {
@@ -250,6 +334,26 @@ export default function ExchangeRatePage() {
     try {
       setIsSaving(true);
       
+      let finalImageUrl = formData.imageUrl || "";
+      
+      // 如果有新选择的图片，先上传
+      if (imageFile) {
+        setUploadingImage(true);
+        try {
+          finalImageUrl = await uploadImage(imageFile);
+        } catch (error) {
+          console.error('图片上传失败:', error);
+          toast({
+            title: "图片上传失败",
+            description: error instanceof Error ? error.message : "未知错误",
+            variant: "destructive",
+          });
+          return;
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+      
       // 构建新的项目数据
       const newItem: ExchangeItem = {
         id: isAddingNew ? `item_${Date.now()}` : editingItem!.id,
@@ -258,6 +362,7 @@ export default function ExchangeRatePage() {
         description: formData.description,
         emoji: formData.emoji,
         sortOrder: isAddingNew ? exchangeItems.length : (editingItem?.sortOrder || 0),
+        imageUrl: finalImageUrl,
       };
 
       let updatedItems: ExchangeItem[];
@@ -376,7 +481,10 @@ export default function ExchangeRatePage() {
       coinAmount: "",
       description: "",
       emoji: sceneConfig.defaultEmoji,
+      imageUrl: "",
     });
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   // 切换场景时重置表单
@@ -524,7 +632,7 @@ export default function ExchangeRatePage() {
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100/50 dark:bg-amber-900/20 border border-amber-300/30 dark:border-amber-700/30 w-fit">
                   <Clock className="h-3.5 w-3.5 text-amber-700 dark:text-amber-500" />
-                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                  <span className="text-xs font-medium text-amber-800 dark:text-amber-200" suppressHydrationWarning>
                     {formatUpdateTime(lastUpdateTime)}
                     {isRefreshing && <span className="ml-1.5 text-amber-700 dark:text-amber-500 animate-pulse">更新中</span>}
                   </span>
@@ -599,13 +707,75 @@ export default function ExchangeRatePage() {
                   rows={3}
                 />
               </div>
+              
+              {/* 图片上传 */}
+              <div className="space-y-2">
+                <Label>礼品图片（可选）</Label>
+                {imagePreview ? (
+                  <div className="relative">
+                    <div className="relative w-full h-48 bg-muted rounded-lg overflow-hidden">
+                      {formData.imageUrl && !imageFile ? (
+                        <SignedImage
+                          src={imagePreview}
+                          alt="礼品图片"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src={imagePreview}
+                          alt="礼品图片预览"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleRemoveImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-2">点击选择图片</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                    >
+                      选择图片
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">支持 JPG、PNG 等格式，最大 5MB</p>
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
                 取消
               </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
+              <Button onClick={handleSave} disabled={isSaving || uploadingImage}>
+                {uploadingImage ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent inline-block" />
+                    上传图片中...
+                  </>
+                ) : isSaving ? (
                   <>
                     <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent inline-block" />
                     保存中...
@@ -681,17 +851,29 @@ export default function ExchangeRatePage() {
                   </p>
                 )}
                 
-                {isAdmin && (
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(item)}
-                      className="flex-1 border-amber-400/50 hover:bg-amber-100/50 dark:hover:bg-amber-900/30"
-                    >
-                      <Pencil className="h-3 w-3 mr-1" />
-                      编辑
-                    </Button>
+                {/* 查看详情按钮 - 所有用户都可以看到 */}
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetail(item)}
+                    className="flex-1 border-blue-400/50 hover:bg-blue-100/50 dark:hover:bg-blue-900/30"
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    查看详情
+                  </Button>
+                  
+                  {isAdmin && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(item)}
+                        className="flex-1 border-amber-400/50 hover:bg-amber-100/50 dark:hover:bg-amber-900/30"
+                      >
+                        <Pencil className="h-3 w-3 mr-1" />
+                        编辑
+                      </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
@@ -738,10 +920,11 @@ export default function ExchangeRatePage() {
                             )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
-                      </AlertDialogContent>
+                        </AlertDialogContent>
                     </AlertDialog>
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -764,6 +947,13 @@ export default function ExchangeRatePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 礼品详情弹窗 */}
+      <PrizeDetailModal
+        item={selectedItem}
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+      />
     </div>
   );
 }
