@@ -154,6 +154,22 @@ export function MapExplorer() {
     setMounted(true);
   }, []);
 
+  // 控制 Header 显示/隐藏
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    if (showAttractionsList) {
+      document.body.classList.add('hide-header');
+    } else {
+      document.body.classList.remove('hide-header');
+    }
+
+    // 清理函数：组件卸载时移除类
+    return () => {
+      document.body.classList.remove('hide-header');
+    };
+  }, [showAttractionsList]);
+
   // 加载景点数据
   useEffect(() => {
     const loadAttractions = async () => {

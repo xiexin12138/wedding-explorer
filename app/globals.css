@@ -336,3 +336,12 @@ select {
     opacity: 1;
   }
 }
+
+/* Header 隐藏控制样式 */
+.hide-header header {
+  transform: translateY(-100%);
+}
+
+header {
+  transition: transform 0.3s ease-in-out;
+}
