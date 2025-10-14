@@ -13,7 +13,7 @@ export default function MapPage() {
 
   // 设置页面标题
   useEffect(() => {
-    document.title = `地图探索 - ${APP_NAME}`;
+    document.title = `潮州·凤城探索 - ${APP_NAME}`;
   }, []);
 
   const handleBackToHome = () => {

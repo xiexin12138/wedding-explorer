@@ -25,7 +25,19 @@ import {
   List,
   Loader2,
   Trash2,
+  Filter,
+  ArrowUpDown,
+  X,
+  Check,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AttractionForm } from "@/components/AttractionForm";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/components/UserProvider";
@@ -96,6 +108,10 @@ export function MapExplorer() {
     null
   );
   const [isLocating, setIsLocating] = useState<boolean>(false);
+  // 景点打卡状态映射
+  const [attractionCheckInStatus, setAttractionCheckInStatus] = useState<
+    Record<string, boolean>
+  >({});
   // 用于防抖的时间戳
   const lastLocationClickTimeRef = useRef<number>(0);
   // 用于跟踪定位是否正在进行中（与UI状态分开）
@@ -111,13 +127,23 @@ export function MapExplorer() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   
+  // 景点列表过滤和排序状态
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<AttractionType | 'ALL'>('ALL');
+  const [checkInFilter, setCheckInFilter] = useState<'ALL' | 'CHECKED' | 'UNCHECKED'>('ALL');
+  const [sortBy, setSortBy] = useState<'DEFAULT' | 'DISTANCE' | 'CHECKINS'>('DEFAULT');
+  
   // 滑动相关状态
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
   const [dragOffset, setDragOffset] = useState<number>(0);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const cardContainerRef = useRef<HTMLDivElement>(null);
+  
+  // 使用 ref 存储触摸状态，避免闭包问题
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchEndRef = useRef<{ x: number; y: number } | null>(null);
+  
+  // 跟踪上一次的景点索引，用于判断是否需要入场动画
+  const prevAttractionIndexRef = useRef<number>(-1);
   
   const { theme } = useTheme();
   const { user } = useUser();
@@ -159,6 +185,43 @@ export function MapExplorer() {
 
     loadAttractions();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 加载所有景点的打卡状态
+  useEffect(() => {
+    const loadCheckInStatuses = async () => {
+      if (!user || attractions.length === 0) return;
+
+      try {
+        // 并行获取所有景点的打卡状态
+        const statusPromises = attractions.map(async (attraction) => {
+          try {
+            const response = await fetch(
+              `/api/attractions/${attraction.id}/check-in-status`
+            );
+            const result = await response.json();
+            return {
+              id: attraction.id,
+              hasCheckedIn: result.success && result.data.hasCheckedIn,
+            };
+          } catch (error) {
+            console.error(`获取景点 ${attraction.id} 打卡状态失败:`, error);
+            return { id: attraction.id, hasCheckedIn: false };
+          }
+        });
+
+        const statuses = await Promise.all(statusPromises);
+        const statusMap: Record<string, boolean> = {};
+        statuses.forEach((status) => {
+          statusMap[status.id] = status.hasCheckedIn;
+        });
+        setAttractionCheckInStatus(statusMap);
+      } catch (error) {
+        console.error("加载打卡状态失败:", error);
+      }
+    };
+
+    loadCheckInStatuses();
+  }, [user, attractions]);
 
   // 定时更新用户位置
   useEffect(() => {
@@ -396,6 +459,16 @@ export function MapExplorer() {
     }
   }, [map, attractions, currentAttractionIndex, swipeDirection]);
 
+  // 更新上一个景点索引，用于判断切换方向
+  useEffect(() => {
+    // 使用 setTimeout 确保在动画开始前更新
+    const timer = setTimeout(() => {
+      prevAttractionIndexRef.current = currentAttractionIndex;
+    }, 400); // 动画完成后更新
+
+    return () => clearTimeout(timer);
+  }, [currentAttractionIndex]);
+
   // 监听主题变化
   useEffect(() => {
     if (!map || !mounted) return;
@@ -405,7 +478,7 @@ export function MapExplorer() {
   }, [map, theme, mounted]);
 
   // 切换到下一个景点
-  const goToNextAttraction = () => {
+  const goToNextAttraction = useCallback(() => {
     // 确保代码只在客户端执行
     if (typeof window === "undefined") return;
 
@@ -417,10 +490,10 @@ export function MapExplorer() {
         : (currentAttractionIndex + 1) % attractions.length;
     setCurrentAttractionIndex(nextIndex);
     map.setCenter(attractions[nextIndex].position);
-  };
+  }, [attractions, map, currentAttractionIndex]);
 
   // 切换到上一个景点
-  const goToPreviousAttraction = () => {
+  const goToPreviousAttraction = useCallback(() => {
     // 确保代码只在客户端执行
     if (typeof window === "undefined") return;
 
@@ -433,36 +506,36 @@ export function MapExplorer() {
           attractions.length;
     setCurrentAttractionIndex(prevIndex);
     map.setCenter(attractions[prevIndex].position);
-  };
+  }, [attractions, map, currentAttractionIndex]);
 
   // 处理触摸开始
   const handleTouchStart = useCallback((e: TouchEvent) => {
     // 如果卡片已展开或正在过渡，不处理滑动
     if (cardExpanded || isTransitioning) return;
     
-    setTouchStart({
+    touchStartRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
-    });
-    setTouchEnd(null);
+    };
+    touchEndRef.current = null;
     setDragOffset(0);
   }, [cardExpanded, isTransitioning]);
 
   // 处理触摸移动
   const handleTouchMove = useCallback((e: TouchEvent) => {
     // 如果卡片已展开或正在过渡，不处理滑动
-    if (cardExpanded || isTransitioning || !touchStart) return;
+    if (cardExpanded || isTransitioning || !touchStartRef.current) return;
     
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
     
-    setTouchEnd({
+    touchEndRef.current = {
       x: currentX,
       y: currentY,
-    });
+    };
 
-    const deltaX = currentX - touchStart.x;
-    const deltaY = currentY - touchStart.y;
+    const deltaX = currentX - touchStartRef.current.x;
+    const deltaY = currentY - touchStartRef.current.y;
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
 
@@ -477,22 +550,22 @@ export function MapExplorer() {
       const offset = deltaX * resistance;
       setDragOffset(Math.max(-maxDrag, Math.min(maxDrag, offset)));
     }
-  }, [cardExpanded, isTransitioning, touchStart]);
+  }, [cardExpanded, isTransitioning]);
 
   // 处理触摸结束
   const handleTouchEnd = useCallback(() => {
     // 如果卡片已展开或正在过渡，不处理滑动
     if (cardExpanded || isTransitioning) return;
     
-    if (!touchStart || !touchEnd) {
+    if (!touchStartRef.current || !touchEndRef.current) {
       setDragOffset(0);
-      setTouchStart(null);
-      setTouchEnd(null);
+      touchStartRef.current = null;
+      touchEndRef.current = null;
       return;
     }
 
-    const deltaX = touchEnd.x - touchStart.x;
-    const deltaY = touchEnd.y - touchStart.y;
+    const deltaX = touchEndRef.current.x - touchStartRef.current.x;
+    const deltaY = touchEndRef.current.y - touchStartRef.current.y;
     const absDeltaX = Math.abs(deltaX);
     const absDeltaY = Math.abs(deltaY);
 
@@ -527,14 +600,19 @@ export function MapExplorer() {
       setDragOffset(0);
     }
 
-    setTouchStart(null);
-    setTouchEnd(null);
-  }, [cardExpanded, isTransitioning, touchStart, touchEnd]); // eslint-disable-line react-hooks/exhaustive-deps
+    touchStartRef.current = null;
+    touchEndRef.current = null;
+  }, [cardExpanded, isTransitioning, goToPreviousAttraction, goToNextAttraction]);
 
   // 添加和移除原生触摸事件监听器
   useEffect(() => {
     const container = cardContainerRef.current;
-    if (!container) return;
+    if (!container) {
+      console.log('Container not ready for touch events');
+      return;
+    }
+
+    console.log('Adding touch event listeners to container');
 
     // 使用 { passive: false } 允许 preventDefault
     const options = { passive: false };
@@ -544,11 +622,12 @@ export function MapExplorer() {
     container.addEventListener('touchend', handleTouchEnd as EventListener, options);
 
     return () => {
+      console.log('Removing touch event listeners');
       container.removeEventListener('touchstart', handleTouchStart as EventListener);
       container.removeEventListener('touchmove', handleTouchMove as EventListener);
       container.removeEventListener('touchend', handleTouchEnd as EventListener);
     };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd, attractionsLoading, currentAttractionIndex]);
 
   // 显示添加景点表单
   const addNewAttraction = () => {
@@ -951,39 +1030,42 @@ export function MapExplorer() {
           }
           style={!cardExpanded ? { bottom: 'max(6rem, calc(env(safe-area-inset-bottom, 2rem) + 4rem))' } : undefined}
         >
-          {!cardExpanded && (
-            <div
-              key={`card-${currentAttractionIndex}`}
-              className="relative w-full flex justify-center"
-              style={{
-                transform: swipeDirection 
-                  ? swipeDirection === 'left' 
-                    ? 'translateX(-120%) scale(0.9)' 
-                    : 'translateX(120%) scale(0.9)'
-                  : `translateX(${dragOffset}px) scale(${1 - Math.abs(dragOffset) / 600})`,
-                opacity: swipeDirection 
-                  ? 0 
-                  : Math.max(0.4, 1 - Math.abs(dragOffset) / 200),
-                transition: swipeDirection || (!touchStart && dragOffset !== 0)
-                  ? 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
-                  : 'none',
-                willChange: 'transform, opacity',
-                filter: `blur(${Math.abs(dragOffset) / 50}px)`,
-              }}
-            >
-              <AttractionCard
-                attraction={attractions[currentAttractionIndex]}
-                userPosition={userPosition}
-                expanded={cardExpanded}
-                onClose={() => {
-                  // 直接切换状态，让 AttractionCard 组件负责动画
-                  setCardExpanded(!cardExpanded);
-                }}
-                AMapInstance={AMapInstance}
-              />
-            </div>
-          )}
-          {cardExpanded && (
+          <div
+            key={`card-${currentAttractionIndex}`}
+            className="relative w-full flex justify-center"
+            style={
+              !cardExpanded
+                ? {
+                    transform: swipeDirection 
+                      ? swipeDirection === 'left' 
+                        ? 'translateX(-120%) scale(0.9)' 
+                        : 'translateX(120%) scale(0.9)'
+                      : dragOffset !== 0
+                        ? `translateX(${dragOffset}px) scale(${1 - Math.abs(dragOffset) / 600})`
+                        : 'translateX(0) scale(1)', // 新卡片从正常位置开始
+                    opacity: swipeDirection 
+                      ? 0 
+                      : Math.max(0.4, 1 - Math.abs(dragOffset) / 200),
+                    transition: swipeDirection || (!touchStartRef.current && dragOffset !== 0)
+                      ? 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                      : 'none',
+                    willChange: 'transform, opacity',
+                    filter: dragOffset !== 0 ? `blur(${Math.abs(dragOffset) / 50}px)` : 'none',
+                    // 新卡片的初始位置动画
+                    animation: prevAttractionIndexRef.current !== currentAttractionIndex && prevAttractionIndexRef.current !== -1
+                      ? (() => {
+                          // 判断切换方向
+                          const isForward = prevAttractionIndexRef.current < currentAttractionIndex || 
+                                          (prevAttractionIndexRef.current === attractions.length - 1 && currentAttractionIndex === 0);
+                          return isForward 
+                            ? 'slideInFromRight 0.35s cubic-bezier(0.4, 0.0, 0.2, 1)' 
+                            : 'slideInFromLeft 0.35s cubic-bezier(0.4, 0.0, 0.2, 1)';
+                        })()
+                      : 'none',
+                  }
+                : undefined // 展开时不应用变换样式
+            }
+          >
             <AttractionCard
               attraction={attractions[currentAttractionIndex]}
               userPosition={userPosition}
@@ -994,26 +1076,129 @@ export function MapExplorer() {
               }}
               AMapInstance={AMapInstance}
             />
-          )}
+          </div>
         </div>
       )}
 
       {/* 景点列表浮框 */}
       {showAttractionsList && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-10">
-          <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto bg-background/95 backdrop-blur-sm shadow-lg">
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">景点列表</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAttractionsList(false)}
-                >
-                  关闭
-                </Button>
+          <Card className="w-full max-w-md bg-background/95 backdrop-blur-sm shadow-lg flex flex-col gap-1" style={{ maxHeight: '85vh' }}>
+            {/* 标题栏 - 紧凑版 */}
+            <div className="px-4 py-2.5 border-b border-border/50">
+              <h2 className="text-lg font-semibold">景点列表</h2>
+            </div>
+            
+            {/* 过滤和排序栏 - 移动端优化版 */}
+            <div className="px-4 py-2 border-b border-border/50">
+              <div className="grid grid-cols-3 gap-2 sm:gap-1.5">
+                {/* 类型过滤下拉菜单 */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 sm:h-7 justify-between px-2 text-xs min-w-0 touch-manipulation">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Filter className="h-3 w-3 flex-shrink-0" />
+                        <span className="text-xs truncate min-w-0">
+                          {selectedTypeFilter === 'ALL' 
+                            ? '全部' 
+                            : attractionTypeConfig[selectedTypeFilter]?.label}
+                        </span>
+                      </div>
+                      <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-28 sm:w-32" sideOffset={4}>
+                    <DropdownMenuRadioGroup 
+                      value={selectedTypeFilter} 
+                      onValueChange={(value) => setSelectedTypeFilter(value as AttractionType | 'ALL')}
+                    >
+                      <DropdownMenuRadioItem value="ALL">
+                        全部类型
+                      </DropdownMenuRadioItem>
+                      {Object.entries(attractionTypeConfig).map(([type, config]) => (
+                        <DropdownMenuRadioItem key={type} value={type}>
+                          {config.label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* 打卡状态过滤 - 仅登录用户显示，未登录时显示占位 */}
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 sm:h-7 justify-between px-2 text-xs min-w-0 touch-manipulation">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <Check className="h-3 w-3 flex-shrink-0" />
+                          <span className="text-xs truncate min-w-0">
+                            {checkInFilter === 'ALL' && '全部'}
+                            {checkInFilter === 'CHECKED' && '已打卡'}
+                            {checkInFilter === 'UNCHECKED' && '未打卡'}
+                          </span>
+                        </div>
+                        <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="w-24 sm:w-28" sideOffset={4}>
+                      <DropdownMenuRadioGroup 
+                        value={checkInFilter} 
+                        onValueChange={(value) => setCheckInFilter(value as 'ALL' | 'CHECKED' | 'UNCHECKED')}
+                      >
+                        <DropdownMenuRadioItem value="ALL">
+                          全部
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="CHECKED">
+                          已打卡
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="UNCHECKED">
+                          未打卡
+                        </DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <div className="h-8 sm:h-7"></div>
+                )}
+
+                {/* 排序下拉菜单 */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 sm:h-7 justify-between px-2 text-xs min-w-0 touch-manipulation">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <ArrowUpDown className="h-3 w-3 flex-shrink-0" />
+                        <span className="text-xs truncate min-w-0">
+                          {sortBy === 'DEFAULT' && '默认'}
+                          {sortBy === 'DISTANCE' && '距离'}
+                          {sortBy === 'CHECKINS' && '人数'}
+                        </span>
+                      </div>
+                      <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-28 sm:w-32" sideOffset={4}>
+                    <DropdownMenuRadioGroup 
+                      value={sortBy} 
+                      onValueChange={(value) => setSortBy(value as 'DEFAULT' | 'DISTANCE' | 'CHECKINS')}
+                    >
+                      <DropdownMenuRadioItem value="DEFAULT">
+                        默认排序
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="DISTANCE" disabled={!userPosition}>
+                        距离排序
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="CHECKINS">
+                        打卡人数
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="space-y-2">
+            </div>
+            
+            {/* 景点列表区域 - 可滚动 */}
+            <div className="flex-1 overflow-y-auto px-4 py-2">
+              <div className="space-y-1.5">
                 {attractionsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1021,110 +1206,166 @@ export function MapExplorer() {
                       正在加载景点数据...
                     </div>
                   </div>
-                ) : attractions.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    暂无景点数据
-                  </div>
-                ) : (
-                  attractions.map((attraction, index) => {
-                    // 计算距离
+                ) : (() => {
+                  // 格式化距离显示
+                  const formatDistance = (dist: number | null): string => {
+                    if (dist === null) return "未知";
+                    if (dist >= 1000) return `${(dist / 1000).toFixed(1)}km`;
+                    return `${Math.round(dist)}m`;
+                  };
+
+                  // 计算每个景点的距离和打卡状态（用于过滤和排序）
+                  const attractionsWithMeta = attractions.map((attraction, index) => {
                     let distance: number | null = null;
-                    let isUnlocked = false;
                     
                     if (userPosition && AMapInstance) {
                       const point1 = new AMapInstance.LngLat(userPosition[0], userPosition[1]);
                       const point2 = new AMapInstance.LngLat(attraction.position[0], attraction.position[1]);
                       distance = point1.distance(point2);
-                      const unlockDistance = attraction.unlockDistance || 100;
-                      isUnlocked = distance <= unlockDistance;
                     }
 
-                    // 格式化距离显示
-                    const formatDistance = (dist: number | null): string => {
-                      if (dist === null) return "未知";
-                      if (dist >= 1000) return `${(dist / 1000).toFixed(1)}km`;
-                      return `${Math.round(dist)}m`;
-                    };
+                    const hasCheckedIn = attractionCheckInStatus[attraction.id] || false;
 
+                    return {
+                      attraction,
+                      index,
+                      distance,
+                      hasCheckedIn,
+                    };
+                  });
+
+                  // 过滤
+                  let filtered = attractionsWithMeta;
+                  
+                  // 类型过滤
+                  if (selectedTypeFilter !== 'ALL') {
+                    filtered = filtered.filter(item => item.attraction.type === selectedTypeFilter);
+                  }
+                  
+                  // 打卡状态过滤
+                  if (user && checkInFilter !== 'ALL') {
+                    filtered = filtered.filter(item => {
+                      if (checkInFilter === 'CHECKED') return item.hasCheckedIn;
+                      if (checkInFilter === 'UNCHECKED') return !item.hasCheckedIn;
+                      return true;
+                    });
+                  }
+
+                  // 排序
+                  if (sortBy === 'DISTANCE' && userPosition) {
+                    filtered = [...filtered].sort((a, b) => {
+                      if (a.distance === null) return 1;
+                      if (b.distance === null) return -1;
+                      return a.distance - b.distance;
+                    });
+                  } else if (sortBy === 'CHECKINS') {
+                    // 注意：目前没有打卡人数数据，这里预留接口
+                    // 后续可以通过 API 获取每个景点的打卡人数
+                    filtered = [...filtered].sort((a, b) => {
+                      // 临时使用打卡状态排序，已打卡的排在前面
+                      if (a.hasCheckedIn === b.hasCheckedIn) return 0;
+                      return a.hasCheckedIn ? -1 : 1;
+                    });
+                  }
+
+                  if (filtered.length === 0) {
                     return (
-                      <div
-                        key={attraction.id}
-                        className={`p-3 rounded-lg ${
-                          index === currentAttractionIndex
-                            ? "bg-primary/10 border border-primary"
-                            : "bg-muted"
-                        }`}
-                      >
-                        <div 
-                          className="cursor-pointer"
-                          onClick={() => {
-                            setCurrentAttractionIndex(index);
-                            if (map) {
-                              map.setCenter(attraction.position);
-                            }
-                            setShowAttractionsList(false);
-                          }}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium flex-grow">{attraction.name}</h3>
-                            <Badge
-                              className={cn(
-                                attractionTypeConfig[attraction.type]?.className ||
-                                  attractionTypeConfig[AttractionType.OTHER].className
-                              )}
-                            >
-                              {attractionTypeConfig[attraction.type]?.label ||
-                                attractionTypeConfig[AttractionType.OTHER].label}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {attraction.description}
-                          </p>
-                          {/* 距离和解锁状态 */}
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs"
-                            >
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {formatDistance(distance)}
-                            </Badge>
-                            {distance !== null && (
-                              <Badge 
-                                variant={isUnlocked ? "default" : "secondary"}
-                                className={cn(
-                                  "text-xs",
-                                  isUnlocked 
-                                    ? "bg-green-500/90 hover:bg-green-500 text-white" 
-                                    : "bg-gray-500/90 hover:bg-gray-500 text-white"
-                                )}
-                              >
-                                {isUnlocked ? "已解锁" : "未解锁"}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        {user?.isAdmin && (
-                          <div className="mt-2 pt-2 border-t border-border/50">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteConfirmId(attraction.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              删除景点
-                            </Button>
-                          </div>
-                        )}
+                      <div className="text-center py-8 text-muted-foreground">
+                        没有符合条件的景点
                       </div>
                     );
-                  })
-                )}
+                  }
+
+                  return filtered.map(({ attraction, index, distance, hasCheckedIn }) => (
+                    <div
+                      key={attraction.id}
+                      className={`p-2.5 rounded-lg transition-colors ${
+                        index === currentAttractionIndex
+                          ? "bg-primary/10 border border-primary"
+                          : "bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setCurrentAttractionIndex(index);
+                          if (map) {
+                            map.setCenter(attraction.position);
+                          }
+                          setShowAttractionsList(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <h3 className="font-medium flex-grow">{attraction.name}</h3>
+                          <Badge
+                            className={cn(
+                              attractionTypeConfig[attraction.type]?.className ||
+                                attractionTypeConfig[AttractionType.OTHER].className
+                            )}
+                          >
+                            {attractionTypeConfig[attraction.type]?.label ||
+                              attractionTypeConfig[AttractionType.OTHER].label}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate mb-1.5">
+                          {attraction.description}
+                        </p>
+                        {/* 距离和打卡状态 */}
+                        <div className="flex items-center gap-2">
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs"
+                          >
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {formatDistance(distance)}
+                          </Badge>
+                          {user && (
+                            <Badge 
+                              variant={hasCheckedIn ? "default" : "secondary"}
+                              className={cn(
+                                "text-xs",
+                                hasCheckedIn 
+                                  ? "bg-green-500/90 hover:bg-green-500 text-white" 
+                                  : "bg-gray-500/90 hover:bg-gray-500 text-white"
+                              )}
+                            >
+                              {hasCheckedIn ? "已打卡" : "未打卡"}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {user?.isAdmin && (
+                        <div className="mt-1.5 pt-1.5 border-t border-border/50">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmId(attraction.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            删除景点
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ));
+                })()}
               </div>
+            </div>
+            
+            {/* 底部关闭按钮 */}
+            <div className="p-4 border-t border-border/50">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowAttractionsList(false)}
+              >
+                <X className="h-4 w-4 mr-2" />
+                关闭
+              </Button>
             </div>
           </Card>
         </div>

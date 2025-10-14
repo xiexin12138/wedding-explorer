@@ -111,7 +111,7 @@ export default function HomePage() {
           <CardHeader className="relative z-10">
             <CardTitle className="text-lg font-semibold flex items-center gap-2 text-emerald-900 dark:text-emerald-100">
               <Map className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              地图探索
+              潮州·凤城探索
             </CardTitle>
             <CardDescription className="text-emerald-800/80 dark:text-emerald-200/70">
               探索活动地点和周边景点

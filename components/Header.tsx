@@ -288,7 +288,7 @@ export function Header() {
                   onClick={() => router.push(SPECIAL_ROUTES.MAP)}
                 >
                   <Map className="mr-2 h-4 w-4 text-primary" />
-                  地图探索
+                  潮州·凤城探索
                 </DropdownMenuItem>
                 {/* <DropdownMenuItem onClick={() => router.push("/leaderboard")}>
                   <Trophy className="mr-2 h-4 w-4 text-amber-600 dark:text-amber-500" />
