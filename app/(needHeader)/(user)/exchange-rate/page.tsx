@@ -312,14 +312,14 @@ export default function ExchangeRatePage() {
 
   const handleSave = async () => {
     // 验证表单
-    if (!formData.giftName || !formData.coinAmount) {
-      toast({
-        title: "保存失败",
-        description: "请填写礼物名称和游戏币数量",
-        variant: "destructive",
-      });
-      return;
-    }
+    // if (!formData.giftName || !formData.coinAmount) {
+    //   toast({
+    //     title: "保存失败",
+    //     description: "请填写礼物名称和游戏币数量",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
 
     const coinAmount = parseInt(formData.coinAmount);
     if (isNaN(coinAmount) || coinAmount <= 0) {
