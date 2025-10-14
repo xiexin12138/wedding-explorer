@@ -187,6 +187,8 @@ export async function isRequestAuthenticated(request: NextRequest): Promise<{
  * 要求用户必须已登录（用于 API 路由）
  * 会自动查询并添加数据库用户ID
  * 如果用户不存在于数据库，会自动创建用户记录（兼容历史数据）
+ * 
+ * 🚀 优化：优先使用中间件预查询的 dbUserId，减少数据库查询
  */
 export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
   const { isLoggedIn, user } = await isRequestAuthenticated(request)
@@ -196,7 +198,10 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
   }
 
   // 从 authing_users 表查询对应的数据库用户ID
-  if (!user.dbUserId) {
+  // 🚀 优化：如果中间件已经预查询了 dbUserId，则跳过此步骤
+  if (user.dbUserId) {
+    console.log('🚀 使用中间件预查询的 dbUserId，跳过数据库查询:', user.sub, '->', user.dbUserId)
+  } else if (!user.dbUserId) {
     try {
       const { db } = await import('@/lib/db')
       const authingUser = await db.authingUser.findUnique({
@@ -206,7 +211,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
 
       if (authingUser) {
         user.dbUserId = authingUser.userId
-        console.log('✅ 映射 Authing ID 到数据库 ID:', user.sub, '->', user.dbUserId)
+        console.log('✅ API层查询 dbUserId:', user.sub, '->', user.dbUserId)
       } else {
         // 🆕 未找到映射，自动创建用户（兼容历史用户和新用户）
         console.warn('⚠️ 未找到 Authing ID 对应的数据库用户，尝试自动创建:', user.sub)

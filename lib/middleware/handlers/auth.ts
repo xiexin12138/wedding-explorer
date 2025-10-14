@@ -51,6 +51,26 @@ export class AuthHandler implements MiddlewareHandler {
         return createUnauthorizedResponse(request, SPECIAL_ROUTES.LOGIN)
       }
 
+      // 🆕 优化：在中间件中预查询 dbUserId，避免每个 API 都重复查询
+      // 只对 API 路由进行预查询（页面路由不需要）
+      if (pathname.startsWith('/api/')) {
+        try {
+          const { db } = await import('@/lib/db')
+          const authingUser = await db.authingUser.findUnique({
+            where: { authingId: payload.sub },
+            select: { userId: true }
+          })
+          
+          if (authingUser) {
+            payload.dbUserId = authingUser.userId
+            console.log(`✅ 中间件预查询 dbUserId: ${payload.sub} -> ${payload.dbUserId}`)
+          }
+        } catch (error) {
+          // 预查询失败不影响主流程，API 层会兜底
+          console.warn(`⚠️ 中间件预查询 dbUserId 失败，API 层将重试:`, error)
+        }
+      }
+
       // 记录认证成功信息
       this.logAuthSuccess(payload, pathname)
       
