@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2, Check } from "lucide-react";
+import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2, Check, Users } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { OptimizedVideo } from "@/components/OptimizedVideo";
 import { detectEnvironment } from "@/lib/environment-detector";
@@ -74,6 +74,24 @@ export function AttractionCard({
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [checkInData, setCheckInData] = useState<{ checkedInAt: string; coinsEarned: number } | null>(null);
   const [isLoadingCheckInStatus, setIsLoadingCheckInStatus] = useState(true);
+  
+  // 打卡人员列表相关状态
+  const [showCheckInList, setShowCheckInList] = useState(true); // 默认展开
+  const [checkInList, setCheckInList] = useState<Array<{
+    id: string;
+    user: {
+      name: string | null;
+      nickname: string | null;
+      avatar: string | null;
+    };
+    checkedInAt: string;
+    distance: number | null;
+  }>>([]);
+  const [checkInStats, setCheckInStats] = useState<{
+    totalCheckIns: number;
+    avgDistance: number | null;
+  } | null>(null);
+  const [isLoadingCheckInList, setIsLoadingCheckInList] = useState(false);
   
   const { toast } = useToast();
   const { user } = useUser();
@@ -174,6 +192,52 @@ export function AttractionCard({
     loadCheckInStatus();
   }, [attraction.id, user]);
 
+  // 获取打卡人员列表
+  const loadCheckInList = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoadingCheckInList(true);
+      const response = await fetch(
+        `/api/attractions/${attraction.id}/check-ins?page=1&pageSize=10&includeStats=true`
+      );
+      
+      if (!response.ok) {
+        throw new Error('获取打卡列表失败');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setCheckInList(result.data.checkIns);
+        if (result.data.stats) {
+          setCheckInStats(result.data.stats);
+        }
+      }
+    } catch (error) {
+      console.error('获取打卡列表失败:', error);
+      toast({
+        title: "加载失败",
+        description: "无法获取打卡人员列表",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCheckInList(false);
+    }
+  };
+
+  // 切换打卡列表显示
+  const toggleCheckInList = () => {
+    setShowCheckInList(!showCheckInList);
+  };
+
+  // 组件展开时自动加载打卡列表
+  useEffect(() => {
+    if (expanded && user && checkInList.length === 0) {
+      loadCheckInList();
+    }
+  }, [expanded, user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 处理打卡
   const handleCheckIn = async () => {
     if (!user) {
@@ -229,9 +293,14 @@ export function AttractionCard({
         coinsEarned: result.coinsEarned,
       });
 
+      // 刷新打卡列表
+      if (checkInList.length > 0) {
+        loadCheckInList();
+      }
+
       toast({
         title: "打卡成功! 🎉",
-        description: `恭喜你获得 ${result.coinsEarned} 金币奖励!`,
+        description: "感谢你的探索！",
       });
     } catch (error) {
       console.error('打卡失败:', error);
@@ -419,45 +488,7 @@ export function AttractionCard({
       return null;
     }
 
-    // 如果未解锁，显示距离信息
-    if (!isUnlocked) {
-      const distance = userPosition
-        ? calculateDistance(
-            userPosition[0],
-            userPosition[1],
-            attraction.position[0],
-            attraction.position[1]
-          ) - (attraction.unlockDistance || 100)
-        : 10000;
-
-      const displayDistance =
-        distance >= 1000
-          ? `${(distance / 1000).toFixed(1)} 千米`
-          : `${Math.max(0, Math.round(distance))} 米`;
-
-      return (
-        <div className="w-full h-[40vh] relative overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 flex flex-col items-center justify-center">
-          <div className="text-center p-8">
-            <div className="mb-6">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
-                <Map className="w-10 h-10 text-primary" />
-              </div>
-            </div>
-            <div className="text-3xl font-bold mb-3">
-              {userPosition ? displayDistance : "未知"}
-            </div>
-            <div className="text-lg text-muted-foreground mb-2">
-              距离目的地
-            </div>
-            <div className="text-sm text-muted-foreground/80">
-              靠近此位置即可解锁查看详细内容
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // 已解锁但没有媒体内容
+    // 没有媒体内容直接返回
     if (!attraction.media || attraction.media.length === 0) {
       return null;
     }
@@ -695,7 +726,6 @@ export function AttractionCard({
                     {checkInData && (
                       <div className="text-sm text-green-600 dark:text-green-400">
                         <p>打卡时间: {new Date(checkInData.checkedInAt).toLocaleString('zh-CN')}</p>
-                        <p>获得金币: +{checkInData.coinsEarned}</p>
                       </div>
                     )}
                   </div>
@@ -759,6 +789,97 @@ export function AttractionCard({
                 })}
               </div>
             </div>
+
+            {/* 打卡人员列表 */}
+            {user && (
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full flex items-center justify-between"
+                  onClick={toggleCheckInList}
+                >
+                  <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    已打卡的人
+                    {checkInStats && (
+                      <Badge variant="secondary" className="ml-2">
+                        {checkInStats.totalCheckIns}人
+                      </Badge>
+                    )}
+                  </span>
+                  <ChevronUp className={cn(
+                    "h-4 w-4 transition-transform",
+                    showCheckInList ? "rotate-180" : ""
+                  )} />
+                </Button>
+
+                {showCheckInList && (
+                  <div className="mt-3 border rounded-lg overflow-hidden">
+                    {isLoadingCheckInList ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+                      </div>
+                    ) : checkInList.length === 0 ? (
+                      <div className="text-center py-6 text-sm text-muted-foreground">
+                        暂无打卡记录
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {checkInList.map((checkIn, index) => (
+                          <div key={checkIn.id} className="p-3 bg-background hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
+                                  {index + 1}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-sm">
+                                    {checkIn.user.name || checkIn.user.nickname || '匿名用户'}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(checkIn.checkedInAt).toLocaleString('zh-CN', {
+                                      month: 'numeric',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                              {checkIn.distance !== null && (
+                                <div className="text-xs text-muted-foreground">
+                                  {checkIn.distance < 1000 
+                                    ? `${Math.round(checkIn.distance)}m`
+                                    : `${(checkIn.distance / 1000).toFixed(1)}km`
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* 统计信息 */}
+                    {checkInStats && checkInStats.totalCheckIns > 0 && (
+                      <div className="bg-muted/30 p-3 text-xs text-muted-foreground flex justify-between">
+                        <span>共 {checkInStats.totalCheckIns} 人打卡</span>
+                        {checkInStats.avgDistance !== null && (
+                          <span>
+                            平均距离: {checkInStats.avgDistance < 1000 
+                              ? `${Math.round(checkInStats.avgDistance)}m`
+                              : `${(checkInStats.avgDistance / 1000).toFixed(1)}km`
+                            }
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
           </div>
         </div>

@@ -19,23 +19,12 @@ export const POST = withPerformanceMonitoring(async (
   const { id: attractionId } = await params;
   tracker.checkpoint('解析请求参数');
 
-  // 用户认证
+  // 用户认证（requireAuth 会自动创建用户如果不存在）
   const user = await requireAuth(request);
-  tracker.checkpoint('用户认证完成', { userId: user.sub });
+  tracker.checkpoint('用户认证完成', { userId: user.sub, dbUserId: user.dbUserId });
 
-  // 检查是否有数据库用户ID
-  if (!user.dbUserId) {
-    console.error('❌ 用户未关联到数据库!', { authingId: user.sub });
-    return NextResponse.json(
-      { 
-        error: "用户信息异常,请联系管理员",
-        details: "用户未关联到数据库"
-      },
-      { status: 500 }
-    );
-  }
-
-  const userId = user.dbUserId;
+  // requireAuth 保证 dbUserId 一定存在
+  const userId = user.dbUserId!;
   
   // 解析请求体
   const body = await request.json();
@@ -81,26 +70,6 @@ export const POST = withPerformanceMonitoring(async (
     return NextResponse.json(
       {
         error: `您距离景点太远，需要在${attraction.unlockDistance}米内才能打卡`,
-      },
-      { status: 400 }
-    );
-  }
-
-  // 验证用户是否存在
-  const existingUser = await monitorDatabaseOperation(
-    dbMonitor,
-    'findUnique',
-    'User',
-    () => db.user.findUnique({ where: { id: userId } })
-  );
-  tracker.checkpoint('验证用户存在', { userId, exists: !!existingUser });
-
-  if (!existingUser) {
-    console.error('❌ 用户不存在于数据库中!', { userId });
-    return NextResponse.json(
-      { 
-        error: "用户信息异常,请重新登录",
-        details: `用户ID ${userId} 不存在于数据库中`
       },
       { status: 400 }
     );

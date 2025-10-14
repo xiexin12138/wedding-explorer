@@ -1,0 +1,5 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="200" height="200" fill="#F3F4F6"/>
+<path d="M100 60L115 75H105V95H125V105H105V125H115L100 140L85 125H95V105H75V95H95V75H85L100 60Z" fill="#9CA3AF"/>
+<text x="100" y="165" text-anchor="middle" fill="#6B7280" font-family="Arial, sans-serif" font-size="12">礼品图片</text>
+</svg>

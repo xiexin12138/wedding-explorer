@@ -24,7 +24,7 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel }: Attracti
   const [description, setDescription] = useState('');
   const [type, setType] = useState<AttractionType>(AttractionType.SCENIC);
   const [unlockDistance, setUnlockDistance] = useState(100);
-  const [rewardCoins, setRewardCoins] = useState(10); // 默认奖励10金币
+  const [rewardCoins] = useState(10); // 默认奖励10金币（金币功能已屏蔽，但保留后端数据）
   const [mediaFiles, setMediaFiles] = useState<UploadableFile[]>([]);
   
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -189,34 +189,18 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel }: Attracti
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="unlockDistance">解锁距离 (米) *</Label>
-                <Input 
-                  id="unlockDistance" 
-                  type="number" 
-                  min="10"
-                  max="1000"
-                  value={unlockDistance} 
-                  onChange={(e) => setUnlockDistance(parseInt(e.target.value) || 100)} 
-                  placeholder="100"
-                />
-                <p className="text-xs text-muted-foreground">用户在此范围内可打卡</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="rewardCoins">奖励金币数 *</Label>
-                <Input 
-                  id="rewardCoins" 
-                  type="number" 
-                  min="1"
-                  max="1000"
-                  value={rewardCoins} 
-                  onChange={(e) => setRewardCoins(parseInt(e.target.value) || 10)} 
-                  placeholder="10"
-                />
-                <p className="text-xs text-muted-foreground">打卡后获得的金币</p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="unlockDistance">解锁距离 (米) *</Label>
+              <Input 
+                id="unlockDistance" 
+                type="number" 
+                min="10"
+                max="1000"
+                value={unlockDistance} 
+                onChange={(e) => setUnlockDistance(parseInt(e.target.value) || 100)} 
+                placeholder="100"
+              />
+              <p className="text-xs text-muted-foreground">用户在此范围内可打卡</p>
             </div>
 
             <MediaUploader

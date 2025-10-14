@@ -186,6 +186,7 @@ export async function isRequestAuthenticated(request: NextRequest): Promise<{
 /**
  * 要求用户必须已登录（用于 API 路由）
  * 会自动查询并添加数据库用户ID
+ * 如果用户不存在于数据库，会自动创建用户记录（兼容历史数据）
  */
 export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
   const { isLoggedIn, user } = await isRequestAuthenticated(request)
@@ -207,11 +208,49 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
         user.dbUserId = authingUser.userId
         console.log('✅ 映射 Authing ID 到数据库 ID:', user.sub, '->', user.dbUserId)
       } else {
-        console.warn('⚠️ 未找到 Authing ID 对应的数据库用户:', user.sub)
+        // 🆕 未找到映射，自动创建用户（兼容历史用户和新用户）
+        console.warn('⚠️ 未找到 Authing ID 对应的数据库用户，尝试自动创建:', user.sub)
+        
+        const { loginOrRegister } = await import('@/lib/services/user.service')
+        const { getAdminIds } = await import('@/lib/middleware/config')
+        
+        const adminIds = getAdminIds()
+        const isAdmin = adminIds.includes(user.sub)
+        
+        // 构建用户显示名称（使用多个字段作为后备）
+        const displayName = user.name 
+          || user.nickname 
+          || user.username 
+          || (user.email ? user.email.split('@')[0] : undefined)
+          || `用户${user.sub.substring(0, 8)}`
+
+        const nickname = user.nickname 
+          || user.name 
+          || user.username 
+          || (user.email ? user.email.split('@')[0] : undefined)
+        
+        const newUser = await loginOrRegister({
+          authingId: user.sub,
+          name: displayName,
+          nickname: nickname,
+          email: user.email,
+          avatar: typeof user.picture === 'string' ? user.picture : undefined,
+          isAdmin,
+        })
+        
+        user.dbUserId = newUser.id
+        console.log('✅ 自动创建用户成功:', user.sub, '->', user.dbUserId)
       }
     } catch (error) {
-      console.error('❌ 查询数据库用户ID失败:', error)
+      console.error('❌ 处理数据库用户ID失败:', error)
+      // 抛出更友好的错误信息
+      throw new Error('用户信息同步失败，请稍后重试')
     }
+  }
+
+  // 确保 dbUserId 存在后才返回
+  if (!user.dbUserId) {
+    throw new Error('用户信息异常，请重新登录')
   }
 
   return user

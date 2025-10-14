@@ -10,11 +10,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // requireAuth 会自动创建用户如果不存在
     const user = await requireAuth(request);
     const { id: attractionId } = await params;
 
-    // 使用数据库用户ID
-    const userId = user.dbUserId || user.sub;
+    // requireAuth 保证 dbUserId 一定存在
+    const userId = user.dbUserId!;
 
     // 获取打卡记录
     const checkInRecord = await getUserCheckInRecord(userId, attractionId);

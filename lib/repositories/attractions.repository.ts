@@ -346,3 +346,114 @@ export async function getUserAllCheckIns(userId: string) {
     throw new Error('获取用户打卡记录失败');
   }
 }
+
+/**
+ * 获取某个景点的所有打卡记录（包含用户信息）
+ */
+export async function getAttractionCheckIns(
+  attractionId: string,
+  params?: {
+    page?: number;
+    pageSize?: number;
+    orderBy?: 'checkedInAt' | 'distance';
+    order?: 'asc' | 'desc';
+  }
+): Promise<{
+  checkIns: Array<{
+    id: string;
+    userId: string;
+    attractionId: string;
+    checkedInAt: Date;
+    distance: number | null;
+    coinsEarned: number;
+    longitude: number | null;
+    latitude: number | null;
+    user: {
+      id: string;
+      name: string | null;
+      nickname: string | null;
+      avatar: string | null;
+    };
+  }>;
+  total: number;
+}> {
+  try {
+    const { page = 1, pageSize = 20, orderBy = 'checkedInAt', order = 'desc' } = params || {};
+
+    const where = { attractionId };
+
+    const [checkIns, total] = await Promise.all([
+      db.userAttractionCheckIn.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+        },
+        orderBy: {
+          [orderBy]: order,
+        },
+        take: pageSize,
+        skip: (page - 1) * pageSize,
+      }),
+      db.userAttractionCheckIn.count({ where }),
+    ]);
+
+    return { checkIns, total };
+  } catch (error) {
+    console.error('获取景点打卡记录失败:', error);
+    throw new Error('获取景点打卡记录失败');
+  }
+}
+
+/**
+ * 获取某个景点的打卡统计信息
+ */
+export async function getAttractionCheckInStats(attractionId: string): Promise<{
+  totalCheckIns: number;
+  avgDistance: number | null;
+  firstCheckInAt: Date | null;
+  lastCheckInAt: Date | null;
+}> {
+  try {
+    const checkIns = await db.userAttractionCheckIn.findMany({
+      where: { attractionId },
+      select: {
+        distance: true,
+        checkedInAt: true,
+      },
+      orderBy: {
+        checkedInAt: 'asc',
+      },
+    });
+
+    if (checkIns.length === 0) {
+      return {
+        totalCheckIns: 0,
+        avgDistance: null,
+        firstCheckInAt: null,
+        lastCheckInAt: null,
+      };
+    }
+
+    const distances = checkIns.filter(c => c.distance !== null).map(c => c.distance!);
+    const avgDistance = distances.length > 0 
+      ? distances.reduce((sum, d) => sum + d, 0) / distances.length 
+      : null;
+
+    return {
+      totalCheckIns: checkIns.length,
+      avgDistance,
+      firstCheckInAt: checkIns[0].checkedInAt,
+      lastCheckInAt: checkIns[checkIns.length - 1].checkedInAt,
+    };
+  } catch (error) {
+    console.error('获取景点打卡统计失败:', error);
+    throw new Error('获取景点打卡统计失败');
+  }
+}
