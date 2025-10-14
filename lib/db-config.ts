@@ -11,8 +11,9 @@
 export const dbConfig = {
   // 连接池配置
   connectionPool: {
-    // 最大连接数（Vercel 无服务器环境建议较小值）
-    maxConnections: process.env.VERCEL ? 3 : 10, // 先恢复到 3，避免连接数过多
+    // 最大连接数（Vercel 无服务器环境建议较小值，但需要根据实际并发调整）
+    // 从 3 提升到 8，避免高并发时连接池耗尽导致超时
+    maxConnections: 10,
     // 最小连接数
     minConnections: 0,
     // 连接超时时间（毫秒）- 香港到上海延迟很低，但要考虑连接池等待时间
