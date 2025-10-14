@@ -42,9 +42,15 @@ export async function GET(
     });
   } catch (error) {
     console.error("获取打卡状态失败:", error);
+    
+    // 返回更详细的错误信息
+    const errorMessage = error instanceof Error ? error.message : "获取打卡状态失败";
 
     return NextResponse.json(
-      { error: "获取打卡状态失败" },
+      { 
+        success: false,
+        error: errorMessage 
+      },
       { status: 500 }
     );
   }

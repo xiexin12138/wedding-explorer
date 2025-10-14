@@ -110,6 +110,15 @@ export function MapExplorer() {
   const [showAttractionForm, setShowAttractionForm] = useState<boolean>(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  
+  // 滑动相关状态
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  const [dragOffset, setDragOffset] = useState<number>(0);
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  
   const { theme } = useTheme();
   const { user } = useUser();
   const { toast } = useToast();
@@ -374,11 +383,18 @@ export function MapExplorer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, AMapInstance, attractions]); // 移除markers依赖项以避免无限循环
 
-  // 单独处理当前景点变化时的地图中心设置
+  // 单独处理当前景点变化时的地图中心设置和入场动画
   useEffect(() => {
     if (!map || attractions.length === 0 || currentAttractionIndex < 0) return;
     map.setCenter(attractions[currentAttractionIndex].position);
-  }, [map, attractions, currentAttractionIndex]);
+    
+    // 触发入场动画
+    if (!swipeDirection) {
+      // 只在非滑动切换时才需要重置动画状态
+      setDragOffset(0);
+      setIsTransitioning(false);
+    }
+  }, [map, attractions, currentAttractionIndex, swipeDirection]);
 
   // 监听主题变化
   useEffect(() => {
@@ -418,6 +434,121 @@ export function MapExplorer() {
     setCurrentAttractionIndex(prevIndex);
     map.setCenter(attractions[prevIndex].position);
   };
+
+  // 处理触摸开始
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    // 如果卡片已展开或正在过渡，不处理滑动
+    if (cardExpanded || isTransitioning) return;
+    
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    });
+    setTouchEnd(null);
+    setDragOffset(0);
+  }, [cardExpanded, isTransitioning]);
+
+  // 处理触摸移动
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    // 如果卡片已展开或正在过渡，不处理滑动
+    if (cardExpanded || isTransitioning || !touchStart) return;
+    
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    
+    setTouchEnd({
+      x: currentX,
+      y: currentY,
+    });
+
+    const deltaX = currentX - touchStart.x;
+    const deltaY = currentY - touchStart.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // 只有当水平滑动距离大于垂直滑动距离时，才更新拖拽偏移
+    if (absDeltaX > absDeltaY) {
+      // 阻止默认的滚动行为
+      e.preventDefault();
+      
+      // 添加阻力效果：拖拽距离越大，阻力越大
+      const resistance = 0.5;
+      const maxDrag = 150; // 最大拖拽距离
+      const offset = deltaX * resistance;
+      setDragOffset(Math.max(-maxDrag, Math.min(maxDrag, offset)));
+    }
+  }, [cardExpanded, isTransitioning, touchStart]);
+
+  // 处理触摸结束
+  const handleTouchEnd = useCallback(() => {
+    // 如果卡片已展开或正在过渡，不处理滑动
+    if (cardExpanded || isTransitioning) return;
+    
+    if (!touchStart || !touchEnd) {
+      setDragOffset(0);
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
+
+    const deltaX = touchEnd.x - touchStart.x;
+    const deltaY = touchEnd.y - touchStart.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // 最小滑动距离阈值
+    const minSwipeDistance = 50;
+
+    // 只有当水平滑动距离大于垂直滑动距离，并且超过阈值时，才认为是有效的水平滑动
+    if (absDeltaX > absDeltaY && absDeltaX > minSwipeDistance) {
+      setIsTransitioning(true);
+      
+      if (deltaX > 0) {
+        // 向右滑动 - 上一个景点
+        setSwipeDirection('right');
+        setTimeout(() => {
+          goToPreviousAttraction();
+          setDragOffset(0);
+          setSwipeDirection(null);
+          setIsTransitioning(false);
+        }, 300);
+      } else {
+        // 向左滑动 - 下一个景点
+        setSwipeDirection('left');
+        setTimeout(() => {
+          goToNextAttraction();
+          setDragOffset(0);
+          setSwipeDirection(null);
+          setIsTransitioning(false);
+        }, 300);
+      }
+    } else {
+      // 回弹动画
+      setDragOffset(0);
+    }
+
+    setTouchStart(null);
+    setTouchEnd(null);
+  }, [cardExpanded, isTransitioning, touchStart, touchEnd]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 添加和移除原生触摸事件监听器
+  useEffect(() => {
+    const container = cardContainerRef.current;
+    if (!container) return;
+
+    // 使用 { passive: false } 允许 preventDefault
+    const options = { passive: false };
+
+    container.addEventListener('touchstart', handleTouchStart as EventListener, options);
+    container.addEventListener('touchmove', handleTouchMove as EventListener, options);
+    container.addEventListener('touchend', handleTouchEnd as EventListener, options);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart as EventListener);
+      container.removeEventListener('touchmove', handleTouchMove as EventListener);
+      container.removeEventListener('touchend', handleTouchEnd as EventListener);
+    };
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   // 显示添加景点表单
   const addNewAttraction = () => {
@@ -812,23 +943,58 @@ export function MapExplorer() {
       {/* 景点信息浮框 - 使用新的 AttractionCard 组件 */}
       {!attractionsLoading && attractions.length > 0 && currentAttractionIndex >= 0 && (
         <div
+          ref={cardContainerRef}
           className={
             cardExpanded
               ? "fixed inset-0 z-[200]"
-              : "absolute left-0 right-0 flex justify-center"
+              : "absolute left-0 right-0 flex justify-center overflow-hidden"
           }
           style={!cardExpanded ? { bottom: 'max(6rem, calc(env(safe-area-inset-bottom, 2rem) + 4rem))' } : undefined}
         >
-          <AttractionCard
-            attraction={attractions[currentAttractionIndex]}
-            userPosition={userPosition}
-            expanded={cardExpanded}
-            onClose={() => {
-              // 直接切换状态，让 AttractionCard 组件负责动画
-              setCardExpanded(!cardExpanded);
-            }}
-            AMapInstance={AMapInstance}
-          />
+          {!cardExpanded && (
+            <div
+              key={`card-${currentAttractionIndex}`}
+              className="relative w-full flex justify-center"
+              style={{
+                transform: swipeDirection 
+                  ? swipeDirection === 'left' 
+                    ? 'translateX(-120%) scale(0.9)' 
+                    : 'translateX(120%) scale(0.9)'
+                  : `translateX(${dragOffset}px) scale(${1 - Math.abs(dragOffset) / 600})`,
+                opacity: swipeDirection 
+                  ? 0 
+                  : Math.max(0.4, 1 - Math.abs(dragOffset) / 200),
+                transition: swipeDirection || (!touchStart && dragOffset !== 0)
+                  ? 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                  : 'none',
+                willChange: 'transform, opacity',
+                filter: `blur(${Math.abs(dragOffset) / 50}px)`,
+              }}
+            >
+              <AttractionCard
+                attraction={attractions[currentAttractionIndex]}
+                userPosition={userPosition}
+                expanded={cardExpanded}
+                onClose={() => {
+                  // 直接切换状态，让 AttractionCard 组件负责动画
+                  setCardExpanded(!cardExpanded);
+                }}
+                AMapInstance={AMapInstance}
+              />
+            </div>
+          )}
+          {cardExpanded && (
+            <AttractionCard
+              attraction={attractions[currentAttractionIndex]}
+              userPosition={userPosition}
+              expanded={cardExpanded}
+              onClose={() => {
+                // 直接切换状态，让 AttractionCard 组件负责动画
+                setCardExpanded(!cardExpanded);
+              }}
+              AMapInstance={AMapInstance}
+            />
+          )}
         </div>
       )}
 
