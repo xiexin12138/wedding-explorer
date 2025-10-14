@@ -151,6 +151,50 @@ export function MapExplorer() {
   const { user } = useUser();
   const { toast } = useToast();
 
+  // 设置地图中心的辅助函数，考虑底部卡片偏移
+  const setCenterWithOffset = useCallback((position: [number, number]) => {
+    if (!map || !AMapInstance) return;
+    
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+    
+    if (viewportHeight > 0) {
+      // 卡片顶部到屏幕底部的距离（像素）
+      const cardBottomOffset = 96; // 6rem
+      const cardHeight = 200; // 卡片预估高度
+      const cardTopFromBottom = cardBottomOffset + cardHeight;
+      
+      // 卡片顶部到屏幕顶部的距离
+      const cardTopFromTop = viewportHeight - cardTopFromBottom;
+      
+      // 我们希望标记点在卡片顶部到屏幕顶部的中间
+      const targetPixelY = cardTopFromTop / 2;
+      
+      // 获取视口中心点的像素坐标
+      const viewportCenterY = viewportHeight / 2;
+      
+      // 计算需要向上偏移的像素数（正数表示向上）
+      const offsetY = viewportCenterY - targetPixelY;
+      
+      // 将景点位置转换为像素坐标
+      const pixel = map.lnglatToPixel(position);
+      
+      // 应用偏移
+      const offsetPixel = new AMapInstance.Pixel(
+        pixel.getX(),
+        pixel.getY() + offsetY
+      );
+      
+      // 将偏移后的像素坐标转回经纬度
+      const offsetLngLat = map.pixelToLngLat(offsetPixel);
+      
+      // 设置地图中心
+      map.setCenter(offsetLngLat);
+    } else {
+      // 如果无法获取视口高度，使用默认行为
+      map.setCenter(position);
+    }
+  }, [map, AMapInstance]);
+
   // 在客户端挂载后更新状态
   useEffect(() => {
     setMounted(true);
@@ -444,7 +488,7 @@ export function MapExplorer() {
 
       marker.on("click", () => {
         setCurrentAttractionIndex(index);
-        map.setCenter(attraction.position);
+        // 注意：这里不需要调用 setCenterWithOffset，因为 currentAttractionIndex 改变会触发 effect
       });
 
       map.add(marker);
@@ -466,8 +510,10 @@ export function MapExplorer() {
 
   // 单独处理当前景点变化时的地图中心设置和入场动画
   useEffect(() => {
-    if (!map || attractions.length === 0 || currentAttractionIndex < 0) return;
-    map.setCenter(attractions[currentAttractionIndex].position);
+    if (!map || !AMapInstance || attractions.length === 0 || currentAttractionIndex < 0) return;
+    
+    const attraction = attractions[currentAttractionIndex];
+    setCenterWithOffset(attraction.position);
     
     // 触发入场动画
     if (!swipeDirection) {
@@ -475,7 +521,7 @@ export function MapExplorer() {
       setDragOffset(0);
       setIsTransitioning(false);
     }
-  }, [map, attractions, currentAttractionIndex, swipeDirection]);
+  }, [map, AMapInstance, attractions, currentAttractionIndex, swipeDirection, setCenterWithOffset]);
 
   // 更新上一个景点索引，用于判断切换方向
   useEffect(() => {
@@ -507,7 +553,7 @@ export function MapExplorer() {
         ? 0
         : (currentAttractionIndex + 1) % attractions.length;
     setCurrentAttractionIndex(nextIndex);
-    map.setCenter(attractions[nextIndex].position);
+    // 注意：不需要在这里调用 setCenterWithOffset，因为 currentAttractionIndex 改变会触发 effect
   }, [attractions, map, currentAttractionIndex]);
 
   // 切换到上一个景点
@@ -523,7 +569,7 @@ export function MapExplorer() {
         : (currentAttractionIndex - 1 + attractions.length) %
           attractions.length;
     setCurrentAttractionIndex(prevIndex);
-    map.setCenter(attractions[prevIndex].position);
+    // 注意：不需要在这里调用 setCenterWithOffset，因为 currentAttractionIndex 改变会触发 effect
   }, [attractions, map, currentAttractionIndex]);
 
   // 处理触摸开始
@@ -682,9 +728,7 @@ export function MapExplorer() {
       });
       
       // 将地图中心移动到新添加的景点
-      if (map) {
-        map.setCenter(updatedAttraction.position);
-      }
+      setCenterWithOffset(updatedAttraction.position);
 
       toast({
         title: "景点添加成功",
@@ -694,7 +738,7 @@ export function MapExplorer() {
     
     setShowAttractionForm(false);
     setEditingAttraction(null);
-  }, [map, toast, editingAttraction]);
+  }, [setCenterWithOffset, toast, editingAttraction]);
 
   // 处理景点表单取消
   const handleAttractionCancel = useCallback(() => {
@@ -1332,10 +1376,8 @@ export function MapExplorer() {
                         className="cursor-pointer"
                         onClick={() => {
                           setCurrentAttractionIndex(index);
-                          if (map) {
-                            map.setCenter(attraction.position);
-                          }
                           setShowAttractionsList(false);
+                          // 注意：不需要在这里调用 setCenterWithOffset，因为 currentAttractionIndex 改变会触发 effect
                         }}
                       >
                         <div className="flex items-center gap-2 mb-0.5">
