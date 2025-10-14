@@ -233,10 +233,10 @@ export function AttractionCard({
 
   // 组件展开时自动加载打卡列表
   useEffect(() => {
-    if (expanded && user && checkInList.length === 0) {
+    if (expanded && user) {
       loadCheckInList();
     }
-  }, [expanded, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [expanded, user, attraction.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 处理打卡
   const handleCheckIn = async () => {

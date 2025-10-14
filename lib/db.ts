@@ -58,13 +58,8 @@ if (process.env.NODE_ENV === 'development') {
   console.log('✅ Prisma 客户端初始化完成');
 }
 
-// 优雅关闭
-if (process.env.NODE_ENV === 'production') {
-  process.on('beforeExit', async () => {
-    console.log('🔄 正在关闭数据库连接...');
-    await db.$disconnect();
-    console.log('✅ 数据库连接已关闭');
-  });
-}
+// 注意: 在 Next.js 的 serverless/edge 环境中，不需要手动管理连接关闭
+// Prisma 客户端会在请求完成后自动清理连接
+// process.on('beforeExit') 在 Edge Runtime 中不支持，已移除
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
