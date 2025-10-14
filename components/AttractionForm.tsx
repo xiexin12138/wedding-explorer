@@ -17,15 +17,32 @@ interface AttractionFormProps {
   position: [number, number];
   onSubmitSuccess: (attraction: AttractionDetail) => void;
   onCancel: () => void;
+  editingAttraction?: AttractionDetail; // 如果传入此参数，则为编辑模式
 }
 
-export function AttractionForm({ position, onSubmitSuccess, onCancel }: AttractionFormProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState<AttractionType>(AttractionType.SCENIC);
-  const [unlockDistance, setUnlockDistance] = useState(100);
-  const [rewardCoins] = useState(10); // 默认奖励10金币（金币功能已屏蔽，但保留后端数据）
-  const [mediaFiles, setMediaFiles] = useState<UploadableFile[]>([]);
+export function AttractionForm({ position, onSubmitSuccess, onCancel, editingAttraction }: AttractionFormProps) {
+  const isEditMode = !!editingAttraction;
+  
+  const [name, setName] = useState(editingAttraction?.name || '');
+  const [description, setDescription] = useState(editingAttraction?.description || '');
+  const [type, setType] = useState<AttractionType>(editingAttraction?.type || AttractionType.SCENIC);
+  const [unlockDistance, setUnlockDistance] = useState(editingAttraction?.unlockDistance || 100);
+  const [rewardCoins] = useState(editingAttraction?.rewardCoins || 10); // 默认奖励10金币（金币功能已屏蔽，但保留后端数据）
+  
+  // 初始化已有的媒体文件（编辑模式）
+  const [mediaFiles, setMediaFiles] = useState<UploadableFile[]>(() => {
+    if (editingAttraction?.media) {
+      return editingAttraction.media.map((item, index) => ({
+        id: `existing-${index}`,
+        file: new File([], item.title || 'media', { type: item.type === 'image' ? 'image/jpeg' : 'video/mp4' }),
+        previewUrl: item.url,
+        status: 'success' as const,
+        progress: 100,
+        finalUrl: item.url,
+      }));
+    }
+    return [];
+  });
   
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,11 +141,22 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel }: Attracti
         media: allFinalMedia
       };
 
-      const response = await fetch('/api/attractions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(attractionPayload)
-      });
+      let response;
+      if (isEditMode && editingAttraction) {
+        // 编辑模式：使用 PATCH 请求
+        response = await fetch(`/api/attractions/${editingAttraction.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(attractionPayload)
+        });
+      } else {
+        // 新建模式：使用 POST 请求
+        response = await fetch('/api/attractions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(attractionPayload)
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -159,7 +187,7 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel }: Attracti
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-background shadow-xl">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold">添加新景点</h2>
+            <h2 className="text-xl font-bold">{isEditMode ? '编辑景点' : '添加新景点'}</h2>
             <Button variant="ghost" size="sm" onClick={onCancel}><X className="h-4 w-4" /></Button>
           </div>
           
@@ -213,7 +241,11 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel }: Attracti
             <div className="flex gap-3 pt-4">
               <Button type="button" variant="outline" onClick={onCancel} className="flex-1" disabled={isSubmitting}>取消</Button>
               <Button type="submit" className="flex-1" disabled={isSubmitting}>
-                {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />提交中...</> : <><Save className="h-4 w-4 mr-2" />保存景点</>}
+                {isSubmitting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />{isEditMode ? '更新中...' : '提交中...'}</>
+                ) : (
+                  <><Save className="h-4 w-4 mr-2" />{isEditMode ? '保存修改' : '保存景点'}</>
+                )}
               </Button>
             </div>
           </form>

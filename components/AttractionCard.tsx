@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2, Check, Users } from "lucide-react";
+import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2, Check, Users, Copy } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { OptimizedVideo } from "@/components/OptimizedVideo";
 import { detectEnvironment } from "@/lib/environment-detector";
@@ -40,6 +40,7 @@ export interface AttractionDetail {
   type: AttractionType;
   media?: AttractionMedia[];
   unlockDistance?: number; // 解锁距离，单位米，默认为100米
+  rewardCoins?: number; // 打卡奖励金币数（金币功能已屏蔽，但保留数据）
 }
 
 interface AttractionCardProps {
@@ -92,6 +93,9 @@ export function AttractionCard({
     avgDistance: number | null;
   } | null>(null);
   const [isLoadingCheckInList, setIsLoadingCheckInList] = useState(false);
+  
+  // 复制相关状态
+  const [isCopied, setIsCopied] = useState(false);
   
   const { toast } = useToast();
   const { user } = useUser();
@@ -330,6 +334,78 @@ export function AttractionCard({
       console.error('打开地图失败:', error);
     } finally {
       setOpeningMapType(null);
+    }
+  };
+
+  // 复制景点名称（兼容微信浏览器）
+  const handleCopyName = async () => {
+    try {
+      // 方法1: 尝试使用现代 Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(attraction.name);
+        setIsCopied(true);
+        toast({
+          title: "复制成功",
+          description: `已复制「${attraction.name}」到剪贴板`,
+        });
+      } else {
+        // 方法2: 使用传统的 document.execCommand（兼容微信浏览器）
+        const textArea = document.createElement('textarea');
+        textArea.value = attraction.name;
+        // 防止页面滚动
+        textArea.style.position = 'fixed';
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.width = '2em';
+        textArea.style.height = '2em';
+        textArea.style.padding = '0';
+        textArea.style.border = 'none';
+        textArea.style.outline = 'none';
+        textArea.style.boxShadow = 'none';
+        textArea.style.background = 'transparent';
+        textArea.style.opacity = '0';
+        
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        // 对于 iOS
+        if (navigator.userAgent.match(/ipad|iphone/i)) {
+          const range = document.createRange();
+          range.selectNodeContents(textArea);
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+          textArea.setSelectionRange(0, 999999);
+        }
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          setIsCopied(true);
+          toast({
+            title: "复制成功",
+            description: `已复制「${attraction.name}」到剪贴板`,
+          });
+        } else {
+          throw new Error('复制失败');
+        }
+      }
+      
+      // 2秒后重置复制状态
+      setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.error('复制失败:', error);
+      toast({
+        title: "复制失败",
+        description: "请手动选择并复制景点名称",
+        variant: "destructive",
+      });
     }
   };
 
@@ -691,7 +767,20 @@ export function AttractionCard({
         {/* 内容区域 */}
         <div className="flex-1 p-6 overflow-y-auto pb-20">
           <div className="relative flex items-center mb-2">
-            <h2 className="text-2xl font-bold mr-2">{attraction.name}</h2>
+            <h2 className="text-2xl font-bold mr-2 flex-shrink-0">{attraction.name}</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 flex-shrink-0 mr-2"
+              onClick={handleCopyName}
+              title="复制景点名称"
+            >
+              {isCopied ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
             <div className="inline-block">
               {/* 在展开视图中使用内联样式而不是绝对定位 */}
               <Badge 
@@ -916,7 +1005,23 @@ export function AttractionCard({
   return (
     <Card className="p-4 w-11/12 max-w-md bg-background/90 backdrop-blur-sm shadow-lg relative animate-in fade-in slide-in-from-bottom origin-bottom scale-y-100 duration-300 ease-out">
       <div className="flex items-center gap-2 mb-1">
-        <h3 className="text-lg font-bold">{attraction.name}</h3>
+        <h3 className="text-lg font-bold flex-shrink-0">{attraction.name}</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 flex-shrink-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCopyName();
+          }}
+          title="复制景点名称"
+        >
+          {isCopied ? (
+            <Check className="h-3.5 w-3.5 text-green-500" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+        </Button>
         <Badge 
           className={cn(
             attractionTypeConfig[attraction.type]?.className || attractionTypeConfig[AttractionType.OTHER].className

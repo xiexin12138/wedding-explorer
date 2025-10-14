@@ -30,6 +30,7 @@ import {
   X,
   Check,
   ChevronDown,
+  Edit,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -124,6 +125,7 @@ export function MapExplorer() {
   const [userPositionCircle, setUserPositionCircle] =
     useState<AMap.Circle | null>(null);
   const [showAttractionForm, setShowAttractionForm] = useState<boolean>(false);
+  const [editingAttraction, setEditingAttraction] = useState<Attraction | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   
@@ -656,29 +658,54 @@ export function MapExplorer() {
   };
 
   // 处理景点表单提交
-  const handleAttractionSubmit = useCallback((newAttraction: Attraction) => {
-    setAttractions(prev => {
-      const updated = [...prev, newAttraction];
-      setCurrentAttractionIndex(updated.length - 1);
-      return updated;
-    });
-    setShowAttractionForm(false);
-    
-    // 将地图中心移动到新添加的景点
-    if (map) {
-      map.setCenter(newAttraction.position);
-    }
+  const handleAttractionSubmit = useCallback((updatedAttraction: Attraction) => {
+    if (editingAttraction) {
+      // 编辑模式：更新现有景点
+      setAttractions(prev => {
+        const index = prev.findIndex(a => a.id === editingAttraction.id);
+        if (index === -1) return prev;
+        const updated = [...prev];
+        updated[index] = updatedAttraction;
+        return updated;
+      });
+      
+      toast({
+        title: "景点更新成功",
+        description: `景点「${updatedAttraction.name}」已成功更新`,
+      });
+    } else {
+      // 新建模式：添加新景点
+      setAttractions(prev => {
+        const updated = [...prev, updatedAttraction];
+        setCurrentAttractionIndex(updated.length - 1);
+        return updated;
+      });
+      
+      // 将地图中心移动到新添加的景点
+      if (map) {
+        map.setCenter(updatedAttraction.position);
+      }
 
-    // 显示成功提示
-    toast({
-      title: "景点添加成功",
-      description: `景点「${newAttraction.name}」已成功添加到地图中`,
-    });
-  }, [map, toast]);
+      toast({
+        title: "景点添加成功",
+        description: `景点「${updatedAttraction.name}」已成功添加到地图中`,
+      });
+    }
+    
+    setShowAttractionForm(false);
+    setEditingAttraction(null);
+  }, [map, toast, editingAttraction]);
 
   // 处理景点表单取消
   const handleAttractionCancel = useCallback(() => {
     setShowAttractionForm(false);
+    setEditingAttraction(null);
+  }, []);
+
+  // 处理编辑景点
+  const handleEditAttraction = useCallback((attraction: Attraction) => {
+    setEditingAttraction(attraction);
+    setShowAttractionForm(true);
   }, []);
 
 
@@ -1036,7 +1063,7 @@ export function MapExplorer() {
       )}
 
       {/* 景点信息浮框 - 使用新的 AttractionCard 组件 */}
-      {!attractionsLoading && attractions.length > 0 && currentAttractionIndex >= 0 && (
+      {!attractionsLoading && attractions.length > 0 && currentAttractionIndex >= 0 && !showAttractionsList && (
         <div
           ref={cardContainerRef}
           className={
@@ -1351,7 +1378,19 @@ export function MapExplorer() {
                         </div>
                       </div>
                       {user?.isAdmin && (
-                        <div className="mt-1.5 pt-1.5 border-t border-border/50">
+                        <div className="mt-1.5 pt-1.5 border-t border-border/50 space-y-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full hover:bg-primary/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditAttraction(attraction);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            编辑景点
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1387,12 +1426,13 @@ export function MapExplorer() {
         </div>
       )}
 
-      {/* 添加景点表单 */}
+      {/* 添加/编辑景点表单 */}
       {showAttractionForm && map && (
         <AttractionForm
-          position={[map.getCenter().getLng(), map.getCenter().getLat()]}
+          position={editingAttraction?.position || [map.getCenter().getLng(), map.getCenter().getLat()]}
           onSubmitSuccess={handleAttractionSubmit}
           onCancel={handleAttractionCancel}
+          editingAttraction={editingAttraction || undefined}
         />
       )}
 
