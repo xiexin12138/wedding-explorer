@@ -1,18 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { ChevronUp, X, ChevronLeft, ChevronRight, Map, Loader2, Check, Users, Copy } from "lucide-react";
+import {
+  ChevronUp,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Map,
+  Loader2,
+  Check,
+  Users,
+  Copy,
+} from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { OptimizedVideo } from "@/components/OptimizedVideo";
 import { detectEnvironment } from "@/lib/environment-detector";
 import { openMap } from "@/lib/map-launcher";
 import { attractionTypeConfig } from "@/components/MapExplorer";
 import { getSignedUrl } from "@/lib/cos-url-signer";
-import { checkInAttraction, getCheckInStatus } from "@/lib/services/attractions.service";
+import {
+  checkInAttraction,
+  getCheckInStatus,
+} from "@/lib/services/attractions.service";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/components/UserProvider";
 
@@ -60,7 +73,9 @@ export function AttractionCard({
 }: AttractionCardProps) {
   const [internalExpanded, setInternalExpanded] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const [openingMapType, setOpeningMapType] = useState<'amap' | 'baidu' | 'tencent' | null>(null);
+  const [openingMapType, setOpeningMapType] = useState<
+    "amap" | "baidu" | "tencent" | null
+  >(null);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [signedFullscreenUrl, setSignedFullscreenUrl] = useState<string>("");
   const [isImageLoading, setIsImageLoading] = useState(false);
@@ -69,34 +84,39 @@ export function AttractionCard({
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  
+
   // 打卡相关状态
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
-  const [checkInData, setCheckInData] = useState<{ checkedInAt: string; coinsEarned: number } | null>(null);
+  const [checkInData, setCheckInData] = useState<{
+    checkedInAt: string;
+    coinsEarned: number;
+  } | null>(null);
   const [isLoadingCheckInStatus, setIsLoadingCheckInStatus] = useState(true);
-  
+
   // 打卡人员列表相关状态
   const [showCheckInList, setShowCheckInList] = useState(true); // 默认展开
-  const [checkInList, setCheckInList] = useState<Array<{
-    id: string;
-    user: {
-      name: string | null;
-      nickname: string | null;
-      avatar: string | null;
-    };
-    checkedInAt: string;
-    distance: number | null;
-  }>>([]);
+  const [checkInList, setCheckInList] = useState<
+    Array<{
+      id: string;
+      user: {
+        name: string | null;
+        nickname: string | null;
+        avatar: string | null;
+      };
+      checkedInAt: string;
+      distance: number | null;
+    }>
+  >([]);
   const [checkInStats, setCheckInStats] = useState<{
     totalCheckIns: number;
     avgDistance: number | null;
   } | null>(null);
   const [isLoadingCheckInList, setIsLoadingCheckInList] = useState(false);
-  
+
   // 复制相关状态
   const [isCopied, setIsCopied] = useState(false);
-  
+
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -104,36 +124,54 @@ export function AttractionCard({
   const expanded =
     externalExpanded !== undefined ? externalExpanded : internalExpanded;
 
-
-
   // 计算两点之间的距离（米）- 使用高德地图的距离计算功能
-  const calculateDistance = useCallback((
-    lng1: number,
-    lat1: number,
-    lng2: number,
-    lat2: number
-  ): number => {
-    // 如果高德地图实例不存在，使用默认值
-    if (!AMapInstance) {
-      return 10000; // 默认返回一个较大的距离，确保未解锁
+  const calculateDistance = useCallback(
+    (lng1: number, lat1: number, lng2: number, lat2: number): number => {
+      // 如果高德地图实例不存在，使用默认值
+      if (!AMapInstance) {
+        return 10000; // 默认返回一个较大的距离，确保未解锁
+      }
+
+      // 创建两个点
+      const point1 = new AMapInstance.LngLat(lng1, lat1);
+      const point2 = new AMapInstance.LngLat(lng2, lat2);
+
+      // 计算两点之间的距离
+      const distance = point1.distance(point2);
+      console.log("🚀 ~ calculateDistance ~ distance:", distance);
+
+      return distance; // 返回距离（米）
+    },
+    [AMapInstance]
+  );
+
+  // 格式化距离显示
+  const formatDistance = useCallback((distance: number): string => {
+    if (distance < 1000) {
+      return `${Math.round(distance)}m`;
+    } else {
+      return `${(distance / 1000).toFixed(1)}km`;
     }
-    
-    // 创建两个点
-    const point1 = new AMapInstance.LngLat(lng1, lat1);
-    const point2 = new AMapInstance.LngLat(lng2, lat2);
-    
-    // 计算两点之间的距离
-    const distance = point1.distance(point2);
-    console.log("🚀 ~ calculateDistance ~ distance:", distance)
-    
-    return distance; // 返回距离（米）
-  }, [AMapInstance]);
+  }, []);
+
+  // 计算当前用户到景点的距离
+  const currentDistance = useMemo(() => {
+    if (!userPosition || !attraction.position) {
+      return null;
+    }
+    return calculateDistance(
+      userPosition[0],
+      userPosition[1],
+      attraction.position[0],
+      attraction.position[1]
+    );
+  }, [userPosition, attraction.position, calculateDistance]);
 
   // 监听外部 expanded 状态变化
   useEffect(() => {
     // 只有当 externalExpanded 不为 undefined 时才处理
     if (externalExpanded !== undefined) {
-      if (!externalExpanded  && internalExpanded ) {
+      if (!externalExpanded && internalExpanded) {
         // 当外部状态变为 false 时，先显示关闭动画
         setIsClosing(true);
         setTimeout(() => {
@@ -147,7 +185,7 @@ export function AttractionCard({
       }
     }
   }, [externalExpanded, internalExpanded]);
-  
+
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isUnlocked, setIsUnlocked] = useState(false);
 
@@ -187,7 +225,7 @@ export function AttractionCard({
           setCheckInData(status.checkInData);
         }
       } catch (error) {
-        console.error('获取打卡状态失败:', error);
+        console.error("获取打卡状态失败:", error);
       } finally {
         setIsLoadingCheckInStatus(false);
       }
@@ -199,19 +237,19 @@ export function AttractionCard({
   // 获取打卡人员列表
   const loadCheckInList = async () => {
     if (!user) return;
-    
+
     try {
       setIsLoadingCheckInList(true);
       const response = await fetch(
         `/api/attractions/${attraction.id}/check-ins?page=1&pageSize=10&includeStats=true`
       );
-      
+
       if (!response.ok) {
-        throw new Error('获取打卡列表失败');
+        throw new Error("获取打卡列表失败");
       }
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setCheckInList(result.data.checkIns);
         if (result.data.stats) {
@@ -219,7 +257,7 @@ export function AttractionCard({
         }
       }
     } catch (error) {
-      console.error('获取打卡列表失败:', error);
+      console.error("获取打卡列表失败:", error);
       toast({
         title: "加载失败",
         description: "无法获取打卡人员列表",
@@ -273,7 +311,7 @@ export function AttractionCard({
 
     try {
       setIsCheckingIn(true);
-      
+
       // 计算当前距离
       let distance: number | undefined;
       if (userPosition) {
@@ -307,8 +345,8 @@ export function AttractionCard({
         description: "感谢你的探索！",
       });
     } catch (error) {
-      console.error('打卡失败:', error);
-      const errorMessage = error instanceof Error ? error.message : '打卡失败';
+      console.error("打卡失败:", error);
+      const errorMessage = error instanceof Error ? error.message : "打卡失败";
       toast({
         title: "打卡失败",
         description: errorMessage,
@@ -320,18 +358,18 @@ export function AttractionCard({
   };
 
   // 通用地图打开方法
-  const handleOpenMap = async (mapType: 'amap' | 'baidu' | 'tencent') => {
+  const handleOpenMap = async (mapType: "amap" | "baidu" | "tencent") => {
     if (openingMapType) return; // 防止重复点击
-    
+
     setOpeningMapType(mapType);
     try {
       const { environment } = detectEnvironment();
       openMap(mapType, attraction.position, attraction.name, environment);
-      
+
       // 模拟地图应用打开的延迟，给用户反馈
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
-      console.error('打开地图失败:', error);
+      console.error("打开地图失败:", error);
     } finally {
       setOpeningMapType(null);
     }
@@ -350,25 +388,25 @@ export function AttractionCard({
         });
       } else {
         // 方法2: 使用传统的 document.execCommand（兼容微信浏览器）
-        const textArea = document.createElement('textarea');
+        const textArea = document.createElement("textarea");
         textArea.value = attraction.name;
         // 防止页面滚动
-        textArea.style.position = 'fixed';
-        textArea.style.top = '0';
-        textArea.style.left = '0';
-        textArea.style.width = '2em';
-        textArea.style.height = '2em';
-        textArea.style.padding = '0';
-        textArea.style.border = 'none';
-        textArea.style.outline = 'none';
-        textArea.style.boxShadow = 'none';
-        textArea.style.background = 'transparent';
-        textArea.style.opacity = '0';
-        
+        textArea.style.position = "fixed";
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.width = "2em";
+        textArea.style.height = "2em";
+        textArea.style.padding = "0";
+        textArea.style.border = "none";
+        textArea.style.outline = "none";
+        textArea.style.boxShadow = "none";
+        textArea.style.background = "transparent";
+        textArea.style.opacity = "0";
+
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         // 对于 iOS
         if (navigator.userAgent.match(/ipad|iphone/i)) {
           const range = document.createRange();
@@ -380,10 +418,10 @@ export function AttractionCard({
           }
           textArea.setSelectionRange(0, 999999);
         }
-        
-        const successful = document.execCommand('copy');
+
+        const successful = document.execCommand("copy");
         document.body.removeChild(textArea);
-        
+
         if (successful) {
           setIsCopied(true);
           toast({
@@ -391,16 +429,16 @@ export function AttractionCard({
             description: `已复制「${attraction.name}」到剪贴板`,
           });
         } else {
-          throw new Error('复制失败');
+          throw new Error("复制失败");
         }
       }
-      
+
       // 2秒后重置复制状态
       setTimeout(() => {
         setIsCopied(false);
       }, 2000);
     } catch (error) {
-      console.error('复制失败:', error);
+      console.error("复制失败:", error);
       toast({
         title: "复制失败",
         description: "请手动选择并复制景点名称",
@@ -474,8 +512,18 @@ export function AttractionCard({
         touch2.clientX - touch1.clientX,
         touch2.clientY - touch1.clientY
       );
-      (e.currentTarget as HTMLElement & { initialPinchDistance?: number; initialScale?: number }).initialPinchDistance = distance;
-      (e.currentTarget as HTMLElement & { initialPinchDistance?: number; initialScale?: number }).initialScale = imageScale;
+      (
+        e.currentTarget as HTMLElement & {
+          initialPinchDistance?: number;
+          initialScale?: number;
+        }
+      ).initialPinchDistance = distance;
+      (
+        e.currentTarget as HTMLElement & {
+          initialPinchDistance?: number;
+          initialScale?: number;
+        }
+      ).initialScale = imageScale;
     } else if (e.touches.length === 1) {
       setIsDragging(true);
       setDragStart({
@@ -493,8 +541,12 @@ export function AttractionCard({
         touch2.clientX - touch1.clientX,
         touch2.clientY - touch1.clientY
       );
-      const initialDistance = (e.currentTarget as HTMLElement & { initialPinchDistance?: number }).initialPinchDistance;
-      const initialScale = (e.currentTarget as HTMLElement & { initialScale?: number }).initialScale || 1;
+      const initialDistance = (
+        e.currentTarget as HTMLElement & { initialPinchDistance?: number }
+      ).initialPinchDistance;
+      const initialScale =
+        (e.currentTarget as HTMLElement & { initialScale?: number })
+          .initialScale || 1;
 
       if (initialDistance) {
         const scale = (distance / initialDistance) * initialScale;
@@ -556,8 +608,6 @@ export function AttractionCard({
     );
   };
 
-
-  
   // 渲染媒体
   const renderMedia = () => {
     if (!expanded) {
@@ -584,7 +634,7 @@ export function AttractionCard({
           )}
 
           {currentMedia.type === "image" ? (
-            <div 
+            <div
               className="relative w-full h-full cursor-pointer"
               onClick={() => handleImageClick(currentMedia.url)}
             >
@@ -691,7 +741,7 @@ export function AttractionCard({
               <p className="text-white text-sm">加载中...</p>
             </div>
           )}
-          
+
           {signedFullscreenUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -767,7 +817,9 @@ export function AttractionCard({
         {/* 内容区域 */}
         <div className="flex-1 p-6 overflow-y-auto pb-20">
           <div className="relative flex items-center mb-2">
-            <h2 className="text-2xl font-bold mr-2 flex-shrink-0">{attraction.name}</h2>
+            <h2 className="text-2xl font-bold mr-2 flex-shrink-0">
+              {attraction.name}
+            </h2>
             <Button
               variant="ghost"
               size="sm"
@@ -783,81 +835,68 @@ export function AttractionCard({
             </Button>
             <div className="inline-block">
               {/* 在展开视图中使用内联样式而不是绝对定位 */}
-              <Badge 
+              <Badge
                 className={cn(
-                  attractionTypeConfig[attraction.type]?.className || attractionTypeConfig[AttractionType.OTHER].className
+                  attractionTypeConfig[attraction.type]?.className ||
+                    attractionTypeConfig[AttractionType.OTHER].className
                 )}
               >
-                {attractionTypeConfig[attraction.type]?.label || attractionTypeConfig[AttractionType.OTHER].label}
+                {attractionTypeConfig[attraction.type]?.label ||
+                  attractionTypeConfig[AttractionType.OTHER].label}
               </Badge>
             </div>
           </div>
 
-          <div className="mt-4">
-            <div className="prose dark:prose-invert">
-              <p className="whitespace-pre-wrap">{attraction.description}</p>
-            </div>
-
-            {/* 打卡按钮 */}
-            {user && (
-              <div className="mt-6">
-                {isLoadingCheckInStatus ? (
-                  <div className="flex items-center justify-center py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="ml-2 text-sm text-muted-foreground">加载打卡状态...</span>
-                  </div>
-                ) : hasCheckedIn ? (
-                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span className="font-semibold text-green-700 dark:text-green-300">已打卡</span>
-                    </div>
-                    {checkInData && (
-                      <div className="text-sm text-green-600 dark:text-green-400">
-                        <p>打卡时间: {new Date(checkInData.checkedInAt).toLocaleString('zh-CN')}</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Button
-                    variant={isUnlocked ? "default" : "outline"}
-                    size="lg"
-                    className="w-full font-semibold"
-                    onClick={handleCheckIn}
-                    disabled={!isUnlocked || isCheckingIn}
-                  >
-                    {isCheckingIn ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                        打卡中...
-                      </>
-                    ) : isUnlocked ? (
-                      <>
-                        <Check className="h-5 w-5 mr-2" />
-                        立即打卡
-                      </>
-                    ) : (
-                      <>
-                        <Map className="h-5 w-5 mr-2" />
-                        靠近后可打卡
-                      </>
-                    )}
-                  </Button>
-                )}
+            <div className="mt-4">
+              <div className="prose dark:prose-invert">
+                <p className="whitespace-pre-wrap">{attraction.description}</p>
               </div>
-            )}
+              
+              {/* 打卡状态显示（仅在已打卡时显示） */}
+              {user && hasCheckedIn && !isLoadingCheckInStatus && (
+                <div className="mt-6 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <span className="font-semibold text-green-700 dark:text-green-300">
+                      已打卡
+                    </span>
+                  </div>
+                  {checkInData && (
+                    <div className="text-sm text-green-600 dark:text-green-400">
+                      <p>
+                        打卡时间:{" "}
+                        {new Date(checkInData.checkedInAt).toLocaleString(
+                          "zh-CN"
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* 地图导航按钮 - 根据解锁状态显示不同文案 */}
             <div className="mt-4">
               <div className="flex flex-wrap gap-2">
                 {[
-                  { type: 'amap' as const, label: '高德地图', navLabel: '用高德导航到这里' },
-                  { type: 'baidu' as const, label: '百度地图', navLabel: '用百度导航到这里' },
-                  { type: 'tencent' as const, label: '腾讯地图', navLabel: '用腾讯导航到这里' }
+                  {
+                    type: "amap" as const,
+                    label: "高德地图",
+                    navLabel: "用高德导航到这里",
+                  },
+                  {
+                    type: "baidu" as const,
+                    label: "百度地图",
+                    navLabel: "用百度导航到这里",
+                  },
+                  {
+                    type: "tencent" as const,
+                    label: "腾讯地图",
+                    navLabel: "用腾讯导航到这里",
+                  },
                 ].map((mapProvider) => {
                   const isCurrentLoading = openingMapType === mapProvider.type;
                   const isAnyLoading = openingMapType !== null;
-                  
+
                   return (
                     <Button
                       key={mapProvider.type}
@@ -872,7 +911,11 @@ export function AttractionCard({
                       ) : (
                         <Map className="h-4 w-4" />
                       )}
-                      {isCurrentLoading ? '打开中...' : (isUnlocked ? mapProvider.label : mapProvider.navLabel)}
+                      {isCurrentLoading
+                        ? "打开中..."
+                        : isUnlocked
+                        ? mapProvider.label
+                        : mapProvider.navLabel}
                     </Button>
                   );
                 })}
@@ -897,10 +940,12 @@ export function AttractionCard({
                       </Badge>
                     )}
                   </span>
-                  <ChevronUp className={cn(
-                    "h-4 w-4 transition-transform",
-                    showCheckInList ? "rotate-180" : ""
-                  )} />
+                  <ChevronUp
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      showCheckInList ? "rotate-180" : ""
+                    )}
+                  />
                 </Button>
 
                 {showCheckInList && (
@@ -908,7 +953,9 @@ export function AttractionCard({
                     {isLoadingCheckInList ? (
                       <div className="flex items-center justify-center py-6">
                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                        <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+                        <span className="ml-2 text-sm text-muted-foreground">
+                          加载中...
+                        </span>
                       </div>
                     ) : checkInList.length === 0 ? (
                       <div className="text-center py-6 text-sm text-muted-foreground">
@@ -917,7 +964,10 @@ export function AttractionCard({
                     ) : (
                       <div className="divide-y">
                         {checkInList.map((checkIn, index) => (
-                          <div key={checkIn.id} className="p-3 bg-background hover:bg-muted/50 transition-colors">
+                          <div
+                            key={checkIn.id}
+                            className="p-3 bg-background hover:bg-muted/50 transition-colors"
+                          >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold text-sm">
@@ -925,24 +975,29 @@ export function AttractionCard({
                                 </div>
                                 <div>
                                   <div className="font-medium text-sm">
-                                    {checkIn.user.name || checkIn.user.nickname || '匿名用户'}
+                                    {checkIn.user.name ||
+                                      checkIn.user.nickname ||
+                                      "匿名用户"}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
-                                    {new Date(checkIn.checkedInAt).toLocaleString('zh-CN', {
-                                      month: 'numeric',
-                                      day: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
+                                    {new Date(
+                                      checkIn.checkedInAt
+                                    ).toLocaleString("zh-CN", {
+                                      month: "numeric",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
                                     })}
                                   </div>
                                 </div>
                               </div>
                               {checkIn.distance !== null && (
                                 <div className="text-xs text-muted-foreground">
-                                  {checkIn.distance < 1000 
+                                  {checkIn.distance < 1000
                                     ? `${Math.round(checkIn.distance)}m`
-                                    : `${(checkIn.distance / 1000).toFixed(1)}km`
-                                  }
+                                    : `${(checkIn.distance / 1000).toFixed(
+                                        1
+                                      )}km`}
                                 </div>
                               )}
                             </div>
@@ -957,10 +1012,12 @@ export function AttractionCard({
                         <span>共 {checkInStats.totalCheckIns} 人打卡</span>
                         {checkInStats.avgDistance !== null && (
                           <span>
-                            平均距离: {checkInStats.avgDistance < 1000 
+                            平均距离:{" "}
+                            {checkInStats.avgDistance < 1000
                               ? `${Math.round(checkInStats.avgDistance)}m`
-                              : `${(checkInStats.avgDistance / 1000).toFixed(1)}km`
-                            }
+                              : `${(checkInStats.avgDistance / 1000).toFixed(
+                                  1
+                                )}km`}
                           </span>
                         )}
                       </div>
@@ -969,16 +1026,84 @@ export function AttractionCard({
                 )}
               </div>
             )}
-
           </div>
         </div>
 
-        {/* 底部关闭按钮 */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-background/0 pointer-events-none">
-          <div className="pointer-events-auto">
+        {/* 底部按钮组 */}
+        <div className="fixed bottom-0 left-0 right-0 py-4 px-2 bg-gradient-to-t from-background via-background to-background/0 pointer-events-none">
+          <div className="pointer-events-auto flex gap-3">
+            {/* 左侧打卡按钮 */}
+            {user && (
+              <div className="flex-[2]">
+                {isLoadingCheckInStatus ? (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full h-12 text-base font-medium"
+                    disabled
+                  >
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    加载中...
+                  </Button>
+                ) : hasCheckedIn ? (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full h-12 text-base font-medium bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
+                    disabled
+                  >
+                    <Check className="h-5 w-5 mr-2" />
+                    已打卡
+                    {currentDistance !== null && (
+                      <span className="ml-2 text-sm opacity-80">
+                        ({formatDistance(currentDistance!)})
+                      </span>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className="w-full h-12 text-base font-medium"
+                    onClick={handleCheckIn}
+                    disabled={!isUnlocked || isCheckingIn}
+                  >
+                    {isCheckingIn ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        打卡中...
+                      </>
+                    ) : isUnlocked ? (
+                      <>
+                        <Check className="h-5 w-5 mr-2" />
+                        立即打卡
+                        {currentDistance !== null && (
+                          <span className="ml-2 text-sm opacity-80">
+                            ({formatDistance(currentDistance!)})
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Map className="h-5 w-5 mr-2" />
+                        靠近后可打卡
+                        {currentDistance !== null && (
+                          <span className="ml-2 text-sm opacity-80">
+                            ({formatDistance(currentDistance!)})
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+            
+            {/* 右侧关闭按钮 */}
             <Button
               variant="outline"
-              className="w-full h-12 text-base font-medium"
+              size="lg"
+              className="h-12 px-8 text-base font-medium flex-1"
               onClick={() => {
                 // 先设置关闭动画状态
                 setIsClosing(true);
@@ -1022,15 +1147,19 @@ export function AttractionCard({
             <Copy className="h-3.5 w-3.5" />
           )}
         </Button>
-        <Badge 
+        <Badge
           className={cn(
-            attractionTypeConfig[attraction.type]?.className || attractionTypeConfig[AttractionType.OTHER].className
+            attractionTypeConfig[attraction.type]?.className ||
+              attractionTypeConfig[AttractionType.OTHER].className
           )}
         >
-          {attractionTypeConfig[attraction.type]?.label || attractionTypeConfig[AttractionType.OTHER].label}
+          {attractionTypeConfig[attraction.type]?.label ||
+            attractionTypeConfig[AttractionType.OTHER].label}
         </Badge>
       </div>
-      <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">{attraction.description}</p>
+      <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">
+        {attraction.description}
+      </p>
 
       {/* 展开按钮 */}
       <div className="mt-2 flex justify-end">
