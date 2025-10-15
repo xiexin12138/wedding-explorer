@@ -203,11 +203,16 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
     console.log('🚀 使用中间件预查询的 dbUserId，跳过数据库查询:', user.sub, '->', user.dbUserId)
   } else if (!user.dbUserId) {
     try {
-      const { db } = await import('@/lib/db')
-      const authingUser = await db.authingUser.findUnique({
-        where: { authingId: user.sub },
-        select: { userId: true }
-      })
+      const { db, withDatabaseRetry } = await import('@/lib/db')
+      
+      // 使用重试机制查询用户映射
+      const authingUser = await withDatabaseRetry(
+        () => db.authingUser.findUnique({
+          where: { authingId: user.sub },
+          select: { userId: true }
+        }),
+        '查询用户映射'
+      )
 
       if (authingUser) {
         user.dbUserId = authingUser.userId
@@ -234,14 +239,18 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
           || user.username 
           || (user.email ? user.email.split('@')[0] : undefined)
         
-        const newUser = await loginOrRegister({
-          authingId: user.sub,
-          name: displayName,
-          nickname: nickname,
-          email: user.email,
-          avatar: typeof user.picture === 'string' ? user.picture : undefined,
-          isAdmin,
-        })
+        // 使用重试机制创建用户
+        const newUser = await withDatabaseRetry(
+          () => loginOrRegister({
+            authingId: user.sub,
+            name: displayName,
+            nickname: nickname,
+            email: user.email,
+            avatar: typeof user.picture === 'string' ? user.picture : undefined,
+            isAdmin,
+          }),
+          '创建用户'
+        )
         
         user.dbUserId = newUser.id
         console.log('✅ 自动创建用户成功:', user.sub, '->', user.dbUserId)

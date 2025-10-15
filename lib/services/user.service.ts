@@ -6,7 +6,7 @@
 import * as userRepo from '@/lib/repositories/user.repository';
 import * as coinTransactionRepo from '@/lib/repositories/coin-transaction.repository';
 import type { User, TransactionType, CoinTransaction, Prisma } from '@/app/generated/prisma';
-import { db } from '@/lib/db';
+import { db, withDatabaseRetry } from '@/lib/db';
 import { GAME_CONFIG } from '@/lib/game-config';
 import { getDictionaryItemByKey } from '@/lib/repositories/dictionary.repository';
 
@@ -37,19 +37,28 @@ export async function loginOrRegister(params: {
     let needsReload = false; // 标记是否需要重新加载用户数据
 
     // 优先通过 authingId 查找（Authing 登录）
-    // 性能优化：不加载关联表，减少 JOIN
+    // 性能优化：不加载关联表，减少 JOIN，使用重试机制
     if (authingId) {
-      user = await userRepo.getUserByAuthingId(authingId, false);
+      user = await withDatabaseRetry(
+        () => userRepo.getUserByAuthingId(authingId, false),
+        '通过AuthingId查找用户'
+      );
     }
 
     // 如果没有找到，再通过 unionId 查找（微信跨应用识别）
     if (!user && unionId) {
-      user = await userRepo.getUserByUnionId(unionId, false);
+      user = await withDatabaseRetry(
+        () => userRepo.getUserByUnionId(unionId, false),
+        '通过UnionId查找用户'
+      );
     }
 
     // 如果没有找到，再通过 openId 查找（微信登录）
     if (!user && openId) {
-      user = await userRepo.getUserByOpenId(openId, false);
+      user = await withDatabaseRetry(
+        () => userRepo.getUserByOpenId(openId, false),
+        '通过OpenId查找用户'
+      );
     }
 
     // 如果用户存在，更新最后登录时间和可能更新的信息
