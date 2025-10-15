@@ -205,6 +205,8 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
     try {
       const { db, withDatabaseRetry } = await import('@/lib/db')
       
+      console.log('🔍 开始查询用户映射:', user.sub)
+      
       // 使用重试机制查询用户映射
       const authingUser = await withDatabaseRetry(
         () => db.authingUser.findUnique({
@@ -239,6 +241,8 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
           || user.username 
           || (user.email ? user.email.split('@')[0] : undefined)
         
+        console.log('🔄 开始创建用户:', { authingId: user.sub, name: displayName })
+        
         // 使用重试机制创建用户
         const newUser = await withDatabaseRetry(
           () => loginOrRegister({
@@ -257,7 +261,19 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
       }
     } catch (error) {
       console.error('❌ 处理数据库用户ID失败:', error)
-      // 抛出更友好的错误信息
+      
+      // 检查是否是数据库连接错误
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("Can't reach database server") ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('connection')
+      ) {
+        // 数据库连接失败，返回更友好的错误信息
+        throw new Error('数据库连接失败，请稍后重试。如果问题持续存在，请联系管理员。')
+      }
+      
+      // 其他错误，抛出通用错误信息
       throw new Error('用户信息同步失败，请稍后重试')
     }
   }

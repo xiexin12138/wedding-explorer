@@ -27,12 +27,12 @@ export const dbConfig = {
 
   // 重试配置
   retry: {
-    // 最大重试次数
-    maxRetries: 2, // 减少重试次数，避免累积延迟
+    // 最大重试次数（增加到 3 次以应对网络波动）
+    maxRetries: 3,
     // 重试间隔（毫秒）
-    retryDelay: 500, // 减少重试间隔
+    retryDelay: 1000, // 增加重试间隔到 1 秒
     // 指数退避因子
-    backoffFactor: 1.5,
+    backoffFactor: 2, // 提高退避因子，增加间隔时间
   },
 
   // 查询优化

@@ -72,23 +72,34 @@ export async function withDatabaseRetry<T>(
     } catch (error) {
       lastError = error as Error;
       
-      // 检查是否是连接池相关错误
-      const isConnectionError = 
-        error instanceof Error && (
-          error.message.includes('connection pool') ||
-          error.message.includes('Timed out') ||
-          error.message.includes('Connection terminated') ||
-          error.message.includes('Connection refused')
-        );
+      // 检查是否是连接相关错误（需要重试）
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorName = error instanceof Error ? error.constructor.name : '';
       
+      const isConnectionError = 
+        errorMessage.includes('connection pool') ||
+        errorMessage.includes('Timed out') ||
+        errorMessage.includes('Connection terminated') ||
+        errorMessage.includes('Connection refused') ||
+        errorMessage.includes("Can't reach database server") ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ENOTFOUND') ||
+        errorMessage.includes('ECONNRESET') ||
+        errorName === 'PrismaClientInitializationError' ||
+        errorName === 'PrismaClientKnownRequestError';
+      
+      // 如果不是连接错误，或已达到最大重试次数，直接抛出
       if (!isConnectionError || attempt > maxRetries) {
         console.error(`❌ ${operationName}失败 (尝试 ${attempt}/${maxRetries + 1}):`, error);
         throw error;
       }
       
+      // 计算延迟时间（指数退避）
       const delay = dbConfig.retry.retryDelay * Math.pow(dbConfig.retry.backoffFactor, attempt - 1);
-      console.warn(`⚠️ ${operationName}连接失败，${delay}ms后重试 (尝试 ${attempt}/${maxRetries + 1}):`, error.message);
+      console.warn(`⚠️ ${operationName}连接失败，${delay}ms后重试 (尝试 ${attempt}/${maxRetries + 1}):`, errorMessage);
       
+      // 等待后重试
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
