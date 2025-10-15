@@ -154,7 +154,7 @@ export function AttractionCard({
     }
   }, []);
 
-  // 计算当前用户到景点的距离
+  // 计算当前用户到景点的距离 - 添加防抖优化
   const currentDistance = useMemo(() => {
     if (!userPosition || !attraction.position) {
       return null;
@@ -166,6 +166,28 @@ export function AttractionCard({
       attraction.position[1]
     );
   }, [userPosition, attraction.position, calculateDistance]);
+
+  // 防抖的距离显示，避免频繁更新导致的闪烁
+  const [displayDistance, setDisplayDistance] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (currentDistance === null) {
+      setDisplayDistance(null);
+      return;
+    }
+
+    // 如果距离变化很小（小于10米），不更新显示，避免闪烁
+    if (displayDistance !== null && Math.abs(currentDistance - displayDistance) < 10) {
+      return;
+    }
+
+    // 使用防抖更新显示距离
+    const timer = setTimeout(() => {
+      setDisplayDistance(currentDistance);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [currentDistance, displayDistance]);
 
   // 监听外部 expanded 状态变化
   useEffect(() => {
@@ -1054,9 +1076,9 @@ export function AttractionCard({
                   >
                     <Check className="h-5 w-5 mr-2" />
                     已打卡
-                    {currentDistance !== null && (
+                    {displayDistance !== null && (
                       <span className="ml-2 text-sm opacity-80">
-                        ({formatDistance(currentDistance!)})
+                        ({formatDistance(displayDistance!)})
                       </span>
                     )}
                   </Button>
@@ -1077,9 +1099,9 @@ export function AttractionCard({
                       <>
                         <Check className="h-5 w-5 mr-2" />
                         立即打卡
-                        {currentDistance !== null && (
+                        {displayDistance !== null && (
                           <span className="ml-2 text-sm opacity-80">
-                            ({formatDistance(currentDistance!)})
+                            ({formatDistance(displayDistance!)})
                           </span>
                         )}
                       </>
@@ -1087,9 +1109,9 @@ export function AttractionCard({
                       <>
                         <Map className="h-5 w-5 mr-2" />
                         靠近后可打卡
-                        {currentDistance !== null && (
+                        {displayDistance !== null && (
                           <span className="ml-2 text-sm opacity-80">
-                            ({formatDistance(currentDistance!)})
+                            ({formatDistance(displayDistance!)})
                           </span>
                         )}
                       </>

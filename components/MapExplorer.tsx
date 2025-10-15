@@ -351,7 +351,26 @@ export function MapExplorer() {
               gcoord.WGS84,
               gcoord.GCJ02
             ) as [number, number];
-            setUserPosition(gcj02Point);
+            
+            // 只有当位置变化超过 5 米时才更新，避免频繁更新导致卡片闪烁
+            setUserPosition(prevPosition => {
+              if (!prevPosition) {
+                return gcj02Point;
+              }
+              
+              // 计算距离变化
+              const distance = Math.sqrt(
+                Math.pow(gcj02Point[0] - prevPosition[0], 2) + 
+                Math.pow(gcj02Point[1] - prevPosition[1], 2)
+              ) * 111000; // 粗略转换为米
+              
+              // 如果变化小于 5 米，不更新位置
+              if (distance < 5) {
+                return prevPosition;
+              }
+              
+              return gcj02Point;
+            });
 
             // 获取定位精度
             const geolocationResult =
@@ -371,8 +390,8 @@ export function MapExplorer() {
     // 初始更新一次位置
     updateUserLocation();
 
-    // 设置定时器，每 5 秒更新一次位置
-    locationTimerRef.current = setInterval(updateUserLocation, 5000);
+    // 设置定时器，每 10 秒更新一次位置（减少更新频率，避免卡片闪烁）
+    locationTimerRef.current = setInterval(updateUserLocation, 10000);
 
     // 清理函数
     return () => {
