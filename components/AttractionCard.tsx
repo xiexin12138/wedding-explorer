@@ -795,7 +795,7 @@ export function AttractionCard({
 
           <div className="mt-4">
             <div className="prose dark:prose-invert">
-              <p>{attraction.description}</p>
+              <p className="whitespace-pre-wrap">{attraction.description}</p>
             </div>
 
             {/* 打卡按钮 */}
@@ -1030,7 +1030,7 @@ export function AttractionCard({
           {attractionTypeConfig[attraction.type]?.label || attractionTypeConfig[AttractionType.OTHER].label}
         </Badge>
       </div>
-      <p className="text-sm text-muted-foreground">{attraction.description}</p>
+      <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">{attraction.description}</p>
 
       {/* 展开按钮 */}
       <div className="mt-2 flex justify-end">
