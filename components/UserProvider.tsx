@@ -132,6 +132,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (data.user) {
           setUser(data.user);
           console.log("✅ 用户已登录:", data.user);
+          
+          // 如果用户没有 dbId，自动调用 profile API 进行数据库同步
+          if (!data.user.data?.dbId) {
+            console.log("🔄 用户缺少 dbId，开始自动同步到数据库...");
+            try {
+              const profileResponse = await getWithTracking("/api/user/profile");
+              if (profileResponse.ok) {
+                const profileData = await profileResponse.json();
+                if (profileData.success && profileData.data) {
+                  // 更新用户信息，包含数据库同步后的信息
+                  const updatedUser = {
+                    ...data.user,
+                    data: {
+                      ...data.user.data,
+                      dbId: profileData.data.user.id,
+                      // 同步数据库中的最新信息
+                      name: profileData.data.user.name || data.user.name,
+                      nickname: profileData.data.user.nickname || data.user.data?.nickname,
+                      coins: profileData.data.user.coins,
+                      rank: profileData.data.rank
+                    }
+                  };
+                  setUser(updatedUser);
+                  console.log("✅ 用户信息已同步到数据库:", updatedUser);
+                }
+              }
+            } catch (error) {
+              console.error("❌ 自动同步用户信息失败:", error);
+            }
+          }
         } else {
           setUser(null);
           console.log("❌ 用户未登录");

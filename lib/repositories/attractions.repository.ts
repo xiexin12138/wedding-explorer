@@ -71,7 +71,7 @@ export async function getAllAttractions(includeDisabled: boolean = false): Promi
     const prismaAttractions = await db.attraction.findMany({
       where,
       orderBy: [
-        { sortOrder: 'asc' },
+        { sortOrder: 'desc' },
         { createdAt: 'desc' }
       ]
     });

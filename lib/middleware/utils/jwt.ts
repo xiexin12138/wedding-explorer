@@ -100,8 +100,43 @@ export function parseJWTPayload(token: string): JWTPayload {
     const payloadString = base64UrlDecode(payloadBase64)
     console.log(`🔍 JWT payload 解码成功，长度: ${payloadString.length}`)
     
-    const payload = JSON.parse(payloadString) as JWTPayload
+    // 处理 UTF-8 编码问题
+    let decodedPayloadString: string
+    try {
+      // 尝试将字节序列转换为正确的 UTF-8 字符串
+      const bytes = new Uint8Array(payloadString.length)
+      for (let i = 0; i < payloadString.length; i++) {
+        bytes[i] = payloadString.charCodeAt(i)
+      }
+      decodedPayloadString = new TextDecoder('utf-8').decode(bytes)
+      console.log(`🔍 UTF-8 解码成功，修复后长度: ${decodedPayloadString.length}`)
+    } catch (utfError) {
+      console.log('⚠️ UTF-8 解码失败，使用原始字符串:', utfError)
+      decodedPayloadString = payloadString
+    }
+    
+    const payload = JSON.parse(decodedPayloadString) as JWTPayload
     console.log(`✅ JWT payload 解析成功，包含字段: ${Object.keys(payload).join(', ')}`)
+    
+    // 详细打印用户相关字段
+    console.log('🔍 JWT Payload 用户字段详情:', {
+      sub: payload.sub,
+      name: payload.name,
+      nickname: payload.nickname,
+      username: payload.username,
+      email: payload.email,
+      phone: payload.phone,
+      phoneNumber: payload.phoneNumber,
+      picture: payload.picture,
+      photo: payload.photo,
+      given_name: payload.given_name,
+      family_name: payload.family_name,
+      preferred_username: payload.preferred_username,
+      iat: payload.iat,
+      exp: payload.exp,
+      aud: payload.aud,
+      iss: payload.iss
+    })
     
     return payload
   } catch (error) {

@@ -54,6 +54,23 @@ export class AuthHandler implements MiddlewareHandler {
       // 记录认证成功信息
       this.logAuthSuccess(payload, pathname)
       
+      // 打印中间件解析的用户信息
+      console.log('🔍 中间件解析的 OAuth 用户信息:', {
+        sub: payload.sub,
+        name: payload.name,
+        nickname: payload.nickname,
+        username: payload.username,
+        email: payload.email,
+        phone: payload.phone,
+        phoneNumber: payload.phoneNumber,
+        picture: payload.picture,
+        photo: payload.photo,
+        iat: payload.iat,
+        exp: payload.exp,
+        allFields: Object.keys(payload),
+        pathname: pathname
+      })
+      
       // 将用户信息添加到上下文中，供后续处理器和 API 路由使用
       context.user = payload
       

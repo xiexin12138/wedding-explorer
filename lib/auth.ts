@@ -63,8 +63,9 @@ export function getUserFromMiddleware(request: NextRequest): AuthingUser | null 
       return null
     }
 
-    // 解码 Base64 编码的用户信息
+    // 解码 Base64 编码的用户信息，确保正确处理 UTF-8
     const userInfoJson = Buffer.from(encodedUserInfo, 'base64').toString('utf-8')
+    console.log('🔍 解码后的用户信息 JSON:', userInfoJson.substring(0, 200) + '...')
     const userInfo = JSON.parse(userInfoJson)
 
     // 验证基本字段
@@ -74,6 +75,18 @@ export function getUserFromMiddleware(request: NextRequest): AuthingUser | null 
     }
 
     console.log('✅ 从中间件获取用户信息:', userInfo.sub)
+    console.log('🔍 中间件用户信息详情:', {
+      sub: userInfo.sub,
+      name: userInfo.name,
+      nickname: userInfo.nickname,
+      username: userInfo.username,
+      email: userInfo.email,
+      phone: userInfo.phone,
+      phoneNumber: userInfo.phoneNumber,
+      picture: userInfo.picture,
+      photo: userInfo.photo,
+      allFields: Object.keys(userInfo)
+    })
     return userInfo as AuthingUser
 
   } catch (error) {
@@ -122,6 +135,22 @@ export async function validateJWTToken(token: string): Promise<AuthingUser | nul
     }
 
     console.log('✅ Authing JWT token HS256 验证通过:', payload.sub)
+    console.log('🔍 JWT Payload 用户信息详情:', {
+      sub: payload.sub,
+      name: payload.name,
+      nickname: payload.nickname,
+      username: payload.username,
+      email: payload.email,
+      phone: payload.phone,
+      phoneNumber: payload.phoneNumber,
+      picture: payload.picture,
+      photo: payload.photo,
+      iat: payload.iat,
+      exp: payload.exp,
+      aud: payload.aud,
+      iss: payload.iss,
+      allFields: Object.keys(payload)
+    })
     return payload as AuthingUser
 
   } catch (error) {
@@ -230,6 +259,16 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
         const isAdmin = adminIds.includes(user.sub)
         
         // 构建用户显示名称（使用多个字段作为后备）
+        console.log('📋 Authing 用户原始信息:', {
+          authingId: user.sub,
+          name: user.name,
+          nickname: user.nickname,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+          phoneNumber: user.phoneNumber
+        })
+
         const displayName = user.name 
           || user.nickname 
           || user.username 
@@ -241,7 +280,14 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
           || user.username 
           || (user.email ? user.email.split('@')[0] : undefined)
         
-        console.log('🔄 开始创建用户:', { authingId: user.sub, name: displayName })
+        console.log('🔄 开始创建用户:', { 
+          authingId: user.sub, 
+          name: displayName,
+          nickname: nickname,
+          isNicknameEmpty: !nickname,
+          isFallbackName: displayName.startsWith('用户'),
+          jwtOriginalName: user.name
+        })
         
         // 使用重试机制创建用户
         const newUser = await withDatabaseRetry(
@@ -258,6 +304,12 @@ export async function requireAuth(request: NextRequest): Promise<AuthingUser> {
         
         user.dbUserId = newUser.id
         console.log('✅ 自动创建用户成功:', user.sub, '->', user.dbUserId)
+        
+        // 检查并填充空的 name 字段
+        if (user.name && user.dbUserId) {
+          const { updateUserNameIfEmpty } = await import('@/lib/services/user.service')
+          await updateUserNameIfEmpty(user.dbUserId, user.name)
+        }
       }
     } catch (error) {
       console.error('❌ 处理数据库用户ID失败:', error)

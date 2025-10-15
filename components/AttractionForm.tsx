@@ -28,6 +28,7 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel, editingAtt
   const [type, setType] = useState<AttractionType>(editingAttraction?.type || AttractionType.SCENIC);
   const [unlockDistance, setUnlockDistance] = useState(editingAttraction?.unlockDistance || 100);
   const [rewardCoins] = useState(editingAttraction?.rewardCoins || 10); // 默认奖励10金币（金币功能已屏蔽，但保留后端数据）
+  const [sortOrder, setSortOrder] = useState(editingAttraction?.sortOrder ?? 0); // 排序权重，默认为0
   
   // 初始化已有的媒体文件（编辑模式）
   const [mediaFiles, setMediaFiles] = useState<UploadableFile[]>(() => {
@@ -138,7 +139,8 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel, editingAtt
         position: position,
         unlockDistance: unlockDistance,
         rewardCoins: rewardCoins, // 使用用户设置的金币奖励数额
-        media: allFinalMedia
+        media: allFinalMedia,
+        sortOrder: sortOrder
       };
 
       let response;
@@ -229,6 +231,18 @@ export function AttractionForm({ position, onSubmitSuccess, onCancel, editingAtt
                 placeholder="100"
               />
               <p className="text-xs text-muted-foreground">用户在此范围内可打卡</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sortOrder">排序权重</Label>
+              <Input 
+                id="sortOrder" 
+                type="number" 
+                value={sortOrder} 
+                onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)} 
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground">数值越大越靠前，默认为0</p>
             </div>
 
             <MediaUploader

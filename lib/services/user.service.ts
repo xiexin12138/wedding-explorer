@@ -11,6 +11,51 @@ import { GAME_CONFIG } from '@/lib/game-config';
 import { getDictionaryItemByKey } from '@/lib/repositories/dictionary.repository';
 
 /**
+ * 检查并更新用户的 name 字段
+ * 如果数据库中的 name 为空，则使用 JWT 中的 name 填充
+ */
+export async function updateUserNameIfEmpty(
+  userId: string, 
+  jwtName: string | undefined,
+  tx?: Prisma.TransactionClient
+): Promise<boolean> {
+  if (!jwtName) return false;
+  
+  const dbClient = tx || db;
+  
+  try {
+    // 查询当前用户的 name 字段
+    const currentUser = await dbClient.user.findUnique({
+      where: { id: userId },
+      select: { name: true }
+    });
+    
+    if (!currentUser) return false;
+    
+    // 如果 name 为空或 null，则更新
+    if (!currentUser.name) {
+      await dbClient.user.update({
+        where: { id: userId },
+        data: { name: jwtName }
+      });
+      
+      console.log('✅ 已填充空的 name 字段:', { 
+        userId, 
+        from: currentUser.name, 
+        to: jwtName 
+      });
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('❌ 更新用户 name 字段失败:', error);
+    return false;
+  }
+}
+
+/**
  * 用户登录或注册（性能优化版本）
  * 如果用户不存在则自动创建
  * 支持 Authing ID、微信 OpenID/UnionID
@@ -65,18 +110,42 @@ export async function loginOrRegister(params: {
     if (user) {
       // 性能优化：将更新和关联检查合并到一个事务中
       await db.$transaction(async (tx) => {
+        // 检查是否需要填充空的 name 字段
+        const shouldUpdateName = !user!.name && name;
+        
+        console.log('🔍 用户信息更新检查:', {
+          userId: user!.id,
+          currentName: user!.name,
+          jwtName: name,
+          shouldUpdateName,
+          currentNickname: user!.nickname,
+          jwtNickname: nickname
+        });
+
         // 更新用户信息
         await tx.user.update({
           where: { id: user!.id },
           data: {
             lastLoginAt: new Date(),
             ...(nickname && { nickname }),
-            ...(name && { name }),
+            // 如果数据库中 name 为空且 JWT 中有 name，则更新
+            ...(shouldUpdateName && { name }),
+            // 如果 JWT 中有新的 name 且不为空，也更新
+            ...(name && user!.name && name !== user!.name && { name }),
             ...(avatar && { avatar }),
             ...(email && { email }),
             ...(isAdmin !== undefined && { role: isAdmin ? 'ADMIN' : user!.role }),
           },
         });
+
+        if (shouldUpdateName) {
+          console.log('✅ 已填充空的 name 字段:', { from: user!.name, to: name });
+        }
+        
+        // 额外检查：如果更新后仍然没有 name，尝试使用 JWT 原始 name 填充
+        if (!shouldUpdateName && !user!.name && name) {
+          await updateUserNameIfEmpty(user!.id, name, tx);
+        }
 
         // 如果提供了新的认证信息，使用 upsert 减少查询
         if (authingId) {
@@ -129,6 +198,16 @@ export async function loginOrRegister(params: {
         const INITIAL_COINS = GAME_CONFIG.initialCoins;
 
         // 创建用户（初始化游戏币）
+        console.log('💾 即将存储到数据库的用户信息:', {
+          nickname,
+          name,
+          avatar,
+          email,
+          role: isAdmin ? 'ADMIN' : 'GUEST',
+          nicknameIsNull: nickname === null || nickname === undefined,
+          nameIsFallback: name && name.startsWith('用户')
+        })
+
         const newUser = await tx.user.create({
           data: {
             nickname,
@@ -141,6 +220,13 @@ export async function loginOrRegister(params: {
             totalCoinsEarned: INITIAL_COINS,
           },
         });
+
+        console.log('✅ 用户创建成功:', {
+          id: newUser.id,
+          nickname: newUser.nickname,
+          name: newUser.name,
+          email: newUser.email
+        })
 
         // 创建 Authing 关联
         if (authingId) {

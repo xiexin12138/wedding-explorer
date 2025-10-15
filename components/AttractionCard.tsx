@@ -54,6 +54,7 @@ export interface AttractionDetail {
   media?: AttractionMedia[];
   unlockDistance?: number; // 解锁距离，单位米，默认为100米
   rewardCoins?: number; // 打卡奖励金币数（金币功能已屏蔽，但保留数据）
+  sortOrder?: number; // 排序权重，数值越大越靠前
 }
 
 interface AttractionCardProps {

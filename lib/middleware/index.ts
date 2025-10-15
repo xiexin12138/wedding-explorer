@@ -74,8 +74,10 @@ class MiddlewareManager {
         exp: context.user.exp,
       })
       
-      // 使用 Base64 编码避免特殊字符问题
-      const encodedUserInfo = Buffer.from(userInfo).toString('base64')
+      console.log('🔍 中间件编码前的用户信息 JSON:', userInfo.substring(0, 200) + '...')
+      
+      // 使用 Base64 编码避免特殊字符问题，确保 UTF-8 编码
+      const encodedUserInfo = Buffer.from(userInfo, 'utf-8').toString('base64')
       
       response.headers.set('x-middleware-user', encodedUserInfo)
       console.log(`🔄 中间件传递用户信息到请求头: ${context.user.sub}`)

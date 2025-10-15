@@ -70,6 +70,16 @@ export const GET = withPerformanceMonitoring(async (
       const isAdmin = adminIds.includes(authUser.sub);
       
       // 构建用户显示名称（使用多个字段作为后备）
+      console.log('📋 Profile API - Authing 用户原始信息:', {
+        authingId: authUser.sub,
+        name: authUser.name,
+        nickname: authUser.nickname,
+        username: authUser.username,
+        email: authUser.email,
+        phone: authUser.phone,
+        phoneNumber: authUser.phoneNumber
+      })
+
       const displayName = authUser.name 
         || authUser.nickname 
         || authUser.username 
@@ -82,6 +92,14 @@ export const GET = withPerformanceMonitoring(async (
         || authUser.name 
         || authUser.username 
         || (authUser.email ? authUser.email.split('@')[0] : undefined);
+
+      console.log('🔄 Profile API - 处理后的用户信息:', { 
+        name: displayName,
+        nickname: nickname,
+        isNicknameEmpty: !nickname,
+        isFallbackName: displayName.startsWith('用户'),
+        jwtOriginalName: authUser.name
+      })
       
       user = await monitorDatabaseOperation(
         dbMonitor,
