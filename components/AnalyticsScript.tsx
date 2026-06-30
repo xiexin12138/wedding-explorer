@@ -3,6 +3,7 @@ import {
   ANALYTICS_PROVIDER,
   ANALYTICS_SCRIPT_SRC,
   ANALYTICS_SITE_ID,
+  ANALYTICS_WEBSITE_ID,
   ANALYTICS_TOKEN,
   GOOGLE_ANALYTICS_ID,
 } from "@/lib/client-config";
@@ -33,6 +34,17 @@ export async function AnalyticsScript({ dataDomain }: AnalyticsScriptProps) {
           defer
           data-domain={domain}
           src={ANALYTICS_SCRIPT_SRC}
+          strategy="afterInteractive"
+        />
+      );
+
+    case "umami":
+      if (!ANALYTICS_SCRIPT_SRC || !ANALYTICS_WEBSITE_ID) return null;
+      return (
+        <Script
+          defer
+          src={ANALYTICS_SCRIPT_SRC}
+          data-website-id={ANALYTICS_WEBSITE_ID}
           strategy="afterInteractive"
         />
       );
